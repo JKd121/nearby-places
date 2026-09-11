@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { CATEGORIES } from "../amap/categories";
 import type { CategoryKey, CategorySearchResult, GeocodedPlace, Place } from "../amap/types";
+import type { LocationCandidate } from "../location/types";
 import type { SearchRadius, SearchResponse } from "../search/contracts";
 import type { SortMode } from "../search/sort";
 import {
@@ -13,8 +14,9 @@ import {
   sortPlacesForFilter, toggleCategory, toggleGroup, truncateTag, type ActiveFilter,
 } from "./logic";
 
-type Phase = "initial" | "resolving" | "resolved" | "searching" | "results" | "resolve-error" | "search-error";
+type Phase = "initial" | "resolving" | "needs-confirmation" | "resolved" | "not-found" | "searching" | "results" | "resolve-error" | "search-error";
 interface PublicApiError { message?: string; }
+interface ResolutionApiResponse { status?: "confirmed" | "needs_confirmation" | "not_found"; location?: LocationCandidate; candidates?: LocationCandidate[]; error?: PublicApiError; }
 
 function categoryLabel(key: CategoryKey): string { return CATEGORIES.find((category) => category.key === key)?.label ?? key; }
 async function readJson(response: Response): Promise<unknown> { try { return await response.json(); } catch { return null; } }
@@ -22,7 +24,10 @@ function sortLabel(mode: SortMode): string { return { "distance-asc": "距离最
 
 export default function SearchApp() {
   const [query, setQuery] = useState("");
-  const [resolvedLocation, setResolvedLocation] = useState<GeocodedPlace | null>(null);
+  const [resolvedLocation, setResolvedLocation] = useState<LocationCandidate | null>(null);
+  const [resolvedQuery, setResolvedQuery] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<LocationCandidate[]>([]);
+  const [showAllCandidates, setShowAllCandidates] = useState(false);
   const [phase, setPhase] = useState<Phase>("initial");
   const [response, setResponse] = useState<SearchResponse | null>(null);
   const [publicError, setPublicError] = useState<string | null>(null);
@@ -32,6 +37,7 @@ export default function SearchApp() {
   const [sortMode, setSortMode] = useState<SortMode>("distance-asc");
   const [visibleCount, setVisibleCount] = useState(getInitialVisibleCount("all"));
   const requestId = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const availableFilters = useMemo(() => getAvailableFilters(response), [response]);
   const activeResult = useMemo(() => getCategoryResult(response, activeFilter), [response, activeFilter]);
@@ -51,9 +57,13 @@ export default function SearchApp() {
 
   function invalidateLocation(nextQuery: string): void {
     setQuery(nextQuery);
-    if (resolvedLocation && nextQuery.trim() !== resolvedLocation.query.trim()) {
-      setResolvedLocation(null); setPublicError(null); setPhase("initial"); resetView();
-    }
+    requestId.current += 1;
+    setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false); setPublicError(null); setPhase("initial"); resetView();
+  }
+
+  function clearQuery(): void {
+    invalidateLocation("");
+    inputRef.current?.focus();
   }
 
   function changeCategories(next: CategoryKey[]): void { requestId.current += 1; setSelectedCategoryIds(next); resetView(); if (resolvedLocation) setPhase("resolved"); }
@@ -68,27 +78,36 @@ export default function SearchApp() {
     const trimmed = query.trim();
     if (!trimmed) { setPublicError("请先输入地点名称"); setPhase("resolve-error"); return; }
     const currentId = requestId.current + 1; requestId.current = currentId;
-    setPhase("resolving"); setPublicError(null); resetView(); setResolvedLocation(null);
+    setPhase("resolving"); setPublicError(null); resetView(); setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false);
     try {
       const result = await fetch("/api/resolve-location", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: trimmed }) });
-      const payload = await readJson(result) as { resolvedLocation?: GeocodedPlace; error?: PublicApiError } | null;
+      const payload = await readJson(result) as ResolutionApiResponse | null;
       if (currentId !== requestId.current) return;
-      if (!result.ok || !payload?.resolvedLocation) throw new Error(payload?.error?.message ?? "地点解析失败");
-      setResolvedLocation(payload.resolvedLocation); setPhase("resolved");
+      if (!result.ok) throw new Error(payload?.error?.message ?? "地点解析失败");
+      if (payload?.status === "needs_confirmation") { setCandidates(payload.candidates ?? []); setPhase("needs-confirmation"); return; }
+      if (payload?.status === "not_found") { setPhase("not-found"); return; }
+      if (payload?.status !== "confirmed" || !payload.location) throw new Error("地点解析失败");
+      setResolvedLocation(payload.location); setResolvedQuery(trimmed); setPhase("resolved");
     } catch (error) {
       if (currentId !== requestId.current) return;
       setPublicError(error instanceof Error ? error.message : "地点解析失败"); setPhase("resolve-error");
     }
   }
 
-  function clearResolved(): void { requestId.current += 1; setResolvedLocation(null); resetView(); setPublicError(null); setPhase("initial"); }
+  function confirmCandidate(candidate: LocationCandidate): void {
+    requestId.current += 1;
+    setResolvedLocation(candidate); setResolvedQuery(query.trim()); setCandidates([]); setShowAllCandidates(false); setPublicError(null); setPhase("resolved"); resetView();
+  }
+
+  function clearResolved(): void { requestId.current += 1; setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false); resetView(); setPublicError(null); setPhase("initial"); }
 
   async function searchNearby(): Promise<void> {
     if (!resolvedLocation || selectedCategoryIds.length === 0) return;
     const currentId = requestId.current + 1; requestId.current = currentId;
     setPhase("searching"); setPublicError(null);
     try {
-      const result = await fetch("/api/search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ center: { longitude: resolvedLocation.longitude, latitude: resolvedLocation.latitude }, resolvedLocation, categoryIds: selectedCategoryIds, radiusMeters }) });
+      const searchLocation: GeocodedPlace = { query: resolvedQuery ?? query.trim(), formattedAddress: resolvedLocation.address ?? resolvedLocation.name, province: null, city: resolvedLocation.city, district: resolvedLocation.district, level: resolvedLocation.placeType, longitude: resolvedLocation.location.longitude, latitude: resolvedLocation.location.latitude };
+      const result = await fetch("/api/search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ center: { longitude: resolvedLocation.location.longitude, latitude: resolvedLocation.location.latitude }, resolvedLocation: searchLocation, categoryIds: selectedCategoryIds, radiusMeters }) });
       const payload = await readJson(result) as (SearchResponse & { error?: PublicApiError }) | null;
       if (currentId !== requestId.current) return;
       if (!result.ok || !payload?.categories) throw new Error(payload?.error?.message ?? "周边搜索失败");
@@ -112,11 +131,13 @@ export default function SearchApp() {
     <header className="page-header"><h1>地点周边</h1><p className="subtitle">搜索一个地点，比较附近的生活服务。</p></header>
     <section className="search-panel" aria-busy={phase === "resolving" || phase === "searching"}>
       <label htmlFor="location-query">地点</label>
-      <div className="input-row"><input id="location-query" value={query} onChange={(event) => invalidateLocation(event.target.value)} placeholder="例如：深圳北站" disabled={phase === "resolving" || phase === "searching"} /><button type="button" onClick={resolveLocation} disabled={phase === "resolving" || phase === "searching"}>{phase === "resolving" ? "解析中…" : "解析地点"}</button></div>
+      <div className="input-row"><div className="input-shell"><input ref={inputRef} id="location-query" value={query} onChange={(event) => invalidateLocation(event.target.value)} placeholder="例如：深圳北站" disabled={phase === "resolving" || phase === "searching"} />{query.length > 0 && <button type="button" className="clear-input-button" aria-label="清空地点" onClick={clearQuery} disabled={phase === "resolving" || phase === "searching"}>×</button>}</div><button type="button" onClick={resolveLocation} disabled={phase === "resolving" || phase === "searching"}>{phase === "resolving" ? "解析中…" : "解析地点"}</button></div>
       {publicError && (phase === "resolve-error" || phase === "search-error") && <p className="error-text" role="alert">{publicError}</p>}
     </section>
+    {phase === "not-found" && <section className="resolution-message" aria-live="polite"><strong>没有找到明确地点</strong><p>请尝试补充城市、行政区或更完整的地点名称。</p></section>}
+    {phase === "needs-confirmation" && <CandidateList candidates={candidates} expanded={showAllCandidates} onExpand={() => setShowAllCandidates(true)} onSelect={confirmCandidate} />}
     {resolvedLocation && <>
-      <section className="location-confirmation" aria-live="polite"><div className="location-heading"><p className="section-kicker">已解析位置</p><button type="button" className="secondary location-edit" onClick={clearResolved} disabled={phase === "searching"}>修改地点</button></div><h2>{resolvedLocation.formattedAddress || "未命名位置"}</h2><p>{resolvedLocation.district ?? resolvedLocation.city ?? resolvedLocation.province ?? "行政区未知"}</p><p className="coordinates">{resolvedLocation.longitude}, {resolvedLocation.latitude}</p></section>
+      <section className="location-confirmation" aria-live="polite"><div className="location-heading"><p className="section-kicker">已确认地点</p><button type="button" className="secondary location-edit" onClick={clearResolved} disabled={phase === "searching"}>修改地点</button></div><h2>{resolvedLocation.name}</h2>{resolvedLocation.placeType && <p>{resolvedLocation.placeType}</p>}<p>{[resolvedLocation.city, resolvedLocation.district].filter(Boolean).join(" · ") || "行政区未知"}</p>{resolvedLocation.address && <p>{resolvedLocation.address}</p>}<p className="coordinates">{resolvedLocation.location.longitude}, {resolvedLocation.location.latitude}</p></section>
       <section className="controls-panel" aria-label="搜索条件">
         <CategorySelector selected={selectedCategoryIds} onChange={changeCategories} />
         <fieldset className="radius-selector"><legend>搜索半径</legend><div className="option-row">{ALLOWED_RADIUS_METERS.map((value) => <label key={value} className="option-pill"><input type="radio" name="radius" value={value} checked={radiusMeters === value} onChange={(event) => changeRadius(event.target.value)} />{value / 1000} km</label>)}</div></fieldset>
@@ -127,6 +148,11 @@ export default function SearchApp() {
     {phase === "searching" && <p className="progress-text" role="status"><span className="spinner" aria-hidden="true" />正在依次搜索 {selectedCategoryIds.length} 个类别…</p>}
     {response && <ResultsView response={response} activeFilter={activeFilter} availableFilters={availableFilters} activeResult={activeResult} allowedSortModes={allowedSortModes} sortMode={effectiveSortMode} onFilterChange={changeFilter} onSortChange={changeSort} places={visiblePlaces} totalPlaces={sortedPlaces.length} canLoadMore={canLoadMore} onLoadMore={loadMore} successfulCount={successfulCount} failedCount={failedCount} />}
   </>;
+}
+
+function CandidateList({ candidates, expanded, onExpand, onSelect }: { candidates: readonly LocationCandidate[]; expanded: boolean; onExpand: () => void; onSelect: (candidate: LocationCandidate) => void }) {
+  const visibleCandidates = expanded ? candidates : candidates.slice(0, 5);
+  return <section className="candidate-panel" aria-live="polite"><h2>{candidates.length > 1 ? "找到多个可能的地点" : "请确认你想搜索的位置"}</h2><p className="muted">请选择你想搜索的位置</p><div className="candidate-list">{visibleCandidates.map((candidate, index) => <button type="button" className="candidate-button" key={`${candidate.id ?? candidate.name}-${index}`} onClick={() => onSelect(candidate)}><strong>{candidate.name}</strong>{candidate.placeType && <span>{candidate.placeType}</span>}<span>{[candidate.city, candidate.district].filter(Boolean).join(" · ") || "行政区未知"}</span>{candidate.address && <span>{candidate.address}</span>}</button>)}</div>{!expanded && candidates.length > 5 && <button type="button" className="secondary candidate-more" onClick={onExpand}>查看更多地点</button>}</section>;
 }
 
 function CategorySelector({ selected, onChange }: { selected: readonly CategoryKey[]; onChange: (next: CategoryKey[]) => void }) {

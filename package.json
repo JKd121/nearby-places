@@ -11,8 +11,10 @@
     "check:web": "next typegen && tsc --noEmit -p tsconfig.json",
     "build": "npm run build:core && npm run build:web",
     "check": "npm run check:core && npm run check:web",
-    "test": "npm run build:core --silent && node --test dist/test/categories.test.js dist/test/client.test.js dist/test/distance.test.js dist/test/search-service.test.js dist/test/search-validation.test.js dist/test/smoke.test.js dist/test/sort.test.js dist/test/web-logic.test.js",
-    "smoke": "npm run build:core --silent && node dist/scripts/amap-smoke-test.js"
+    "test": "npm run build:core --silent && node --test dist/test/categories.test.js dist/test/client.test.js dist/test/distance.test.js dist/test/search-service.test.js dist/test/search-validation.test.js dist/test/smoke.test.js dist/test/sort.test.js dist/test/web-logic.test.js dist/test/location-router.test.js dist/test/location-normalize.test.js dist/test/location-resolver.test.js dist/test/location-route.test.js",
+    "smoke": "npm run build:core --silent && node dist/scripts/amap-smoke-test.js",
+    "resolver:spike": "npm run build:core --silent && node dist/scripts/spikes/location-intent-spike.js",
+    "resolver:address-micro": "npm run build:core --silent && node dist/scripts/spikes/location-intent-spike.js --address-micro"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

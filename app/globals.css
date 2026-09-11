@@ -33,12 +33,26 @@ h1 { font-size: clamp(1.7rem, 3vw, 1.9rem); line-height: 1.2; letter-spacing: -.
 .search-panel { padding: 13px 16px; }
 .search-panel label { display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: .82rem; font-weight: 650; }
 .input-row, .button-row { display: flex; gap: 8px; }
+.input-shell { position: relative; width: 100%; min-width: 0; flex: 1 1 auto; }
+.input-shell input { width: 100%; padding-right: 44px; }
+.clear-input-button { position: absolute; top: 50%; right: 12px; display: inline-flex; align-items: center; justify-content: center; width: 36px; min-width: 36px; height: 36px; min-height: 36px; transform: translateY(-50%); border: 0; padding: 0; background: transparent; color: var(--text-tertiary); font-size: 1.3rem; font-weight: 500; line-height: 1; opacity: .5; }
+.clear-input-button:hover:not(:disabled), .input-shell:focus-within .clear-input-button { border-color: transparent; background: transparent; color: var(--text-primary); opacity: .82; }
+.clear-input-button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: -1px; }
 input { min-width: 0; flex: 1; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 9px 11px; background: var(--surface); color: var(--text-primary); }
 button { min-height: 40px; border: 1px solid var(--accent); border-radius: var(--radius-sm); padding: 8px 14px; background: var(--accent); color: #fff; font-weight: 600; transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease; }
 button:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
 button.secondary { border-color: var(--border); background: var(--surface); color: var(--text-primary); }
 button.secondary:hover:not(:disabled) { border-color: var(--border-strong); background: var(--surface-subtle); }
 .error-text { color: var(--danger); font-size: .88rem; }
+.resolution-message, .candidate-panel { margin-top: 8px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); }
+.resolution-message p, .candidate-panel > p { margin: 4px 0 0; }
+.candidate-panel h2 { font-size: 1rem; }
+.candidate-list { display: grid; gap: 6px; margin-top: 10px; }
+.candidate-button { display: grid; gap: 2px; min-height: 40px; border-color: var(--border); background: var(--surface-subtle); color: var(--text-primary); text-align: left; }
+.candidate-button:hover:not(:disabled) { border-color: var(--accent); background: #e9f3f6; }
+.candidate-button strong { font-weight: 650; }
+.candidate-button span { color: var(--text-secondary); font-size: .8rem; line-height: 1.35; overflow-wrap: anywhere; }
+.candidate-more { margin-top: 8px; }
 .fixed-scope, .coordinates, .muted, .place-address, .progress-text { color: var(--text-tertiary); }
 .fixed-scope { margin: 8px 0 0; font-size: .82rem; }
 .location-confirmation { margin-top: 8px; padding: 11px 14px; border-color: transparent; background: var(--surface-subtle); }
@@ -105,7 +119,7 @@ button.secondary:hover:not(:disabled) { border-color: var(--border-strong); back
   .page-shell { width: min(100% - 32px, 1040px); padding-top: 20px; }
   .page-header { margin-bottom: 12px; }
   .input-row, .button-row { flex-direction: column; }
-  .input-row button, .controls-panel > button { width: 100%; }
+  .input-row > button, .controls-panel > button { width: 100%; }
   .location-edit { width: auto; }
   .results-summary { align-items: flex-start; flex-direction: column; gap: 2px; }
   .result-toolbar { display: grid; gap: 8px; }
