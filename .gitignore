@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.next/
+.vercel/
+.serena/
+.env
+.env.*
+!.env.example
+harness/build/*-real-api-verification.txt
+*.log
+*.tsbuildinfo

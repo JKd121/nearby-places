@@ -1,0 +1,29 @@
+{
+  "name": "amap-nearby-spike",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build:core": "tsc -p tsconfig.core.json",
+    "check:core": "tsc -p tsconfig.core.json --noEmit",
+    "build:web": "next build --webpack",
+    "check:web": "next typegen && tsc --noEmit -p tsconfig.json",
+    "build": "npm run build:core && npm run build:web",
+    "check": "npm run check:core && npm run check:web",
+    "test": "npm run build:core --silent && node --test dist/test/categories.test.js dist/test/client.test.js dist/test/distance.test.js dist/test/search-service.test.js dist/test/search-validation.test.js dist/test/smoke.test.js dist/test/sort.test.js dist/test/web-logic.test.js",
+    "smoke": "npm run build:core --silent && node dist/scripts/amap-smoke-test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "next": "^16.3.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "server-only": "^0.0.1"
+  }
+}
