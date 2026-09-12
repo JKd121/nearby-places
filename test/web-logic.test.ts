@@ -3,6 +3,7 @@ import test from "node:test";
 import { CATEGORIES } from "../src/amap/categories.js";
 import type { CategorySearchResult, Place } from "../src/amap/types.js";
 import type { SearchResponse } from "../src/search/contracts.js";
+import { buildAmapMarkerUrl } from "../src/web/location-links.js";
 import {
   ALLOWED_RADIUS_METERS,
   CATEGORY_GROUPS,
@@ -95,4 +96,37 @@ test("formatters are null-safe and follow category cost policy", () => {
   assert.equal(formatCost("gym", null), null);
   assert.equal(truncateTag("潮汕牛肉, 牛肉火锅, 大排档, 其他"), "潮汕牛肉 · 牛肉火锅 · 大排档");
   assert.equal(truncateTag(null), null);
+});
+
+test("AMap marker URL encodes names and contains no secret", () => {
+  const rawName = "深圳北站 / A&B (北广场)";
+  const result = buildAmapMarkerUrl({ longitude: 114.025796, latitude: 22.608443, name: rawName });
+  assert.ok(result);
+  const url = new URL(result);
+  assert.equal(url.protocol, "https:");
+  assert.equal(url.hostname, "uri.amap.com");
+  assert.equal(url.pathname, "/marker");
+  assert.equal(url.searchParams.get("position"), "114.025796,22.608443");
+  assert.equal(url.searchParams.get("name"), rawName);
+  assert.equal(url.searchParams.get("src"), "place-aggregator");
+  assert.equal(url.searchParams.get("coordinate"), "gaode");
+  assert.equal(url.searchParams.get("callnative"), "0");
+  assert.equal(url.search.includes("AMAP_WEB_SERVICE_KEY"), false);
+  assert.equal(url.searchParams.has("key"), false);
+});
+
+test("AMap marker URL accepts geographic boundaries", () => {
+  assert.ok(buildAmapMarkerUrl({ longitude: -180, latitude: -90, name: "南端" }));
+  assert.ok(buildAmapMarkerUrl({ longitude: 180, latitude: 90, name: "北端" }));
+});
+
+test("AMap marker URL rejects invalid coordinates without throwing", () => {
+  for (const place of [
+    { longitude: 180.001, latitude: 22, name: "越界经度" },
+    { longitude: -180.001, latitude: 22, name: "越界经度" },
+    { longitude: 114, latitude: 90.001, name: "越界纬度" },
+    { longitude: 114, latitude: -90.001, name: "越界纬度" },
+    { longitude: Number.NaN, latitude: 22, name: "NaN" },
+    { longitude: 114, latitude: Number.POSITIVE_INFINITY, name: "Infinity" },
+  ]) assert.equal(buildAmapMarkerUrl(place), null);
 });
