@@ -4,6 +4,8 @@ import { AmapApiError, createAmapClient } from "../src/amap/client.js";
 import { CATEGORIES } from "../src/amap/categories.js";
 
 const hotel = CATEGORIES[0]!;
+const bus = CATEGORIES.find((category) => category.key === "bus")!;
+const subway = CATEGORIES.find((category) => category.key === "subway")!;
 function jsonResponse(body: unknown): Response { return new Response(JSON.stringify(body), { status: 200 }); }
 
 test("types-only Around request, native distance, business nulls and page contract", async () => {
@@ -29,10 +31,60 @@ test("types-only Around request, native distance, business nulls and page contra
   assert.equal(page.places[0]?.distanceMeters, 10);
   assert.ok((page.places[0]?.computedDistanceMeters ?? 0) > 0);
   assert.equal(page.places[0]?.cost, null);
+  assert.equal(page.places[0]?.openTimeToday, null);
+  assert.equal(page.places[0]?.openTimeWeek, null);
   assert.equal(page.places[1]?.rating, 4.1);
   assert.equal(page.places[1]?.typecode, hotel.types[0]);
+  assert.equal(page.places[0]?.parentId, null);
   assert.equal(page.returnedCount, 2);
   assert.equal(page.mayHaveNextApiPage, false);
+});
+
+test("subway accepts exact station type, rejects exits, and preserves parent POI ID", async () => {
+  const fetchStub: typeof fetch = async () => jsonResponse({ status: "1", pois: [
+    { id: "exit", parent: "station", name: "深圳北站地铁站A口", location: "114.001,22", typecode: "150501" },
+    { id: "station", parent: "hub", name: "深圳北站", location: "114.002,22", typecode: "150500" },
+    { id: "missing-type", name: "Unknown", location: "114.003,22" },
+  ] });
+  const page = await createAmapClient("test-key", fetchStub).searchNearby(
+    { longitude: 114, latitude: 22 }, subway, { radiusMeters: 3_000, pageNumber: 1, pageSize: 25 },
+  );
+  assert.deepEqual(page.places.map((place) => place.id), ["station"]);
+  assert.equal(page.places[0]?.typecode, "150500");
+  assert.equal(page.places[0]?.parentId, "hub");
+  assert.equal(page.returnedCount, 3);
+  assert.equal(page.mayHaveNextApiPage, false);
+});
+
+test("bus preserves provider variants without subway-style exact filtering", async () => {
+  const typecodes = ["150700", "150701", "150702", "150703", "150704"];
+  const fetchStub: typeof fetch = async () => jsonResponse({ status: "1", pois: typecodes.map((typecode, index) => ({
+    id: `bus-${typecode}`,
+    name: `站点-${typecode}`,
+    location: `114.${String(index + 1).padStart(3, "0")},22`,
+    typecode,
+  })) });
+  const page = await createAmapClient("test-key", fetchStub).searchNearby(
+    { longitude: 114, latitude: 22 }, bus, { radiusMeters: 3_000, pageNumber: 1, pageSize: 25 },
+  );
+  assert.deepEqual(page.places.map((place) => place.typecode).sort(), typecodes.sort());
+});
+
+test("business hours preserve provider text and normalize missing, empty, and invalid values", async () => {
+  const fetchStub: typeof fetch = async () => jsonResponse({ status: "1", pois: [
+    { id: "both", name: "Both", location: "114.001,22", business: { opentime_today: "10:00-22:00", opentime_week: "周一至周日 10:00-22:00" } },
+    { id: "today", name: "Today", location: "114.002,22", business: { opentime_today: "全天", opentime_week: "" } },
+    { id: "week", name: "Week", location: "114.003,22", business: { opentime_today: " ", opentime_week: "周末 09:00-18:00" } },
+    { id: "invalid", name: "Invalid", location: "114.004,22", business: { opentime_today: 24, opentime_week: [] } },
+    { id: "missing", name: "Missing", location: "114.005,22" },
+  ] });
+  const places = (await createAmapClient("test-key", fetchStub).searchNearby({ longitude: 114, latitude: 22 }, hotel, { radiusMeters: 3000, pageNumber: 1, pageSize: 25 })).places;
+  const byId = new Map(places.map((place) => [place.id, place]));
+  assert.deepEqual([byId.get("both")?.openTimeToday, byId.get("both")?.openTimeWeek], ["10:00-22:00", "周一至周日 10:00-22:00"]);
+  assert.deepEqual([byId.get("today")?.openTimeToday, byId.get("today")?.openTimeWeek], ["全天", null]);
+  assert.deepEqual([byId.get("week")?.openTimeToday, byId.get("week")?.openTimeWeek], [null, "周末 09:00-18:00"]);
+  assert.deepEqual([byId.get("invalid")?.openTimeToday, byId.get("invalid")?.openTimeWeek], [null, null]);
+  assert.deepEqual([byId.get("missing")?.openTimeToday, byId.get("missing")?.openTimeWeek], [null, null]);
 });
 
 test("strategy parameters vary without duplicating typecodes", async () => {

@@ -1,7 +1,8 @@
 import { AmapApiError } from "../amap/client.js";
 import { getCategory } from "../amap/categories.js";
 import type { CategoryConfig, CategorySearchResult, Coordinates, GeocodedPlace, NearbySearchOptions, PlacePage, SearchFailure } from "../amap/types.js";
-import type { ConfirmedSearchRequest, SearchRequest, SearchResponse } from "./contracts.js";
+import type { ConfirmedSearchRequest, SearchRequest, SearchResponse, SearchSecondPageRequest, SearchSecondPageResponse } from "./contracts.js";
+import { deriveCategoryStatus } from "./status.js";
 
 export type Delay = (milliseconds: number) => Promise<void>;
 
@@ -33,7 +34,7 @@ export async function searchCategoriesSequentially(
     try {
       const response = await searchNearby(centre, category, { radiusMeters, pageNumber: 1, pageSize: 25 });
       const { places, ...page } = response;
-      results.push({ category, status: places.length === 0 ? "empty" : "success", places, page, error: null });
+      results.push({ category, status: deriveCategoryStatus(places, page), places, page, error: null });
     } catch (error) {
       results.push({ category, status: "error", places: [], page: null, error: toFailure(error) });
     }
@@ -51,4 +52,10 @@ export async function executeResolvedSearch(request: ConfirmedSearchRequest, cli
   const categories = request.categoryIds.map(getCategory);
   const results = await searchCategoriesSequentially(request.resolvedLocation, categories, client.searchNearby.bind(client), request.radiusMeters, delay);
   return { resolvedLocation: request.resolvedLocation, categories: results, status: results.some((result) => result.status === "error") ? "partial success" : "success" };
+}
+
+export async function executeSecondPageSearch(request: SearchSecondPageRequest, client: SearchClient): Promise<SearchSecondPageResponse> {
+  const category = getCategory(request.categoryId);
+  const page = await client.searchNearby(request.center, category, { radiusMeters: request.radiusMeters, pageNumber: 2, pageSize: 25 });
+  return { categoryId: category.key, page };
 }

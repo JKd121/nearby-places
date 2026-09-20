@@ -84,13 +84,15 @@ export function createAmapClient(key: string, fetchImpl: typeof fetch = fetch) {
       const rawPois = Array.isArray(payload.pois) ? payload.pois : [];
       const places = rawPois.flatMap((candidate): Place[] => {
         if (!isRecord(candidate)) return [];
+        const typecode = optionalString(candidate.typecode);
+        if (category.acceptedTypecodes && (typecode === null || !category.acceptedTypecodes.includes(typecode))) return [];
         const location = parseLocation(candidate.location);
         if (!location) return [];
         const business = isRecord(candidate.business) ? candidate.business : {};
         const computedDistanceMeters = computeDistanceMeters(centre, location);
         const nativeDistance = optionalNumber(candidate.distance);
         const amapDistanceMeters = nativeDistance !== null && nativeDistance >= 0 ? nativeDistance : null;
-        return [{ id: requiredString(candidate.id), name: requiredString(candidate.name, "(unnamed POI)"), category: category.key, distanceMeters: amapDistanceMeters ?? computedDistanceMeters, distanceSource: amapDistanceMeters === null ? "computed" : "amap", amapDistanceMeters, computedDistanceMeters, type: optionalString(candidate.type), typecode: optionalString(candidate.typecode), cost: optionalNumber(business.cost), rating: optionalNumber(business.rating), tag: optionalString(business.tag), address: requiredString(candidate.address), ...location }];
+        return [{ id: requiredString(candidate.id), parentId: optionalString(candidate.parent), name: requiredString(candidate.name, "(unnamed POI)"), category: category.key, distanceMeters: amapDistanceMeters ?? computedDistanceMeters, distanceSource: amapDistanceMeters === null ? "computed" : "amap", amapDistanceMeters, computedDistanceMeters, type: optionalString(candidate.type), typecode, cost: optionalNumber(business.cost), rating: optionalNumber(business.rating), tag: optionalString(business.tag), openTimeToday: optionalString(business.opentime_today), openTimeWeek: optionalString(business.opentime_week), address: requiredString(candidate.address), ...location }];
       }).sort((left, right) => left.distanceMeters - right.distanceMeters);
       // `count` is an API total-count hint, not the number returned on this page.
       // Keep this contract page-local so it cannot be mistaken for a total page count.

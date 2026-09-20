@@ -1,8 +1,9 @@
-import { CATEGORIES } from "../amap/categories.js";
-import type { CategoryGroup, CategoryKey, CategorySearchResult, Place } from "../amap/types.js";
+import { CATEGORIES, getCategory } from "../amap/categories.js";
+import type { CategoryGroup, CategoryKey, CategorySearchResult, Place, PlacePage } from "../amap/types.js";
 import type { SearchResponse } from "../search/contracts.js";
 import { isSortModeAllowed, sortPlaces } from "../search/sort.js";
 import type { SortMode } from "../search/sort.js";
+import { deriveCategoryStatus } from "../search/status.js";
 
 export type ActiveFilter = "all" | CategoryKey;
 export type GroupSelection = "none" | "partial" | "all";
@@ -18,10 +19,19 @@ export const CATEGORY_GROUPS: readonly CategoryGroupOption[] = [
   { key: "shopping", label: "购物", categoryIds: ["mall"] },
   { key: "food", label: "餐饮", categoryIds: ["hotpot", "bakery", "dessert"] },
   { key: "entertainment", label: "娱乐", categoryIds: ["ktv", "billiards", "gym"] },
+  { key: "transit", label: "交通", categoryIds: ["bus", "subway"] },
 ];
 
 export const ALL_CATEGORY_IDS: readonly CategoryKey[] = CATEGORIES.map((category) => category.key);
 export const ALLOWED_RADIUS_METERS = [1_000, 2_000, 3_000, 5_000] as const;
+
+export function isTransitCategory(categoryId: CategoryKey): boolean {
+  return getCategory(categoryId).group === "transit";
+}
+
+export function getEmptyStateMessage(categoryId: CategoryKey): string {
+  return getCategory(categoryId).emptyState ?? "该类别暂无附近结果。";
+}
 
 export function selectAllCategories(): CategoryKey[] { return [...ALL_CATEGORY_IDS]; }
 export function clearCategories(): CategoryKey[] { return []; }
@@ -51,18 +61,76 @@ export function getAvailableFilters(response: SearchResponse | null): ActiveFilt
   return response ? ["all", ...response.categories.map((item) => item.category.key)] : [];
 }
 
-export function mergeSuccessfulPlaces(categories: readonly CategorySearchResult[]): Place[] {
-  const seen = new Set<string>();
+/** Merge place lists by exact non-empty IDs while preserving every empty-ID place. */
+export function mergePlacesByExactId(placeLists: readonly (readonly Place[])[]): Place[] {
+  const seenIds = new Set<string>();
   const merged: Place[] = [];
-  for (const result of categories) {
-    if (result.status !== "success") continue;
-    for (const place of result.places) {
-      if (seen.has(place.id)) continue;
-      seen.add(place.id);
+
+  for (const places of placeLists) {
+    for (const place of places) {
+      if (place.id.trim() !== "") {
+        if (seenIds.has(place.id)) continue;
+        seenIds.add(place.id);
+      }
       merged.push(place);
     }
   }
+
   return merged;
+}
+
+export function mergeSuccessfulPlaces(categories: readonly CategorySearchResult[]): Place[] {
+  return mergePlacesByExactId(
+    categories.filter((result) => result.status === "success").map((result) => result.places),
+  );
+}
+
+export function mergeProviderPagePlaces(existing: readonly Place[], incoming: readonly Place[]): Place[] {
+  return mergePlacesByExactId([existing, incoming]);
+}
+
+/** Returns a unique render key without changing provider identity or merge semantics. */
+export function getPlaceRenderKey(place: Place, index: number): string {
+  return place.id.trim() === "" ? `${place.category}-empty-${index}` : `${place.category}-${place.id}`;
+}
+
+/** Selects raw provider business-hours text without reading time or parsing schedules. */
+export function getBusinessHoursDisplay(place: Place): string {
+  if (place.openTimeToday !== null && place.openTimeToday.trim() !== "") return `今日营业：${place.openTimeToday}`;
+  if (place.openTimeWeek !== null && place.openTimeWeek.trim() !== "") return `营业时间：${place.openTimeWeek}`;
+  return "营业时间暂无";
+}
+
+/** Returns a new response after one category successfully receives its fixed provider page 2. */
+export function mergeProviderPageResult(
+  response: SearchResponse,
+  categoryId: CategoryKey,
+  page: PlacePage,
+): SearchResponse {
+  return {
+    ...response,
+    categories: response.categories.map((result) => {
+      if (result.category.key !== categoryId) return result;
+      const { places, ...pageMetadata } = page;
+      const mergedPlaces = mergeProviderPagePlaces(result.places, places);
+      return { ...result, status: deriveCategoryStatus(mergedPlaces, pageMetadata), places: mergedPlaces, page: pageMetadata };
+    }),
+  };
+}
+
+export function resolveProviderPageCategory(
+  activeFilter: ActiveFilter,
+  searchCategoryIds: readonly CategoryKey[],
+): CategoryKey | null {
+  if (activeFilter !== "all") return activeFilter;
+  return searchCategoryIds.length === 1 ? searchCategoryIds[0] ?? null : null;
+}
+
+export function canRequestSecondProviderPage(result: CategorySearchResult | null | undefined): boolean {
+  if (!result || result.status !== "success" || !result.page) return false;
+  return result.page.pageNumber === 1
+    && result.page.returnedCount === result.page.pageSize
+    && result.page.mayHaveNextApiPage;
 }
 
 export function getPlacesForFilter(response: SearchResponse | null, filter: ActiveFilter): Place[] {
@@ -77,12 +145,14 @@ export function getCategoryResult(response: SearchResponse | null, filter: Activ
 }
 
 function getSingleCategorySortModes(categoryId: CategoryKey): SortMode[] {
+  if (isTransitCategory(categoryId)) return ["distance-asc"];
   const base: SortMode[] = ["distance-asc", "rating-desc"];
   return isSortModeAllowed([categoryId], "cost-asc") ? [...base, "cost-asc", "cost-desc"] : base;
 }
 
 export function getAllowedSortModes(filter: ActiveFilter, searchCategoryIds: readonly CategoryKey[] = ALL_CATEGORY_IDS): SortMode[] {
   if (filter === "all") {
+    if (searchCategoryIds.length > 0 && searchCategoryIds.every(isTransitCategory)) return ["distance-asc"];
     if (searchCategoryIds.length !== 1 || !searchCategoryIds[0]) return ["distance-asc", "rating-desc"];
     return getSingleCategorySortModes(searchCategoryIds[0]);
   }
@@ -101,8 +171,8 @@ export function getInitialVisibleCount(filter: ActiveFilter): number { return fi
 
 export function getNextVisibleCount(filter: ActiveFilter, current: number, total: number): number {
   if (filter === "all") return Math.min(total, current + 20);
-  if (current < 20) return Math.min(total, 20);
-  return Math.min(total, 25);
+  const next = current < 20 ? 20 : current < 25 ? 25 : current < 35 ? 35 : current < 45 ? 45 : 50;
+  return Math.min(total, next);
 }
 
 export function formatDistance(meters: number): string {

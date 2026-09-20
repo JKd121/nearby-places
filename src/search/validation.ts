@@ -1,12 +1,17 @@
 import { isCategoryKey } from "../amap/categories.js";
 import type { CategoryKey, Coordinates, GeocodedPlace } from "../amap/types.js";
-import type { ConfirmedSearchRequest, SearchRadius, SearchRequest } from "./contracts.js";
+import type { ConfirmedSearchRequest, SearchRadius, SearchRequest, SearchSecondPageRequest } from "./contracts.js";
 
 const ALLOWED_FIELDS = new Set(["query", "categoryIds", "radiusMeters"]);
 const ALLOWED_RADII = new Set<SearchRadius>([1_000, 2_000, 3_000, 5_000]);
 
 export class SearchRequestValidationError extends Error {
   constructor(message: string) { super(message); this.name = "SearchRequestValidationError"; }
+}
+
+function parseSearchRadius(value: unknown): SearchRadius {
+  if (typeof value !== "number" || !ALLOWED_RADII.has(value as SearchRadius)) throw new SearchRequestValidationError("radiusMeters must be one of 1000, 2000, 3000, 5000");
+  return value as SearchRadius;
 }
 
 export function parseSearchRequest(input: unknown): SearchRequest {
@@ -29,8 +34,7 @@ export function parseSearchRequest(input: unknown): SearchRequest {
     categoryIds.push(value);
   }
 
-  if (typeof record.radiusMeters !== "number" || !ALLOWED_RADII.has(record.radiusMeters as SearchRadius)) throw new SearchRequestValidationError("radiusMeters must be one of 1000, 2000, 3000, 5000");
-  return { query, categoryIds, radiusMeters: record.radiusMeters as SearchRadius };
+  return { query, categoryIds, radiusMeters: parseSearchRadius(record.radiusMeters) };
 }
 
 function parseCoordinates(value: unknown, fieldName: string): Coordinates {
@@ -67,4 +71,15 @@ export function parseConfirmedSearchRequest(input: unknown): ConfirmedSearchRequ
   if (center.longitude !== resolvedLocation.longitude || center.latitude !== resolvedLocation.latitude) throw new SearchRequestValidationError("center must match resolvedLocation coordinates");
   const base = parseSearchRequest({ query: resolvedLocation.query, categoryIds: record.categoryIds, radiusMeters: record.radiusMeters });
   return { center, resolvedLocation, categoryIds: base.categoryIds, radiusMeters: base.radiusMeters };
+}
+
+export function parseSearchSecondPageRequest(input: unknown): SearchSecondPageRequest {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) throw new SearchRequestValidationError("request must be an object");
+  const record = input as Record<string, unknown>;
+  const allowed = new Set(["center", "categoryId", "radiusMeters"]);
+  const extraFields = Object.keys(record).filter((key) => !allowed.has(key));
+  if (extraFields.length > 0) throw new SearchRequestValidationError(`unsupported request field(s): ${extraFields.join(", ")}`);
+  const center = parseCoordinates(record.center, "center");
+  if (typeof record.categoryId !== "string" || !isCategoryKey(record.categoryId)) throw new SearchRequestValidationError(`unknown categoryId: ${String(record.categoryId)}`);
+  return { center, categoryId: record.categoryId, radiusMeters: parseSearchRadius(record.radiusMeters) };
 }

@@ -5,7 +5,7 @@ import { isSortModeAllowed, sortPlaces } from "../src/search/sort.js";
 import type { Place } from "../src/amap/types.js";
 
 function place(id: string, distanceMeters: number, rating: number | null, cost: number | null): Place {
-  return { id, name: id, category: "hotpot", distanceMeters, distanceSource: "amap", amapDistanceMeters: distanceMeters, computedDistanceMeters: distanceMeters, type: null, typecode: null, cost, rating, tag: null, address: "", longitude: 0, latitude: 0 };
+  return { id, parentId: null, name: id, category: "hotpot", distanceMeters, distanceSource: "amap", amapDistanceMeters: distanceMeters, computedDistanceMeters: distanceMeters, type: null, typecode: null, cost, rating, tag: null, openTimeToday: null, openTimeWeek: null, address: "", longitude: 0, latitude: 0 };
 }
 
 test("sortPlaces is non-mutating, null-last in both directions, and uses distance tie-break", () => {

@@ -4,6 +4,8 @@ export interface AmapMarkerPlace {
   longitude: number;
   latitude: number;
   name: string;
+  id?: string;
+  preferPoiId?: boolean;
 }
 
 function isValidLongitude(value: number): boolean {
@@ -19,12 +21,14 @@ export function buildAmapMarkerUrl(place: AmapMarkerPlace): string | null {
   if (!isValidLongitude(place.longitude) || !isValidLatitude(place.latitude)) return null;
 
   const url = new URL(AMAP_MARKER_URL);
-  url.search = new URLSearchParams({
+  const params = new URLSearchParams({
     position: `${place.longitude},${place.latitude}`,
     name: place.name,
     src: "place-aggregator",
     coordinate: "gaode",
     callnative: "0",
-  }).toString();
+  });
+  if (place.preferPoiId && place.id?.trim()) params.set("poiid", place.id.trim());
+  url.search = params.toString();
   return url.toString();
 }

@@ -1,4 +1,4 @@
-import type { CategoryKey, CategorySearchResult, Coordinates, GeocodedPlace } from "../amap/types.js";
+import type { CategoryKey, CategorySearchResult, Coordinates, GeocodedPlace, PlacePage } from "../amap/types.js";
 
 export type SearchRadius = 1_000 | 2_000 | 3_000 | 5_000;
 
@@ -19,4 +19,15 @@ export interface SearchResponse {
   resolvedLocation: GeocodedPlace;
   categories: CategorySearchResult[];
   status: "success" | "partial success";
+}
+
+export interface SearchSecondPageRequest {
+  center: Coordinates;
+  categoryId: CategoryKey;
+  radiusMeters: SearchRadius;
+}
+
+export interface SearchSecondPageResponse {
+  categoryId: CategoryKey;
+  page: PlacePage;
 }
