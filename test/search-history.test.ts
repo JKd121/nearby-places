@@ -8,6 +8,9 @@ mock.module("../src/history/repository.js", {
     upsertSearchHistory: async () => {
       throw new Error("repository must not be called by normalization tests");
     },
+    findRecentSearchHistory: async () => {
+      throw new Error("repository must not be called by normalization tests");
+    },
   },
 } as unknown as Parameters<typeof mock.module>[1]);
 

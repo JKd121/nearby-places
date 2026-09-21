@@ -3,7 +3,11 @@ import type {
   SaveSearchHistoryInput,
 } from "./contracts.js";
 
-import { upsertSearchHistory } from "./repository.js";
+
+import {
+  findRecentSearchHistory,
+  upsertSearchHistory,
+} from "./repository.js";
 
 export function normalizeQuery(query: string): string {
   return query.trim().replace(/\s+/g, " ");
@@ -40,4 +44,19 @@ export async function saveSearchHistory(
   const normalized = normalizeSearchHistoryInput(input);
 
   return upsertSearchHistory(normalized);
+}
+
+const DEFAULT_HISTORY_LIMIT = 10;
+const MAX_HISTORY_LIMIT = 20;
+
+export async function getRecentSearchHistory(
+  visitorId: string,
+  limit = DEFAULT_HISTORY_LIMIT,
+) {
+  const safeLimit = Math.min(
+    Math.max(Math.trunc(limit), 1),
+    MAX_HISTORY_LIMIT,
+  );
+
+  return findRecentSearchHistory(visitorId, safeLimit);
 }

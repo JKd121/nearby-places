@@ -26,3 +26,20 @@ export async function upsertSearchHistory(
     },
   });
 }
+
+export async function findRecentSearchHistory(
+  visitorId: string,
+  limit: number,
+) {
+  return prisma.searchHistory.findMany({
+    where: {
+      visitorId,
+    },
+
+    orderBy: {
+      searchedAt: "desc",
+    },
+
+    take: limit,
+  });
+}
