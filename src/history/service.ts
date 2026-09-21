@@ -1,0 +1,43 @@
+import type {
+  NormalizedSearchHistoryInput,
+  SaveSearchHistoryInput,
+} from "./contracts.js";
+
+import { upsertSearchHistory } from "./repository.js";
+
+export function normalizeQuery(query: string): string {
+  return query.trim().replace(/\s+/g, " ");
+}
+
+export function normalizeCategoryIds(categoryIds: string[]): string[] {
+  return [...new Set(categoryIds)].sort();
+}
+
+export function normalizeSearchHistoryInput(
+  input: SaveSearchHistoryInput,
+): NormalizedSearchHistoryInput {
+  const query = normalizeQuery(input.query);
+  const categoryIds = normalizeCategoryIds(input.categoryIds);
+
+  const dedupeKey = JSON.stringify([
+    query,
+    categoryIds,
+    input.radiusMeters,
+  ]);
+
+  return {
+    visitorId: input.visitorId,
+    dedupeKey,
+    query,
+    categoryIds,
+    radiusMeters: input.radiusMeters,
+  };
+}
+
+export async function saveSearchHistory(
+  input: SaveSearchHistoryInput,
+) {
+  const normalized = normalizeSearchHistoryInput(input);
+
+  return upsertSearchHistory(normalized);
+}
