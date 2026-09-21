@@ -11,3 +11,16 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model SearchHistory {
+  id           String   @id @default(cuid())
+  visitorId    String
+  dedupeKey    String
+  query        String
+  categoryIds  String[]
+  radiusMeters Int
+  searchedAt   DateTime @default(now())
+
+  @@unique([visitorId, dedupeKey])
+  @@index([visitorId, searchedAt])
+}
