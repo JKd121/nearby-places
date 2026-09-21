@@ -25,6 +25,32 @@ function categoryLabel(key: CategoryKey): string { return CATEGORIES.find((categ
 async function readJson(response: Response): Promise<unknown> { try { return await response.json(); } catch { return null; } }
 function sortLabel(mode: SortMode): string { return { "distance-asc": "距离最近", "rating-desc": "评分最高", "cost-asc": "消费最低", "cost-desc": "消费最高" }[mode]; }
 
+type SearchHistoryInput = {
+  query: string;
+  categoryIds: CategoryKey[];
+  radiusMeters: SearchRadius;
+};
+
+async function saveSearchHistoryBestEffort(
+  input: SearchHistoryInput,
+): Promise<void> {
+  try {
+    const result = await fetch("/api/history", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(input),
+    });
+
+    if (!result.ok) {
+      console.warn("Failed to save search history");
+    }
+  } catch (error) {
+    console.warn("Failed to save search history", error);
+  }
+}
+
 export default function SearchApp() {
   const [query, setQuery] = useState("");
   const [resolvedLocation, setResolvedLocation] = useState<LocationCandidate | null>(null);
@@ -116,11 +142,35 @@ export default function SearchApp() {
     setPhase("searching"); setPublicError(null);
     try {
       const searchLocation: GeocodedPlace = { query: resolvedQuery ?? query.trim(), formattedAddress: resolvedLocation.address ?? resolvedLocation.name, province: null, city: resolvedLocation.city, district: resolvedLocation.district, level: resolvedLocation.placeType, longitude: resolvedLocation.location.longitude, latitude: resolvedLocation.location.latitude };
+      const historyInput: SearchHistoryInput = {
+            query: searchLocation.query,
+            categoryIds: [...selectedCategoryIds],
+            radiusMeters,
+          };
       const result = await fetch("/api/search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ center: { longitude: resolvedLocation.location.longitude, latitude: resolvedLocation.location.latitude }, resolvedLocation: searchLocation, categoryIds: selectedCategoryIds, radiusMeters }) });
       const payload = await readJson(result) as (SearchResponse & { error?: PublicApiError }) | null;
       if (currentId !== requestId.current) return;
-      if (!result.ok || !payload?.categories) throw new Error(payload?.error?.message ?? "周边搜索失败");
-      setResponse(payload); setActiveFilter("all"); setSortMode("distance-asc"); setVisibleCount(getInitialVisibleCount("all")); setPhase("results");
+
+if (!result.ok || !payload?.categories) {
+  throw new Error(
+    payload?.error?.message ?? "周边搜索失败",
+  );
+}
+
+setResponse(payload);
+setActiveFilter("all");
+setSortMode("distance-asc");
+setVisibleCount(getInitialVisibleCount("all"));
+setPhase("results");
+
+const hasSuccessfulCategory =
+  payload.categories.some(
+    (category) => category.status !== "error",
+  );
+
+if (hasSuccessfulCategory) {
+  void saveSearchHistoryBestEffort(historyInput);
+}
     } catch (error) {
       if (currentId !== requestId.current) return;
       setPublicError(error instanceof Error ? error.message : "周边搜索失败"); setPhase("search-error");
