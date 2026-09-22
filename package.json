@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "next dev --webpack",
     "build:core": "tsc -p tsconfig.core.json",
     "check:core": "tsc -p tsconfig.core.json --noEmit",
