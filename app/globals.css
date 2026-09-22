@@ -54,7 +54,7 @@ h1 { font-size: clamp(1.95rem, 4.2vw, 3rem); line-height: 1.08; letter-spacing: 
 .orbit-pin { position: absolute; top: 40px; right: 56px; display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid rgba(8, 125, 135, .28); border-radius: 50%; background: rgba(255, 255, 255, .78); color: var(--accent); font-size: 1.25rem; box-shadow: 0 0 0 7px rgba(8, 125, 135, .06), var(--shadow-sm); animation: float-pin 5s ease-in-out infinite; }
 
 .search-panel, .location-confirmation, .controls-panel, .candidate-panel, .resolution-message { border: 1px solid rgba(183, 207, 205, .75); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-sm); backdrop-filter: blur(16px); }
-.search-panel { position: relative; padding: 18px 22px 20px; animation: rise-in 420ms var(--ease) both; }
+.search-panel { position: relative; z-index: 2; padding: 18px 22px 20px; animation: rise-in 420ms var(--ease) both; }
 .search-panel-heading, .controls-heading, .candidate-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 13px; }
 .section-kicker { margin: 0 0 5px; color: var(--accent); font-size: .68rem; font-weight: 760; letter-spacing: .15em; text-transform: uppercase; }
 .search-panel h2, .controls-heading h2 { font-size: 1.08rem; letter-spacing: -.025em; }
@@ -75,6 +75,17 @@ h1 { font-size: clamp(1.95rem, 4.2vw, 3rem); line-height: 1.08; letter-spacing: 
 .clear-input-button:hover:not(:disabled), .input-shell:focus-within .clear-input-button { color: var(--ink); opacity: .86; }
 .clear-input-button:hover:not(:disabled) { border-radius: 9px; background: rgba(8, 125, 135, .08); }
 .clear-input-button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: -1px; }
+.search-history-panel { position: absolute; z-index: 20; top: calc(100% + 8px); right: 0; left: 0; padding: 12px 14px; border: 1px solid rgba(183, 207, 205, .9); border-radius: var(--radius-md); background: var(--surface-strong); box-shadow: var(--shadow-md); backdrop-filter: blur(16px); animation: rise-in 180ms var(--ease) both; }
+.search-history-heading { padding: 0 2px 8px; border-bottom: 1px solid rgba(215, 229, 228, .9); color: var(--text-secondary); font-size: .72rem; letter-spacing: .08em; }
+.search-history-heading strong { color: var(--ink); font-weight: 720; }
+.search-history-list { max-height: min(280px, 45vh); margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+.search-history-list > li { margin: 0; padding: 0; }
+.search-history-item { display: grid; width: 100%; min-height: 0; gap: 3px; padding: 10px 2px; border: 0; border-bottom: 1px solid rgba(215, 229, 228, .78); border-radius: 0; background: transparent; color: var(--text-primary); font-weight: inherit; text-align: left; }
+.search-history-item:hover:not(:disabled) { border-color: transparent; border-bottom-color: rgba(215, 229, 228, .78); background: rgba(8, 125, 135, .06); color: var(--text-primary); transform: none; }
+.search-history-list > li:last-child .search-history-item { border-bottom: 0; }
+.search-history-item strong { color: var(--ink); font-size: .84rem; font-weight: 720; line-height: 1.35; overflow-wrap: anywhere; }
+.search-history-item span { color: var(--text-secondary); font-size: .74rem; line-height: 1.35; }
+.search-history-panel > .muted { margin: 0; padding: 9px 2px 3px; line-height: 1.4; }
 button { min-height: 40px; border: 1px solid var(--accent); border-radius: var(--radius-sm); padding: 8px 14px; background: var(--accent); color: #fff; font-weight: 650; transition: background-color 140ms var(--ease), border-color 140ms var(--ease), color 140ms var(--ease), transform 140ms var(--ease); }
 button:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
 button.secondary { border-color: var(--border); background: rgba(255, 255, 255, .7); color: var(--text-primary); }

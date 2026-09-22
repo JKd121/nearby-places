@@ -21,9 +21,63 @@ type Phase = "initial" | "resolving" | "needs-confirmation" | "resolved" | "not-
 interface PublicApiError { message?: string; }
 interface ResolutionApiResponse { status?: "confirmed" | "needs_confirmation" | "not_found"; location?: LocationCandidate; candidates?: LocationCandidate[]; error?: PublicApiError; }
 
+interface SearchHistoryItem {
+  id: string;
+  query: string;
+  categoryIds: string[];
+  radiusMeters: number;
+  searchedAt: string;
+}
+
+interface SearchHistoryApiResponse {
+  items: unknown[];
+}
+
+type HistoryReplaySnapshot = {
+  query: string;
+  categoryIds: CategoryKey[];
+  radiusMeters: SearchRadius;
+};
+
 function categoryLabel(key: CategoryKey): string { return CATEGORIES.find((category) => category.key === key)?.label ?? key; }
 async function readJson(response: Response): Promise<unknown> { try { return await response.json(); } catch { return null; } }
 function sortLabel(mode: SortMode): string { return { "distance-asc": "距离最近", "rating-desc": "评分最高", "cost-asc": "消费最低", "cost-desc": "消费最高" }[mode]; }
+
+function isSearchHistoryItem(value: unknown): value is SearchHistoryItem {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  return (
+    "id" in value &&
+    typeof value.id === "string" &&
+    value.id.trim().length > 0 &&
+    "query" in value &&
+    typeof value.query === "string" &&
+    value.query.trim().length > 0 &&
+    "categoryIds" in value &&
+    Array.isArray(value.categoryIds) &&
+    value.categoryIds.every((categoryId) => typeof categoryId === "string") &&
+    "radiusMeters" in value &&
+    typeof value.radiusMeters === "number" &&
+    Number.isInteger(value.radiusMeters) &&
+    value.radiusMeters > 0 &&
+    "searchedAt" in value &&
+    typeof value.searchedAt === "string"
+  );
+}
+
+function isSearchHistoryApiResponse(
+  value: unknown,
+): value is SearchHistoryApiResponse {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    "items" in value &&
+    Array.isArray(value.items)
+  );
+}
 
 type SearchHistoryInput = {
   query: string;
@@ -67,9 +121,13 @@ export default function SearchApp() {
   const [visibleCount, setVisibleCount] = useState(getInitialVisibleCount("all"));
   const [loadingProviderCategory, setLoadingProviderCategory] = useState<CategoryKey | null>(null);
   const [providerPageErrors, setProviderPageErrors] = useState<Partial<Record<CategoryKey, string>>>({});
+  const [historyItems, setHistoryItems] = useState<SearchHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const historyRequestId = useRef(0);
+  const pendingHistoryReplayRef = useRef<HistoryReplaySnapshot | null>(null);
   const requestId = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
-
   const availableFilters = useMemo(() => getAvailableFilters(response), [response]);
   const activeResult = useMemo(() => getCategoryResult(response, activeFilter), [response, activeFilter]);
   const activePlaces = useMemo(() => getPlacesForFilter(response, activeFilter), [response, activeFilter]);
@@ -91,6 +149,7 @@ export default function SearchApp() {
   }
 
   function invalidateLocation(nextQuery: string): void {
+    pendingHistoryReplayRef.current = null;
     setQuery(nextQuery);
     requestId.current += 1;
     setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false); setPublicError(null); setPhase("initial"); resetView();
@@ -101,17 +160,146 @@ export default function SearchApp() {
     inputRef.current?.focus();
   }
 
-  function changeCategories(next: CategoryKey[]): void { requestId.current += 1; setSelectedCategoryIds(next); resetView(); if (resolvedLocation) setPhase("resolved"); }
+  async function loadSearchHistory(): Promise<void> {
+  const currentId =
+    historyRequestId.current + 1;
+
+  historyRequestId.current = currentId;
+
+  setHistoryLoading(true);
+
+  try {
+    const result = await fetch("/api/history", {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+      },
+    });
+
+    const payload = await readJson(result);
+
+    if (
+      currentId !== historyRequestId.current
+    ) {
+      return;
+    }
+
+    if (!result.ok || !isSearchHistoryApiResponse(payload)) {
+      throw new Error(
+        "Failed to load search history",
+      );
+    }
+
+    const validItems = payload.items.filter(
+      (item): item is SearchHistoryItem => {
+        if (isSearchHistoryItem(item)) {
+          return true;
+        }
+
+        console.warn("Ignoring invalid search history item");
+        return false;
+      },
+    );
+
+    setHistoryItems(validItems);
+  } catch (error) {
+    if (
+      currentId !== historyRequestId.current
+    ) {
+      return;
+    }
+
+    setHistoryItems([]);
+
+    console.warn(
+      "Failed to load search history",
+      error,
+    );
+  } finally {
+    if (
+      currentId === historyRequestId.current
+    ) {
+      setHistoryLoading(false);
+    }
+  }
+}
+
+  function openSearchHistory(): void {
+    setHistoryOpen(true);
+  void loadSearchHistory();
+}
+
+  function closeSearchHistory(): void {
+    setHistoryOpen(false);
+}
+
+  function handleHistorySelect(item: SearchHistoryItem): void {
+    const categoryIds = item.categoryIds;
+    const radiusMeters = item.radiusMeters;
+    const hasValidCategories =
+      Array.isArray(categoryIds) &&
+      categoryIds.length > 0 &&
+      new Set(categoryIds).size === categoryIds.length &&
+      categoryIds.every(
+        (categoryId) =>
+          typeof categoryId === "string" &&
+          ALL_CATEGORY_IDS.includes(categoryId as CategoryKey),
+      );
+    const hasValidRadius =
+      typeof radiusMeters === "number" &&
+      Number.isInteger(radiusMeters) &&
+      ALLOWED_RADIUS_METERS.includes(
+        radiusMeters as (typeof ALLOWED_RADIUS_METERS)[number],
+      );
+
+    if (
+      typeof item.query !== "string" ||
+      item.query.trim().length === 0 ||
+      !hasValidCategories ||
+      !hasValidRadius
+    ) {
+      console.warn("Ignoring invalid search history item", item);
+      return;
+    }
+
+    const replaySnapshot: HistoryReplaySnapshot = {
+      query: item.query,
+      categoryIds: [...categoryIds] as CategoryKey[],
+      radiusMeters: radiusMeters as SearchRadius,
+    };
+
+    requestId.current += 1;
+    pendingHistoryReplayRef.current = replaySnapshot;
+    setQuery(item.query);
+    setSelectedCategoryIds(replaySnapshot.categoryIds);
+    setRadiusMeters(replaySnapshot.radiusMeters);
+    setResolvedLocation(null);
+    setResolvedQuery(null);
+    setCandidates([]);
+    setShowAllCandidates(false);
+    resetView();
+    setPhase("initial");
+    setHistoryOpen(false);
+    void resolveLocationForQuery(replaySnapshot.query);
+  }
+
+  function changeCategories(next: CategoryKey[]): void { pendingHistoryReplayRef.current = null; requestId.current += 1; setSelectedCategoryIds(next); resetView(); if (resolvedLocation) setPhase("resolved"); }
 
   function changeRadius(next: string): void {
     const value = Number(next) as SearchRadius;
     if (!ALLOWED_RADIUS_METERS.includes(value as (typeof ALLOWED_RADIUS_METERS)[number])) return;
-    requestId.current += 1; setRadiusMeters(value); resetView(); if (resolvedLocation) setPhase("resolved");
+    pendingHistoryReplayRef.current = null; requestId.current += 1; setRadiusMeters(value); resetView(); if (resolvedLocation) setPhase("resolved");
   }
 
-  async function resolveLocation(): Promise<void> {
-    const trimmed = query.trim();
-    if (!trimmed) { setPublicError("请先输入地点名称"); setPhase("resolve-error"); return; }
+  function resolveLocation(): void {
+    pendingHistoryReplayRef.current = null;
+    if (query.trim()) setSelectedCategoryIds(selectAllCategories());
+    void resolveLocationForQuery(query);
+  }
+
+  async function resolveLocationForQuery(queryToResolve: string): Promise<void> {
+    const trimmed = queryToResolve.trim();
+    if (!trimmed) { pendingHistoryReplayRef.current = null; setPublicError("请先输入地点名称"); setPhase("resolve-error"); return; }
     const currentId = requestId.current + 1; requestId.current = currentId;
     setPhase("resolving"); setPublicError(null); resetView(); setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false);
     try {
@@ -120,34 +308,59 @@ export default function SearchApp() {
       if (currentId !== requestId.current) return;
       if (!result.ok) throw new Error(payload?.error?.message ?? "地点解析失败");
       if (payload?.status === "needs_confirmation") { setCandidates(payload.candidates ?? []); setPhase("needs-confirmation"); return; }
-      if (payload?.status === "not_found") { setPhase("not-found"); return; }
-      if (payload?.status !== "confirmed" || !payload.location) throw new Error("地点解析失败");
+      if (payload?.status === "not_found") { pendingHistoryReplayRef.current = null; setPhase("not-found"); return; }
+      if (payload?.status !== "confirmed" || !payload.location) {
+        pendingHistoryReplayRef.current = null;
+        throw new Error("地点解析失败");
+      }
       setResolvedLocation(payload.location); setResolvedQuery(trimmed); setPhase("resolved");
+      const replaySnapshot = pendingHistoryReplayRef.current;
+      if (replaySnapshot) {
+        pendingHistoryReplayRef.current = null;
+        void searchNearbyForSnapshot(payload.location, replaySnapshot);
+      }
     } catch (error) {
       if (currentId !== requestId.current) return;
+      pendingHistoryReplayRef.current = null;
       setPublicError(error instanceof Error ? error.message : "地点解析失败"); setPhase("resolve-error");
     }
   }
 
   function confirmCandidate(candidate: LocationCandidate): void {
+    const replaySnapshot = pendingHistoryReplayRef.current;
+    pendingHistoryReplayRef.current = null;
     requestId.current += 1;
-    setResolvedLocation(candidate); setResolvedQuery(query.trim()); setCandidates([]); setShowAllCandidates(false); setPublicError(null); setPhase("resolved"); resetView();
+    setResolvedLocation(candidate); setResolvedQuery(replaySnapshot?.query.trim() ?? query.trim()); setCandidates([]); setShowAllCandidates(false); setPublicError(null); resetView(); setPhase("resolved");
+    if (replaySnapshot) void searchNearbyForSnapshot(candidate, replaySnapshot);
   }
 
-  function clearResolved(): void { requestId.current += 1; setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false); resetView(); setPublicError(null); setPhase("initial"); }
+  function clearResolved(): void { pendingHistoryReplayRef.current = null; requestId.current += 1; setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false); resetView(); setPublicError(null); setPhase("initial"); }
 
   async function searchNearby(): Promise<void> {
     if (!resolvedLocation || selectedCategoryIds.length === 0) return;
+    pendingHistoryReplayRef.current = null;
+    await searchNearbyForSnapshot(resolvedLocation, {
+      query: resolvedQuery ?? query.trim(),
+      categoryIds: [...selectedCategoryIds],
+      radiusMeters,
+    });
+  }
+
+  async function searchNearbyForSnapshot(
+    location: LocationCandidate,
+    snapshot: HistoryReplaySnapshot,
+  ): Promise<void> {
+    if (snapshot.categoryIds.length === 0) return;
     const currentId = requestId.current + 1; requestId.current = currentId;
     setPhase("searching"); setPublicError(null);
     try {
-      const searchLocation: GeocodedPlace = { query: resolvedQuery ?? query.trim(), formattedAddress: resolvedLocation.address ?? resolvedLocation.name, province: null, city: resolvedLocation.city, district: resolvedLocation.district, level: resolvedLocation.placeType, longitude: resolvedLocation.location.longitude, latitude: resolvedLocation.location.latitude };
+      const searchLocation: GeocodedPlace = { query: snapshot.query.trim(), formattedAddress: location.address ?? location.name, province: null, city: location.city, district: location.district, level: location.placeType, longitude: location.location.longitude, latitude: location.location.latitude };
       const historyInput: SearchHistoryInput = {
-            query: searchLocation.query,
-            categoryIds: [...selectedCategoryIds],
-            radiusMeters,
-          };
-      const result = await fetch("/api/search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ center: { longitude: resolvedLocation.location.longitude, latitude: resolvedLocation.location.latitude }, resolvedLocation: searchLocation, categoryIds: selectedCategoryIds, radiusMeters }) });
+        query: searchLocation.query,
+        categoryIds: [...snapshot.categoryIds],
+        radiusMeters: snapshot.radiusMeters,
+      };
+      const result = await fetch("/api/search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ center: { longitude: location.location.longitude, latitude: location.location.latitude }, resolvedLocation: searchLocation, categoryIds: snapshot.categoryIds, radiusMeters: snapshot.radiusMeters }) });
       const payload = await readJson(result) as (SearchResponse & { error?: PublicApiError }) | null;
       if (currentId !== requestId.current) return;
 
@@ -216,7 +429,52 @@ if (hasSuccessfulCategory) {
     <header className="page-header"><div className="hero-topline"><div className="brand-lockup"><span className="brand-mark" aria-hidden="true">⌖</span><span>地点周边</span></div><span className="hero-microcopy">EXPLORE NEARBY · LIVE LOCAL</span></div><div className="hero-copy"><p className="eyebrow">把生活半径，放在一个清晰的地点上</p><h1>探索身边的美好</h1><p className="subtitle">输入地点，确认搜索中心，再发现附近值得去的生活服务。</p></div><ol className="flow-steps" aria-label="搜索流程"><li><span>01</span>输入地点</li><li><span>02</span>确认位置</li><li><span>03</span>发现附近</li></ol><div className="hero-orbit" aria-hidden="true"><span className="orbit-ring orbit-ring-one" /><span className="orbit-ring orbit-ring-two" /><span className="orbit-pin">⌖</span></div></header>
     <section className="search-panel" aria-busy={phase === "resolving" || phase === "searching"}>
       <div className="search-panel-heading"><div><p className="section-kicker">搜索中心</p><h2>搜索一个地点</h2></div></div><label htmlFor="location-query">地点</label>
-      <div className="input-row"><div className="input-shell"><span className="search-field-icon" aria-hidden="true">⌖</span><input ref={inputRef} id="location-query" value={query} onChange={(event) => invalidateLocation(event.target.value)} placeholder="例如：深圳北站" disabled={phase === "resolving" || phase === "searching"} />{query.length > 0 && <button type="button" className="clear-input-button" aria-label="清空地点" onClick={clearQuery} disabled={phase === "resolving" || phase === "searching"}>×</button>}</div><button type="button" onClick={resolveLocation} disabled={phase === "resolving" || phase === "searching"}><span aria-hidden="true">↗</span>{phase === "resolving" ? "解析中…" : "解析地点"}</button></div>
+      <div className="input-row"><div className="input-shell"><span className="search-field-icon" aria-hidden="true">⌖</span><input
+  ref={inputRef}
+  id="location-query"
+  value={query}
+  onFocus={openSearchHistory}
+  onBlur={closeSearchHistory}
+  onChange={(event) => {
+    setHistoryOpen(false);
+    invalidateLocation(event.target.value);
+  }}
+  placeholder="例如：深圳北站"
+  disabled={phase === "resolving" || phase === "searching"}
+/>{query.length > 0 && <button type="button" className="clear-input-button" aria-label="清空地点" onClick={clearQuery} disabled={phase === "resolving" || phase === "searching"}>×</button>}
+        {historyOpen && (
+          <div className="search-history-panel" aria-label="最近搜索">
+            <div className="search-history-heading">
+              <strong>最近搜索</strong>
+            </div>
+            {historyLoading ? (
+              <p className="muted">正在读取最近搜索…</p>
+            ) : historyItems.length === 0 ? (
+              <p className="muted">暂无搜索历史</p>
+            ) : (
+              <ul className="search-history-list">
+                {historyItems.map((item) => (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      className="search-history-item"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => handleHistorySelect(item)}
+                    >
+                      <strong>{item.query}</strong>
+                      <span>
+                        {Array.isArray(item.categoryIds) ? item.categoryIds.length : 0} 个类别
+                        {" · "}
+                        {item.radiusMeters / 1000} km
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div><button type="button" onClick={resolveLocation} disabled={phase === "resolving" || phase === "searching"}><span aria-hidden="true">↗</span>{phase === "resolving" ? "解析中…" : "解析地点"}</button></div>
       {publicError && (phase === "resolve-error" || phase === "search-error") && <p className="error-text" role="alert">{publicError}</p>}
     </section>
     {phase === "not-found" && <section className="resolution-message" aria-live="polite"><strong>没有找到明确地点</strong><p>请尝试补充城市、行政区或更完整的地点名称。</p></section>}
