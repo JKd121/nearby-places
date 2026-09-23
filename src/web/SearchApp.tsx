@@ -124,6 +124,8 @@ export default function SearchApp() {
   const [historyItems, setHistoryItems] = useState<SearchHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
+  const [historyDeleteError, setHistoryDeleteError] = useState<string | null>(null);
   const historyRequestId = useRef(0);
   const pendingHistoryReplayRef = useRef<HistoryReplaySnapshot | null>(null);
   const requestId = useRef(0);
@@ -232,6 +234,33 @@ export default function SearchApp() {
   function closeSearchHistory(): void {
     setHistoryOpen(false);
 }
+
+  async function handleHistoryDelete(id: string): Promise<void> {
+    if (deletingHistoryId !== null) return;
+
+    setDeletingHistoryId(id);
+    setHistoryDeleteError(null);
+
+    try {
+      const result = await fetch("/api/history", {
+        method: "DELETE",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ id }),
+      });
+
+      if (!result.ok) {
+        throw new Error("Failed to delete search history");
+      }
+
+      await loadSearchHistory();
+    } catch {
+      setHistoryDeleteError("删除这条搜索历史失败，请重试");
+    } finally {
+      setDeletingHistoryId(null);
+    }
+  }
 
   function handleHistorySelect(item: SearchHistoryItem): void {
     const categoryIds = item.categoryIds;
@@ -434,7 +463,16 @@ if (hasSuccessfulCategory) {
   id="location-query"
   value={query}
   onFocus={openSearchHistory}
-  onBlur={closeSearchHistory}
+  onBlur={(event) => {
+    const nextFocusedElement = event.relatedTarget;
+    if (
+      nextFocusedElement instanceof Node &&
+      event.currentTarget.parentElement?.contains(nextFocusedElement)
+    ) {
+      return;
+    }
+    closeSearchHistory();
+  }}
   onChange={(event) => {
     setHistoryOpen(false);
     invalidateLocation(event.target.value);
@@ -455,23 +493,37 @@ if (hasSuccessfulCategory) {
               <ul className="search-history-list">
                 {historyItems.map((item) => (
                   <li key={item.id}>
-                    <button
-                      type="button"
-                      className="search-history-item"
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => handleHistorySelect(item)}
-                    >
-                      <strong>{item.query}</strong>
-                      <span>
-                        {Array.isArray(item.categoryIds) ? item.categoryIds.length : 0} 个类别
-                        {" · "}
-                        {item.radiusMeters / 1000} km
-                      </span>
-                    </button>
+                    <div className="search-history-row">
+                      <button
+                        type="button"
+                        className="search-history-item"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => handleHistorySelect(item)}
+                      >
+                        <strong>{item.query}</strong>
+                        <span>
+                          {Array.isArray(item.categoryIds) ? item.categoryIds.length : 0} 个类别
+                          {" · "}
+                          {item.radiusMeters / 1000} km
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className="search-history-delete"
+                        aria-label={`删除这条搜索历史：${item.query}`}
+                        aria-busy={deletingHistoryId === item.id}
+                        disabled={deletingHistoryId !== null}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => void handleHistoryDelete(item.id)}
+                      >
+                        <span aria-hidden="true">×</span>
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
             )}
+            {historyDeleteError && <p className="error-text" role="alert">{historyDeleteError}</p>}
           </div>
         )}
       </div><button type="button" onClick={resolveLocation} disabled={phase === "resolving" || phase === "searching"}><span aria-hidden="true">↗</span>{phase === "resolving" ? "解析中…" : "解析地点"}</button></div>

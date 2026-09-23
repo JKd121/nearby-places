@@ -4,9 +4,10 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import {
+  deleteSearchHistory,
   getRecentSearchHistory,
   saveSearchHistory,
-} from "../../../src/history/service";
+} from "../../../src/history/service.js";
 
 const VISITOR_COOKIE_NAME = "nearby_visitor_id";
 
@@ -64,6 +65,22 @@ function isSaveHistoryBody(
     typeof body.radiusMeters === "number" &&
     Number.isInteger(body.radiusMeters) &&
     body.radiusMeters > 0
+  );
+}
+
+function isDeleteHistoryBody(
+  value: unknown,
+): value is { id: string } {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const body = value as Record<string, unknown>;
+
+  return (
+    Object.keys(body).every((field) => field === "id") &&
+    typeof body.id === "string" &&
+    body.id.trim().length > 0
   );
 }
 
@@ -133,4 +150,48 @@ export async function POST(request: Request) {
   return NextResponse.json({
     item: toHistoryResponseItem(history),
   });
+}
+
+export async function DELETE(request: Request) {
+  let body: unknown;
+
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      {
+        error: "Invalid JSON body",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  if (!isDeleteHistoryBody(body)) {
+    return NextResponse.json(
+      {
+        error: "Invalid search history input",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const visitorId = await getOrCreateVisitorId();
+  const result = await deleteSearchHistory(body.id, visitorId);
+
+  if (result.count === 0) {
+    return NextResponse.json(
+      {
+        error: "Search history not found",
+      },
+      {
+        status: 404,
+      },
+    );
+  }
+
+  return NextResponse.json({ deleted: true });
 }

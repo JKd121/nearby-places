@@ -80,9 +80,12 @@ h1 { font-size: clamp(1.95rem, 4.2vw, 3rem); line-height: 1.08; letter-spacing: 
 .search-history-heading strong { color: var(--ink); font-weight: 720; }
 .search-history-list { max-height: min(280px, 45vh); margin: 0; padding: 0; overflow-y: auto; list-style: none; }
 .search-history-list > li { margin: 0; padding: 0; }
-.search-history-item { display: grid; width: 100%; min-height: 0; gap: 3px; padding: 10px 2px; border: 0; border-bottom: 1px solid rgba(215, 229, 228, .78); border-radius: 0; background: transparent; color: var(--text-primary); font-weight: inherit; text-align: left; }
-.search-history-item:hover:not(:disabled) { border-color: transparent; border-bottom-color: rgba(215, 229, 228, .78); background: rgba(8, 125, 135, .06); color: var(--text-primary); transform: none; }
-.search-history-list > li:last-child .search-history-item { border-bottom: 0; }
+.search-history-row { display: flex; align-items: stretch; gap: 4px; border-bottom: 1px solid rgba(215, 229, 228, .78); }
+.search-history-item { display: grid; min-width: 0; min-height: 0; flex: 1 1 auto; gap: 3px; padding: 10px 6px; border: 0; border-radius: 8px; background: transparent; color: var(--text-primary); font-weight: inherit; text-align: left; }
+.search-history-item:hover:not(:disabled) { border-color: transparent; background: rgba(8, 125, 135, .06); color: var(--text-primary); transform: none; }
+.search-history-delete { display: grid; width: 40px; min-width: 40px; height: 40px; min-height: 40px; flex: 0 0 40px; place-items: center; align-self: center; margin: 4px 0; border: 0; border-color: transparent; border-radius: 9px; padding: 0; background: transparent; color: var(--text-tertiary); font-size: 1.25rem; font-weight: 500; line-height: 1; transition: background-color 140ms var(--ease), color 140ms var(--ease); }
+.search-history-delete:hover:not(:disabled) { border-color: transparent; background: rgba(162, 73, 67, .09); color: var(--danger); }
+.search-history-list > li:last-child .search-history-row { border-bottom: 0; }
 .search-history-item strong { color: var(--ink); font-size: .84rem; font-weight: 720; line-height: 1.35; overflow-wrap: anywhere; }
 .search-history-item span { color: var(--text-secondary); font-size: .74rem; line-height: 1.35; }
 .search-history-panel > .muted { margin: 0; padding: 9px 2px 3px; line-height: 1.4; }

@@ -5,6 +5,7 @@ import type {
 
 
 import {
+  deleteSearchHistory as deleteSearchHistoryRecord,
   findRecentSearchHistory,
   upsertSearchHistory,
 } from "./repository.js";
@@ -59,4 +60,11 @@ export async function getRecentSearchHistory(
   );
 
   return findRecentSearchHistory(visitorId, safeLimit);
+}
+
+export async function deleteSearchHistory(
+  id: string,
+  visitorId: string,
+) {
+  return deleteSearchHistoryRecord(id, visitorId);
 }
