@@ -43,3 +43,15 @@ export async function findRecentSearchHistory(
     take: limit,
   });
 }
+
+export async function deleteSearchHistory(
+  id: string,
+  visitorId: string,
+) {
+  return prisma.searchHistory.deleteMany({
+    where: {
+      id,
+      visitorId,
+    },
+  });
+}

@@ -1,15 +1,38 @@
 import assert from "node:assert/strict";
 import { mock, test } from "node:test";
 
-// The history service imports the repository eagerly.  Replacing that boundary
-// lets these unit tests exercise normalization without loading Prisma or a URL.
-mock.module("../src/history/repository.js", {
+const historyRows = [
+  { id: "history-a", visitorId: "visitor-a" },
+  { id: "history-b", visitorId: "visitor-b" },
+];
+const savedPlaceRows = [{ id: "saved-place-a", visitorId: "visitor-a" }];
+let lastDeleteWhere: unknown;
+let savedPlaceDeleteCalls = 0;
+
+// Mock Prisma at the DB boundary so service/repository behavior can be checked
+// without loading a database URL or connecting to PostgreSQL.
+mock.module("../src/db/prisma.js", {
   exports: {
-    upsertSearchHistory: async () => {
-      throw new Error("repository must not be called by normalization tests");
-    },
-    findRecentSearchHistory: async () => {
-      throw new Error("repository must not be called by normalization tests");
+    prisma: {
+      searchHistory: {
+        upsert: async () => ({}),
+        findMany: async () => [],
+        deleteMany: async ({ where }: { where: { id: string; visitorId: string } }) => {
+          lastDeleteWhere = where;
+          const index = historyRows.findIndex(
+            (row) => row.id === where.id && row.visitorId === where.visitorId,
+          );
+          if (index === -1) return { count: 0 };
+          historyRows.splice(index, 1);
+          return { count: 1 };
+        },
+      },
+      savedPlace: {
+        deleteMany: async () => {
+          savedPlaceDeleteCalls += 1;
+          return { count: 1 };
+        },
+      },
     },
   },
 } as unknown as Parameters<typeof mock.module>[1]);
@@ -18,6 +41,7 @@ const {
   normalizeCategoryIds,
   normalizeQuery,
   normalizeSearchHistoryInput,
+  deleteSearchHistory,
 } = await import("../src/history/service.js");
 
 const baseInput = {
@@ -83,4 +107,33 @@ test("visitor identity remains part of the repository uniqueness boundary", () =
     [firstVisitor.visitorId, firstVisitor.dedupeKey],
     [secondVisitor.visitorId, secondVisitor.dedupeKey],
   );
+});
+
+test("deleteSearchHistory scopes the database delete by both id and visitorId", async () => {
+  historyRows.splice(0, historyRows.length,
+    { id: "history-a", visitorId: "visitor-a" },
+    { id: "history-b", visitorId: "visitor-b" },
+  );
+  savedPlaceRows.splice(0, savedPlaceRows.length, { id: "saved-place-a", visitorId: "visitor-a" });
+  savedPlaceDeleteCalls = 0;
+
+  const result = await deleteSearchHistory("history-a", "visitor-a");
+
+  assert.deepEqual(result, { count: 1 });
+  assert.deepEqual(lastDeleteWhere, { id: "history-a", visitorId: "visitor-a" });
+  assert.deepEqual(historyRows, [{ id: "history-b", visitorId: "visitor-b" }]);
+  assert.deepEqual(savedPlaceRows, [{ id: "saved-place-a", visitorId: "visitor-a" }]);
+  assert.equal(savedPlaceDeleteCalls, 0);
+});
+
+test("deleteSearchHistory cannot remove another visitor's row", async () => {
+  historyRows.splice(0, historyRows.length,
+    { id: "history-b", visitorId: "visitor-b" },
+  );
+
+  const result = await deleteSearchHistory("history-b", "visitor-a");
+
+  assert.deepEqual(result, { count: 0 });
+  assert.deepEqual(lastDeleteWhere, { id: "history-b", visitorId: "visitor-a" });
+  assert.deepEqual(historyRows, [{ id: "history-b", visitorId: "visitor-b" }]);
 });
