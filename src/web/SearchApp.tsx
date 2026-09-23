@@ -158,6 +158,7 @@ export default function SearchApp() {
   }
 
   function clearQuery(): void {
+    setHistoryOpen(false);
     invalidateLocation("");
     inputRef.current?.focus();
   }
@@ -234,6 +235,15 @@ export default function SearchApp() {
   function closeSearchHistory(): void {
     setHistoryOpen(false);
 }
+
+  function toggleSearchHistory(): void {
+    if (historyOpen) {
+      closeSearchHistory();
+      return;
+    }
+
+    openSearchHistory();
+  }
 
   async function handleHistoryDelete(id: string): Promise<void> {
     if (deletingHistoryId !== null) return;
@@ -458,30 +468,40 @@ if (hasSuccessfulCategory) {
     <header className="page-header"><div className="hero-topline"><div className="brand-lockup"><span className="brand-mark" aria-hidden="true">⌖</span><span>地点周边</span></div><span className="hero-microcopy">EXPLORE NEARBY · LIVE LOCAL</span></div><div className="hero-copy"><p className="eyebrow">把生活半径，放在一个清晰的地点上</p><h1>探索身边的美好</h1><p className="subtitle">输入地点，确认搜索中心，再发现附近值得去的生活服务。</p></div><ol className="flow-steps" aria-label="搜索流程"><li><span>01</span>输入地点</li><li><span>02</span>确认位置</li><li><span>03</span>发现附近</li></ol><div className="hero-orbit" aria-hidden="true"><span className="orbit-ring orbit-ring-one" /><span className="orbit-ring orbit-ring-two" /><span className="orbit-pin">⌖</span></div></header>
     <section className="search-panel" aria-busy={phase === "resolving" || phase === "searching"}>
       <div className="search-panel-heading"><div><p className="section-kicker">搜索中心</p><h2>搜索一个地点</h2></div></div><label htmlFor="location-query">地点</label>
-      <div className="input-row"><div className="input-shell"><span className="search-field-icon" aria-hidden="true">⌖</span><input
+      <div className="input-row"><div className={query.length > 0 ? "input-shell has-query" : "input-shell"} onBlur={(event) => {
+        const nextFocusedElement = event.relatedTarget;
+        if (
+          nextFocusedElement instanceof Node &&
+          event.currentTarget.contains(nextFocusedElement)
+        ) {
+          return;
+        }
+        closeSearchHistory();
+      }}><span className="search-field-icon" aria-hidden="true">⌖</span><input
   ref={inputRef}
   id="location-query"
   value={query}
-  onFocus={openSearchHistory}
-  onBlur={(event) => {
-    const nextFocusedElement = event.relatedTarget;
-    if (
-      nextFocusedElement instanceof Node &&
-      event.currentTarget.parentElement?.contains(nextFocusedElement)
-    ) {
-      return;
-    }
-    closeSearchHistory();
-  }}
   onChange={(event) => {
     setHistoryOpen(false);
     invalidateLocation(event.target.value);
   }}
   placeholder="例如：深圳北站"
   disabled={phase === "resolving" || phase === "searching"}
-/>{query.length > 0 && <button type="button" className="clear-input-button" aria-label="清空地点" onClick={clearQuery} disabled={phase === "resolving" || phase === "searching"}>×</button>}
-        {historyOpen && (
-          <div className="search-history-panel" aria-label="最近搜索">
+/>{query.length > 0 && <button type="button" className="clear-input-button" aria-label="清空地点" onClick={clearQuery} disabled={phase === "resolving" || phase === "searching"}>×</button>}<button
+  type="button"
+  className="history-toggle-button"
+  aria-expanded={historyOpen}
+  aria-controls="search-history-panel"
+  onClick={toggleSearchHistory}
+  disabled={phase === "resolving" || phase === "searching"}
+>历史记录</button>
+        <div
+          id="search-history-panel"
+          className="search-history-panel"
+          role="region"
+          aria-label="最近搜索"
+          hidden={!historyOpen}
+        >
             <div className="search-history-heading">
               <strong>最近搜索</strong>
             </div>
@@ -524,8 +544,7 @@ if (hasSuccessfulCategory) {
               </ul>
             )}
             {historyDeleteError && <p className="error-text" role="alert">{historyDeleteError}</p>}
-          </div>
-        )}
+        </div>
       </div><button type="button" onClick={resolveLocation} disabled={phase === "resolving" || phase === "searching"}><span aria-hidden="true">↗</span>{phase === "resolving" ? "解析中…" : "解析地点"}</button></div>
       {publicError && (phase === "resolve-error" || phase === "search-error") && <p className="error-text" role="alert">{publicError}</p>}
     </section>

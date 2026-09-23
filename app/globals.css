@@ -63,7 +63,8 @@ h1 { font-size: clamp(1.95rem, 4.2vw, 3rem); line-height: 1.08; letter-spacing: 
 .input-row, .button-row { display: flex; gap: 10px; }
 .input-shell { position: relative; width: 100%; min-width: 0; flex: 1 1 auto; }
 .search-field-icon { position: absolute; top: 50%; left: 16px; z-index: 1; color: var(--accent); font-size: 1.25rem; line-height: 1; transform: translateY(-50%); pointer-events: none; }
-.input-shell input { width: 100%; min-height: 50px; padding: 12px 48px 12px 46px; border: 1px solid var(--border-strong); border-radius: 14px; background: rgba(255, 255, 255, .82); color: var(--ink); font-size: .95rem; box-shadow: inset 0 1px 0 rgba(255,255,255,.8); transition: border-color 160ms var(--ease), box-shadow 160ms var(--ease), background-color 160ms var(--ease); }
+.input-shell input { width: 100%; min-height: 50px; padding: 12px 88px 12px 46px; border: 1px solid var(--border-strong); border-radius: 14px; background: rgba(255, 255, 255, .82); color: var(--ink); font-size: .95rem; box-shadow: inset 0 1px 0 rgba(255,255,255,.8); transition: border-color 160ms var(--ease), box-shadow 160ms var(--ease), background-color 160ms var(--ease); }
+.input-shell.has-query input { padding-right: 128px; }
 .input-shell input::placeholder { color: #91a5a8; }
 .input-shell input:hover { border-color: #91b6b4; }
 .input-shell input:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 4px rgba(8, 125, 135, .1); outline: 0; }
@@ -71,7 +72,7 @@ h1 { font-size: clamp(1.95rem, 4.2vw, 3rem); line-height: 1.08; letter-spacing: 
 .input-row > button:hover:not(:disabled) { background: linear-gradient(135deg, #0b9aa2, #05616d); box-shadow: 0 12px 24px rgba(8, 125, 135, .26); transform: translateY(-1px); }
 .input-row > button:active:not(:disabled) { transform: translateY(1px); }
 .input-row > button span { margin-right: 6px; font-size: 1.05rem; }
-.clear-input-button { position: absolute; top: 50%; right: 10px; display: flex; align-items: center; justify-content: center; width: 36px; min-width: 36px; height: 36px; min-height: 36px; transform: translateY(-50%); border: 0; padding: 0; background: transparent; color: var(--text-tertiary); font-size: 1.35rem; font-weight: 500; line-height: 1; opacity: .5; transition: color 140ms var(--ease), opacity 140ms var(--ease), background-color 140ms var(--ease); }
+.clear-input-button { position: absolute; top: 50%; right: 84px; display: flex; align-items: center; justify-content: center; width: 36px; min-width: 36px; height: 36px; min-height: 36px; transform: translateY(-50%); border: 0; padding: 0; background: transparent; color: var(--text-tertiary); font-size: 1.35rem; font-weight: 500; line-height: 1; opacity: .5; transition: color 140ms var(--ease), opacity 140ms var(--ease), background-color 140ms var(--ease); }
 .clear-input-button:hover:not(:disabled), .input-shell:focus-within .clear-input-button { color: var(--ink); opacity: .86; }
 .clear-input-button:hover:not(:disabled) { border-radius: 9px; background: rgba(8, 125, 135, .08); }
 .clear-input-button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: -1px; }
@@ -93,6 +94,9 @@ button { min-height: 40px; border: 1px solid var(--accent); border-radius: var(-
 button:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
 button.secondary { border-color: var(--border); background: rgba(255, 255, 255, .7); color: var(--text-primary); }
 button.secondary:hover:not(:disabled) { border-color: var(--border-strong); background: var(--surface-strong); transform: translateY(-1px); }
+.history-toggle-button { position: absolute; top: 50%; right: 8px; display: grid; width: 72px; min-width: 0; min-height: 32px; place-items: center; transform: translateY(-50%); border: 0; border-radius: 8px; padding: 4px; background: transparent; color: var(--text-secondary); font-size: .76rem; font-weight: 700; box-shadow: none; }
+.history-toggle-button:hover:not(:disabled) { transform: translateY(-50%); border-color: transparent; background: rgba(8, 125, 135, .08); color: var(--accent); }
+.history-toggle-button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: -1px; }
 .error-text { margin: 12px 0 0; color: var(--danger); font-size: .84rem; }
 
 .resolution-message, .candidate-panel { margin-top: 14px; padding: 22px 24px; animation: rise-in 320ms var(--ease) both; }
