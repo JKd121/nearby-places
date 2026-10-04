@@ -1,0 +1,42 @@
+{
+  "reason": "Final code change only retry hover text color; reviewed and rebuilt; reran 97 tests/check/build; targeted updated-version browser checks",
+  "hover": {
+    "width": 390,
+    "docWidth": 390,
+    "hover": true,
+    "color": "rgb(255, 255, 255)",
+    "background": "rgb(5, 99, 110)",
+    "text": "最近搜索\n\n读取历史记录失败，请重试\n\n重试"
+  },
+  "cacheAndDeleteSmoke": {
+    "pending": false,
+    "measure": "delete",
+    "openMs": 26.80000001192093,
+    "deleteMs": 31.5,
+    "clickAt": 2211.699999988079,
+    "states": [
+      {
+        "at": 2231.800000011921,
+        "state": "list"
+      }
+    ],
+    "calls": [
+      {
+        "method": "GET",
+        "at": 424.5,
+        "done": 1928.800000011921
+      },
+      {
+        "method": "DELETE",
+        "at": 2240.5
+      }
+    ],
+    "rows": 10
+  },
+  "retryClick": {
+    "rows": 10,
+    "alert": null,
+    "open": true
+  },
+  "globalsSha256": "0A1FBD6BABC5C51376EC8E81E54EF5D310277E820255B42D15AC111F5C07067B"
+}

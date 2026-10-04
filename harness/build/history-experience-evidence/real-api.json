@@ -1,0 +1,204 @@
+{
+  "requests": [
+    {
+      "method": "GET",
+      "path": "?limit=20",
+      "status": 200,
+      "ms": 138
+    },
+    {
+      "method": "POST",
+      "path": "",
+      "status": 200,
+      "ms": 2282
+    },
+    {
+      "method": "POST",
+      "path": "",
+      "status": 200,
+      "ms": 289
+    },
+    {
+      "method": "POST",
+      "path": "",
+      "status": 200,
+      "ms": 290
+    },
+    {
+      "method": "POST",
+      "path": "",
+      "status": 200,
+      "ms": 298
+    },
+    {
+      "method": "POST",
+      "path": "",
+      "status": 200,
+      "ms": 286
+    },
+    {
+      "method": "POST",
+      "path": "",
+      "status": 200,
+      "ms": 299
+    },
+    {
+      "method": "POST",
+      "path": "",
+      "status": 200,
+      "ms": 294
+    },
+    {
+      "method": "POST",
+      "path": "",
+      "status": 200,
+      "ms": 289
+    },
+    {
+      "method": "POST",
+      "path": "",
+      "status": 200,
+      "ms": 290
+    },
+    {
+      "method": "POST",
+      "path": "",
+      "status": 200,
+      "ms": 285
+    },
+    {
+      "method": "POST",
+      "path": "",
+      "status": 200,
+      "ms": 288
+    },
+    {
+      "method": "POST",
+      "path": "",
+      "status": 200,
+      "ms": 933
+    },
+    {
+      "method": "GET",
+      "path": "?limit=20",
+      "status": 200,
+      "ms": 317
+    },
+    {
+      "method": "GET",
+      "path": "",
+      "status": 200,
+      "ms": 284
+    },
+    {
+      "method": "DELETE",
+      "path": "",
+      "status": 404,
+      "ms": 292
+    },
+    {
+      "method": "DELETE",
+      "path": "",
+      "status": 200,
+      "ms": 292
+    },
+    {
+      "method": "GET",
+      "path": "?limit=20",
+      "status": 200,
+      "ms": 300
+    },
+    {
+      "method": "GET",
+      "path": "?limit=21",
+      "status": 400,
+      "ms": 5
+    },
+    {
+      "method": "GET",
+      "path": "?limit=20",
+      "status": 200,
+      "ms": 302
+    },
+    {
+      "method": "DELETE",
+      "path": "",
+      "status": 200,
+      "ms": 287
+    },
+    {
+      "method": "DELETE",
+      "path": "",
+      "status": 200,
+      "ms": 286
+    },
+    {
+      "method": "DELETE",
+      "path": "",
+      "status": 200,
+      "ms": 310
+    },
+    {
+      "method": "DELETE",
+      "path": "",
+      "status": 200,
+      "ms": 281
+    },
+    {
+      "method": "DELETE",
+      "path": "",
+      "status": 200,
+      "ms": 281
+    },
+    {
+      "method": "DELETE",
+      "path": "",
+      "status": 200,
+      "ms": 282
+    },
+    {
+      "method": "DELETE",
+      "path": "",
+      "status": 200,
+      "ms": 283
+    },
+    {
+      "method": "DELETE",
+      "path": "",
+      "status": 200,
+      "ms": 280
+    },
+    {
+      "method": "DELETE",
+      "path": "",
+      "status": 200,
+      "ms": 282
+    },
+    {
+      "method": "DELETE",
+      "path": "",
+      "status": 200,
+      "ms": 732
+    },
+    {
+      "method": "DELETE",
+      "path": "",
+      "status": 200,
+      "ms": 307
+    },
+    {
+      "method": "GET",
+      "path": "?limit=20",
+      "status": 200,
+      "ms": 280
+    }
+  ],
+  "checks": {
+    "newVisitorEmpty": true,
+    "reserve12Default10": true,
+    "otherVisitor404": true,
+    "deletionPersisted": true,
+    "invalid400": true
+  },
+  "cleanup": true
+}

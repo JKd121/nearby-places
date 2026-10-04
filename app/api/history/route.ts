@@ -20,14 +20,14 @@ type SaveHistoryBody = {
   radiusMeters: number;
 };
 
-async function getOrCreateVisitorId(): Promise<string> {
+async function getOrCreateVisitor(): Promise<{ id: string; created: boolean }> {
   const cookieStore = await cookies();
 
   const existingVisitorId =
     cookieStore.get(VISITOR_COOKIE_NAME)?.value;
 
   if (existingVisitorId) {
-    return existingVisitorId;
+    return { id: existingVisitorId, created: false };
   }
 
   const visitorId = randomUUID();
@@ -40,7 +40,7 @@ async function getOrCreateVisitorId(): Promise<string> {
     maxAge: VISITOR_COOKIE_MAX_AGE_SECONDS,
   });
 
-  return visitorId;
+  return { id: visitorId, created: true };
 }
 
 function isSaveHistoryBody(
@@ -100,14 +100,17 @@ function toHistoryResponseItem(history: {
   };
 }
 
-export async function GET() {
-  const visitorId = await getOrCreateVisitorId();
-
-  const history =
-    await getRecentSearchHistory(visitorId);
-
-  return NextResponse.json({
-    items: history.map(toHistoryResponseItem),
+export async function GET(request: Request) {
+  const params = new URL(request.url).searchParams;
+  const limitValue = params.get("limit");
+  if ([...params.keys()].some((key) => key !== "limit") || params.getAll("limit").length > 1 ||
+      (limitValue !== null && limitValue !== "10" && limitValue !== "20")) {
+    return NextResponse.json({ error: "Invalid history limit" }, { status: 400 });
+  }
+  const visitor = await getOrCreateVisitor();
+  const history = visitor.created ? [] : await getRecentSearchHistory(visitor.id, Number(limitValue ?? 10));
+  return NextResponse.json({ items: history.map(toHistoryResponseItem) }, {
+    headers: { "Cache-Control": "private, no-store" },
   });
 }
 
@@ -138,7 +141,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const visitorId = await getOrCreateVisitorId();
+  const { id: visitorId } = await getOrCreateVisitor();
 
   const history = await saveSearchHistory({
     visitorId,
@@ -179,7 +182,7 @@ export async function DELETE(request: Request) {
     );
   }
 
-  const visitorId = await getOrCreateVisitorId();
+  const { id: visitorId } = await getOrCreateVisitor();
   const result = await deleteSearchHistory(body.id, visitorId);
 
   if (result.count === 0) {

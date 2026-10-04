@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useSearchHistory } from "./useSearchHistory";
+import type { SearchHistoryItem, SearchHistoryInput } from "./search-history-store";
 import { CATEGORIES } from "../amap/categories";
 import type { CategoryKey, CategorySearchResult, GeocodedPlace, Place } from "../amap/types";
 import type { LocationCandidate } from "../location/types";
@@ -21,18 +23,6 @@ type Phase = "initial" | "resolving" | "needs-confirmation" | "resolved" | "not-
 interface PublicApiError { message?: string; }
 interface ResolutionApiResponse { status?: "confirmed" | "needs_confirmation" | "not_found"; location?: LocationCandidate; candidates?: LocationCandidate[]; error?: PublicApiError; }
 
-interface SearchHistoryItem {
-  id: string;
-  query: string;
-  categoryIds: string[];
-  radiusMeters: number;
-  searchedAt: string;
-}
-
-interface SearchHistoryApiResponse {
-  items: unknown[];
-}
-
 type HistoryReplaySnapshot = {
   query: string;
   categoryIds: CategoryKey[];
@@ -42,68 +32,6 @@ type HistoryReplaySnapshot = {
 function categoryLabel(key: CategoryKey): string { return CATEGORIES.find((category) => category.key === key)?.label ?? key; }
 async function readJson(response: Response): Promise<unknown> { try { return await response.json(); } catch { return null; } }
 function sortLabel(mode: SortMode): string { return { "distance-asc": "距离最近", "rating-desc": "评分最高", "cost-asc": "消费最低", "cost-desc": "消费最高" }[mode]; }
-
-function isSearchHistoryItem(value: unknown): value is SearchHistoryItem {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return false;
-  }
-
-  return (
-    "id" in value &&
-    typeof value.id === "string" &&
-    value.id.trim().length > 0 &&
-    "query" in value &&
-    typeof value.query === "string" &&
-    value.query.trim().length > 0 &&
-    "categoryIds" in value &&
-    Array.isArray(value.categoryIds) &&
-    value.categoryIds.every((categoryId) => typeof categoryId === "string") &&
-    "radiusMeters" in value &&
-    typeof value.radiusMeters === "number" &&
-    Number.isInteger(value.radiusMeters) &&
-    value.radiusMeters > 0 &&
-    "searchedAt" in value &&
-    typeof value.searchedAt === "string"
-  );
-}
-
-function isSearchHistoryApiResponse(
-  value: unknown,
-): value is SearchHistoryApiResponse {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    !Array.isArray(value) &&
-    "items" in value &&
-    Array.isArray(value.items)
-  );
-}
-
-type SearchHistoryInput = {
-  query: string;
-  categoryIds: CategoryKey[];
-  radiusMeters: SearchRadius;
-};
-
-async function saveSearchHistoryBestEffort(
-  input: SearchHistoryInput,
-): Promise<void> {
-  try {
-    const result = await fetch("/api/history", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(input),
-    });
-
-    if (!result.ok) {
-      console.warn("Failed to save search history");
-    }
-  } catch (error) {
-    console.warn("Failed to save search history", error);
-  }
-}
 
 export default function SearchApp() {
   const [query, setQuery] = useState("");
@@ -121,12 +49,9 @@ export default function SearchApp() {
   const [visibleCount, setVisibleCount] = useState(getInitialVisibleCount("all"));
   const [loadingProviderCategory, setLoadingProviderCategory] = useState<CategoryKey | null>(null);
   const [providerPageErrors, setProviderPageErrors] = useState<Partial<Record<CategoryKey, string>>>({});
-  const [historyItems, setHistoryItems] = useState<SearchHistoryItem[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const history = useSearchHistory();
+  const historyItems = history.items;
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
-  const [historyDeleteError, setHistoryDeleteError] = useState<string | null>(null);
-  const historyRequestId = useRef(0);
   const pendingHistoryReplayRef = useRef<HistoryReplaySnapshot | null>(null);
   const requestId = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -163,113 +88,27 @@ export default function SearchApp() {
     inputRef.current?.focus();
   }
 
-  async function loadSearchHistory(): Promise<void> {
-  const currentId =
-    historyRequestId.current + 1;
-
-  historyRequestId.current = currentId;
-
-  setHistoryLoading(true);
-
-  try {
-    const result = await fetch("/api/history", {
-      method: "GET",
-      headers: {
-        accept: "application/json",
-      },
-    });
-
-    const payload = await readJson(result);
-
-    if (
-      currentId !== historyRequestId.current
-    ) {
-      return;
-    }
-
-    if (!result.ok || !isSearchHistoryApiResponse(payload)) {
-      throw new Error(
-        "Failed to load search history",
-      );
-    }
-
-    const validItems = payload.items.filter(
-      (item): item is SearchHistoryItem => {
-        if (isSearchHistoryItem(item)) {
-          return true;
-        }
-
-        console.warn("Ignoring invalid search history item");
-        return false;
-      },
-    );
-
-    setHistoryItems(validItems);
-  } catch (error) {
-    if (
-      currentId !== historyRequestId.current
-    ) {
-      return;
-    }
-
-    setHistoryItems([]);
-
-    console.warn(
-      "Failed to load search history",
-      error,
-    );
-  } finally {
-    if (
-      currentId === historyRequestId.current
-    ) {
-      setHistoryLoading(false);
-    }
-  }
-}
-
   function openSearchHistory(): void {
     setHistoryOpen(true);
-  void loadSearchHistory();
-}
-
-  function closeSearchHistory(): void {
-    setHistoryOpen(false);
-}
-
-  function toggleSearchHistory(): void {
-    if (historyOpen) {
-      closeSearchHistory();
-      return;
-    }
-
-    openSearchHistory();
+    void history.refresh();
   }
 
-  async function handleHistoryDelete(id: string): Promise<void> {
-    if (deletingHistoryId !== null) return;
+  function closeSearchHistory(): void { setHistoryOpen(false); }
 
-    setDeletingHistoryId(id);
-    setHistoryDeleteError(null);
+  function toggleSearchHistory(): void {
+    if (historyOpen) closeSearchHistory();
+    else openSearchHistory();
+  }
 
-    try {
-      const result = await fetch("/api/history", {
-        method: "DELETE",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({ id }),
-      });
-
-      if (!result.ok) {
-        throw new Error("Failed to delete search history");
-      }
-
-      await loadSearchHistory();
-    } catch {
-      setHistoryDeleteError("删除这条搜索历史失败，请重试");
-    } finally {
-      setDeletingHistoryId(null);
+  function handleHistoryDelete(id: string, button: HTMLButtonElement): void {
+    if (document.activeElement === button) {
+      const buttons = Array.from(button.closest("ul")?.querySelectorAll<HTMLButtonElement>(".search-history-delete") ?? []);
+      const index = buttons.indexOf(button);
+      const next = buttons[index + 1] ?? buttons[index - 1] ??
+        document.querySelector<HTMLButtonElement>(".history-toggle-button");
+      next?.focus();
     }
+    void history.remove(id);
   }
 
   function handleHistorySelect(item: SearchHistoryItem): void {
@@ -421,7 +260,7 @@ const hasSuccessfulCategory =
   );
 
 if (hasSuccessfulCategory) {
-  void saveSearchHistoryBestEffort(historyInput);
+  void history.save(historyInput);
 }
     } catch (error) {
       if (currentId !== requestId.current) return;
@@ -505,10 +344,10 @@ if (hasSuccessfulCategory) {
             <div className="search-history-heading">
               <strong>最近搜索</strong>
             </div>
-            {historyLoading ? (
+            {!history.hasLoaded && historyItems.length === 0 && !history.loadError ? (
               <p className="muted">正在读取最近搜索…</p>
             ) : historyItems.length === 0 ? (
-              <p className="muted">暂无搜索历史</p>
+              <p className="muted">{history.pendingDeleteCount > 0 ? "正在同步删除…" : history.hasMore ? (history.loadError ? "暂时没有可显示的记录" : "正在读取更多记录…") : history.loadError ? "" : "暂无搜索历史"}</p>
             ) : (
               <ul className="search-history-list">
                 {historyItems.map((item) => (
@@ -531,10 +370,8 @@ if (hasSuccessfulCategory) {
                         type="button"
                         className="search-history-delete"
                         aria-label={`删除这条搜索历史：${item.query}`}
-                        aria-busy={deletingHistoryId === item.id}
-                        disabled={deletingHistoryId !== null}
                         onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => void handleHistoryDelete(item.id)}
+                        onClick={(event) => handleHistoryDelete(item.id, event.currentTarget)}
                       >
                         <span aria-hidden="true">×</span>
                       </button>
@@ -543,7 +380,11 @@ if (hasSuccessfulCategory) {
                 ))}
               </ul>
             )}
-            {historyDeleteError && <p className="error-text" role="alert">{historyDeleteError}</p>}
+            {history.deleteError && <p className="error-text" role="alert">{history.deleteError}</p>}
+            {history.loadError && <div className="history-feedback">
+              <p className="error-text" role="alert">{history.loadError}</p>
+              <button type="button" className="history-retry" onClick={() => void history.refresh(true)} disabled={history.loading}>重试</button>
+            </div>}
         </div>
       </div><button type="button" onClick={resolveLocation} disabled={phase === "resolving" || phase === "searching"}><span aria-hidden="true">↗</span>{phase === "resolving" ? "解析中…" : "解析地点"}</button></div>
       {publicError && (phase === "resolve-error" || phase === "search-error") && <p className="error-text" role="alert">{publicError}</p>}
