@@ -1,14 +1,14 @@
-export type SaveSearchHistoryInput = {
-  visitorId: string;
+import type { LocationCandidate } from "../location/types.js";
+
+export type HistorySearchInput = {
   query: string;
   categoryIds: string[];
   radiusMeters: number;
+  confirmedLocation: LocationCandidate;
 };
 
-export type NormalizedSearchHistoryInput = {
-  visitorId: string;
+export type SaveSearchHistoryInput = HistorySearchInput & { visitorId: string };
+
+export type NormalizedSearchHistoryInput = SaveSearchHistoryInput & {
   dedupeKey: string;
-  query: string;
-  categoryIds: string[];
-  radiusMeters: number;
 };

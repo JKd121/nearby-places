@@ -1,5 +1,46 @@
 # Harness Build Log
 
+## 2026-10-05 — 已授权历史直接搜索本地实施与验收
+
+- 用户明确“我确认授权”，覆盖完整本地方案的实施、自审和验证。
+- 实现confirmedLocation完整保存/读回、拒绝缺失中心、中心坐标去重、最近10/20有效记录过滤、点击历史直接search并显示新结果。旧行保留，列表仅显示完整记录。
+- 页面历史显示确认名称和地址；请求进行中允许使用历史与编辑输入，过期响应不覆盖结果或保存历史。两项浏览器发现后的修正均重新自审和验证。
+- 最终npm test103/103、npm run check、npm run build、Prisma generate/validate及diff检查通过；实际浏览器刷新回放、同输入不同中心、快速切换、编辑输入、失败/部分成功、键盘及390/1280px检查通过。
+- 浏览器使用真实production UI、真实history route/service/repository与search validator/service，DB和高德边界提供隔离内存/合成数据。没有把该证据作为真实PostgreSQL或高德集成证据。
+- 迁移仅新增可空JSONB字段，未在在线数据库执行。没有可用本地PostgreSQL/psql/Docker，真实持久化未验证；未Git提交、推送或部署。
+- 本地交付完成，证据：`harness/build/2026-10-05-history-confirmed-location-verification.md`及`history-confirmed-location-evidence/`；下一步审阅，再确定线上迁移和发布范围。
+
+## 2026-10-05 — 旧数据处理确认与实施方案定稿
+
+- 用户接受保留旧数据库记录，列表只显示可直接搜索的完整记录；没有授权删除旧数据或猜测原中心。
+- 同一方案已定稿：完整地点保存/读取校验、确定中心直接周边查询、中心加入去重、最近10/20完整记录过滤、跨刷新及异步回归。
+- 本轮建议交付本地实现、迁移文件、自审和实际验证；在线数据库迁移及发布不自动包含。真实数据库无隔离验证环境时准确披露缺口。
+- 当前AWAITING_PLAN_APPROVAL；尚未实施，变更后gates、浏览器及数据库验收NOT RUN。
+
+## 2026-10-05 — 历史地址完整性硬约束
+
+- 用户否定旧记录“需补确认/重新搜索”降级，要求保存能恢复周边搜索能力的全部地址信息。已将每条可点击历史必须可直接搜索设为确认要求。
+- 方案增加写入必需地点对象、读回全部已确认字段及非法信息校验；不以重新解析或候选选择弥补缺失数据。
+- 旧数据从未保存原选择，无法准确还原。已提出保留数据库数据、隐藏不完整历史的兼容建议并询问用户，尚未确认；未隐藏、删除或修改数据库记录。
+- 当前仍为CLARIFY，方案与验收更新于同一草案；无功能实现，新验收NOT RUN。
+
+## 2026-10-05 — 历史记录直接周边搜索需求确认
+
+- 用户确认：保存已确认地点，点击历史跳过地点解析/候选确认，按确定中心查询最新周边；不保存或恢复历史结果状态。
+- 已核对 schema、history GET/POST/service/repository、前端回放与现有 confirmed search 链路；现有周边接口可直接复用。现有历史缺少中心，且去重忽略地点选择。
+- 已核对高德官方 v5 around 文档及本地 Next Route Handlers 指南；推荐保存完整 LocationCandidate，以原坐标直接搜索，POI ID 为可空元数据。
+- 旧记录缺少原确认信息，已向用户询问保留补确认一次或保留但提示重新搜索，未默认推断中心或删除记录。
+- 方案草案：`harness/build/2026-10-05-history-confirmed-location-plan.md`。状态 CLARIFY；需求确认不等于本轮实施授权。仅更新 Harness，功能代码、数据库和发布均未修改；新验收均 NOT RUN。
+
+## 2026-10-04 — 历史体验优化推送与正式部署完成
+
+- 新授权：用户明确“将本次的修改进行推送和部署”。覆盖已验收历史优化38f39ea的现有Git/Vercel发布路径；不扩展到环境、数据库、DNS或其他功能。
+- 38f39ea已推送release/search-history；确认master58a76fd与b69d92d基线tree相同后创建并合并PR #2，expected_head_sha固定38f39ea。正式merge为de432ca，正式tree与本地验收tree一致。
+- GitHub的Vercel正式部署CsyAhtCe6GaVdrtJuMFX6XheZVnA状态success；nearby.durunqian.com首页200、新bundle已包含缓存/逐项恢复，非法limit=21变为400。
+- 实际生产API用新隔离测试访客完成2条记录保存、读回、归属404、删除持久化并全部清理；内置浏览器打开/重新打开历史空状态正常、error/warn为空。未执行真实高德搜索或长期故障频率测试。
+- 证据：harness/build/2026-10-04-history-production-release.md、production-smoke.json和production-browser.png。本地验收观察的偶发更新失败保留ROOT_CAUSE_UNKNOWN，不由此次有界检查判为已修复。
+- 结果：COMPLETE — HISTORY_EXPERIENCE_DEPLOYED；本条及发布证据在发布后记录到本地Harness。
+
 ## 2026-10-04 — 用户真人验收确认完成并授权本地Git提交
 
 - 用户在localhost:3106验收后明确确认历史记录加载/删除体验优化完成，并要求检查工作树、分支和提交前状态后进行Git提交。
@@ -75,3 +116,8 @@
 - Review: no concurrent Around aggregation, retry, backoff, scheduler, queue, third-party rate limiter, new runtime dependency, or product/UI scope found
 - Real Shenzhen/Hong Kong retest: NOT RUN; key unavailable in this task process
 - Result: correction locally verified; real API verification remains `BLOCKED` pending key injection
+## 2026-10-05 — 历史直接搜索人工验收
+
+- 用户在 `http://localhost:3107/` 隔离测试入口核验后回复“通過”，本地交互人工验收通过。
+- 本次为内存数据库与合成高德数据环境；真实数据库持久化、高德集成及线上迁移/发布仍未验收或执行。
+- 仅更新验收与项目状态记录，没有修改功能代码或新增上线授权。

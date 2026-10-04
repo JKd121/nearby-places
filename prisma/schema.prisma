@@ -19,6 +19,7 @@ model SearchHistory {
   query        String
   categoryIds  String[]
   radiusMeters Int
+  confirmedLocation Json?
   searchedAt   DateTime @default(now())
 
   @@unique([visitorId, dedupeKey])

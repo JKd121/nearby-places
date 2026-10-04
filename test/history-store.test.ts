@@ -1,10 +1,11 @@
+import { confirmedLocation } from "./history-fixtures.js";
 import assert from "node:assert/strict";
 import { test, type TestContext } from "node:test";
 import { createSearchHistoryStore, type SearchHistoryItem } from "../src/web/search-history-store.js";
 
 const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
 const rows = (count: number): SearchHistoryItem[] => Array.from({ length: count }, (_, i) => ({
-  id: `h-${i}`, query: `地点 ${i}`, categoryIds: ["food"], radiusMeters: 3000,
+  confirmedLocation, id: `h-${i}`, query: `地点 ${i}`, categoryIds: ["hotpot"], radiusMeters: 3000,
   searchedAt: new Date(Date.UTC(2026, 9, 4) - i * 1000).toISOString(),
 }));
 
@@ -49,6 +50,20 @@ test("history deduplicates prefetch/open reads, including cached empty results",
   await f.store.refresh();
   assert.equal(f.calls.length, 1);
   assert.equal(f.store.getSnapshot().hasLoaded, true);
+});
+
+test("history hides legacy and corrupt records and retains complete address information", async (t) => {
+  const f = fixture(t);
+  const valid = rows(2);
+  const { confirmedLocation: _missing, ...legacy } = valid[0]!;
+  const promise = f.store.refresh();
+  await tick();
+  f.reply({ items: [legacy, { ...valid[0], confirmedLocation: null }, {
+    ...valid[0], confirmedLocation: { ...confirmedLocation, location: { longitude: 114, latitude: 100 } },
+  }, ...valid] });
+  assert.equal(await promise, true);
+  assert.deepEqual(f.store.getSnapshot().items, valid);
+  assert.deepEqual(f.store.getSnapshot().items[0]?.confirmedLocation, confirmedLocation);
 });
 
 test("background refresh keeps existing items and failed reads do not erase them", async (t) => {
@@ -165,7 +180,7 @@ test("saving shares visitor request ordering and uses the returned normalized it
   const f = fixture(t);
   const read = f.store.refresh();
   const saved = { ...rows(1)[0]!, id: "saved", query: "规范化地点" };
-  const save = f.store.save({ query: " 规范化地点 ", categoryIds: ["food"], radiusMeters: 3000 });
+  const save = f.store.save({ confirmedLocation, query: " 规范化地点 ", categoryIds: ["hotpot"], radiusMeters: 3000 });
   await tick();
   assert.deepEqual(f.calls.map((call) => call.method), ["GET"]);
   f.reply({ items: [] });

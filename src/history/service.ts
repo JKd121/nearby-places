@@ -2,7 +2,7 @@ import type {
   NormalizedSearchHistoryInput,
   SaveSearchHistoryInput,
 } from "./contracts.js";
-
+import { copyConfirmedLocation, isHistorySearchInput } from "./validation.js";
 
 import {
   deleteSearchHistory as deleteSearchHistoryRecord,
@@ -23,11 +23,17 @@ export function normalizeSearchHistoryInput(
 ): NormalizedSearchHistoryInput {
   const query = normalizeQuery(input.query);
   const categoryIds = normalizeCategoryIds(input.categoryIds);
+  if (!isHistorySearchInput({ ...input, query, categoryIds })) {
+    throw new Error("Invalid search history input");
+  }
+  const confirmedLocation = copyConfirmedLocation(input.confirmedLocation);
 
   const dedupeKey = JSON.stringify([
     query,
     categoryIds,
     input.radiusMeters,
+    confirmedLocation.location.longitude,
+    confirmedLocation.location.latitude,
   ]);
 
   return {
@@ -36,6 +42,7 @@ export function normalizeSearchHistoryInput(
     query,
     categoryIds,
     radiusMeters: input.radiusMeters,
+    confirmedLocation,
   };
 }
 
