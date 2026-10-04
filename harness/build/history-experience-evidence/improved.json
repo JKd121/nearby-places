@@ -1,0 +1,1177 @@
+{
+  "cachedAndDelete": [
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 17.69999998807907,
+      "deleteMs": 18.399999976158142,
+      "clickAt": 2233.099999964237,
+      "states": [
+        {
+          "at": 2249.899999976158,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 428.89999997615814,
+          "done": 1929.800000011921
+        },
+        {
+          "method": "DELETE",
+          "at": 2252.5
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 23.299999952316284,
+      "deleteMs": 17.900000035762787,
+      "clickAt": 2169.199999988079,
+      "states": [
+        {
+          "at": 2187.699999988079,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 382.69999998807907,
+          "done": 1884.300000011921
+        },
+        {
+          "method": "DELETE",
+          "at": 2194.5
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 23.799999952316284,
+      "deleteMs": 18.700000047683716,
+      "clickAt": 2168.5,
+      "states": [
+        {
+          "at": 2186.899999976158,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 380.39999997615814,
+          "done": 1895.8999999761581
+        },
+        {
+          "method": "DELETE",
+          "at": 2193.899999976158
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 25,
+      "deleteMs": 18.5,
+      "clickAt": 2159.099999964237,
+      "states": [
+        {
+          "at": 2178.599999964237,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 368.69999998807907,
+          "done": 1869.3999999761581
+        },
+        {
+          "method": "DELETE",
+          "at": 2186.2999999523163
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 23.5,
+      "deleteMs": 18.600000023841858,
+      "clickAt": 2167.899999976158,
+      "states": [
+        {
+          "at": 2186.100000023842,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 369.39999997615814,
+          "done": 1870.699999988079
+        },
+        {
+          "method": "DELETE",
+          "at": 2193.600000023842
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 24,
+      "deleteMs": 18.599999964237213,
+      "clickAt": 2160,
+      "states": [
+        {
+          "at": 2178.399999976158,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 384.5999999642372,
+          "done": 1904.2999999523163
+        },
+        {
+          "method": "DELETE",
+          "at": 2185.899999976158
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 25,
+      "deleteMs": 18.5,
+      "clickAt": 2153,
+      "states": [
+        {
+          "at": 2172.300000011921,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 362.30000001192093,
+          "done": 1869.1000000238419
+        },
+        {
+          "method": "DELETE",
+          "at": 2179.900000035763
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 24.799999952316284,
+      "deleteMs": 18.19999998807907,
+      "clickAt": 2154.300000011921,
+      "states": [
+        {
+          "at": 2173.5,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 362.60000002384186,
+          "done": 1875.5
+        },
+        {
+          "method": "DELETE",
+          "at": 2181.100000023842
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 23.5,
+      "deleteMs": 18.399999976158142,
+      "clickAt": 2157.400000035763,
+      "states": [
+        {
+          "at": 2175.600000023842,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 381.4000000357628,
+          "done": 1883.4000000357628
+        },
+        {
+          "method": "DELETE",
+          "at": 2182.800000011921
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 25.099999964237213,
+      "deleteMs": 18.5,
+      "clickAt": 2162,
+      "states": [
+        {
+          "at": 2181.899999976158,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 378.19999998807907,
+          "done": 1883
+        },
+        {
+          "method": "DELETE",
+          "at": 2188.7999999523163
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 26.399999976158142,
+      "deleteMs": 16.5,
+      "clickAt": 2198,
+      "states": [
+        {
+          "at": 2217.800000011921,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 401.80000001192093,
+          "done": 1906.699999988079
+        },
+        {
+          "method": "DELETE",
+          "at": 2226.100000023842
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 23.30000001192093,
+      "deleteMs": 18.69999998807907,
+      "clickAt": 2162.699999988079,
+      "states": [
+        {
+          "at": 2181,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 357.9000000357628,
+          "done": 1859.199999988079
+        },
+        {
+          "method": "DELETE",
+          "at": 2188
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 23.600000023841858,
+      "deleteMs": 18.099999964237213,
+      "clickAt": 2182.199999988079,
+      "states": [
+        {
+          "at": 2201.5,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 375.5,
+          "done": 1878.699999988079
+        },
+        {
+          "method": "DELETE",
+          "at": 2207.699999988079
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 23.69999998807907,
+      "deleteMs": 18.899999976158142,
+      "clickAt": 2155.199999988079,
+      "states": [
+        {
+          "at": 2173.600000023842,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 369.39999997615814,
+          "done": 1870.6000000238419
+        },
+        {
+          "method": "DELETE",
+          "at": 2180.899999976158
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 24.599999964237213,
+      "deleteMs": 18.30000001192093,
+      "clickAt": 2183.800000011921,
+      "states": [
+        {
+          "at": 2203,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 395.69999998807907,
+          "done": 1910.8999999761581
+        },
+        {
+          "method": "DELETE",
+          "at": 2210.300000011921
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 19.19999998807907,
+      "deleteMs": 18.5,
+      "clickAt": 2161.7000000476837,
+      "states": [
+        {
+          "at": 2176.600000023842,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 369.30000001192093,
+          "done": 1870.6000000238419
+        },
+        {
+          "method": "DELETE",
+          "at": 2183.100000023842
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 23.69999998807907,
+      "deleteMs": 18.400000035762787,
+      "clickAt": 2151.699999988079,
+      "states": [
+        {
+          "at": 2169.5,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 360.30000001192093,
+          "done": 1871.699999988079
+        },
+        {
+          "method": "DELETE",
+          "at": 2177.300000011921
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 23.19999998807907,
+      "deleteMs": 18.80000001192093,
+      "clickAt": 2165.399999976158,
+      "states": [
+        {
+          "at": 2184,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 359.80000001192093,
+          "done": 1862
+        },
+        {
+          "method": "DELETE",
+          "at": 2190.699999988079
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 24,
+      "deleteMs": 18.30000001192093,
+      "clickAt": 2167.800000011921,
+      "states": [
+        {
+          "at": 2186.899999976158,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 377.19999998807907,
+          "done": 1882.8999999761581
+        },
+        {
+          "method": "DELETE",
+          "at": 2194
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 23.600000023841858,
+      "deleteMs": 18.30000001192093,
+      "clickAt": 2159.399999976158,
+      "states": [
+        {
+          "at": 2177.199999988079,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 361.7999999523163,
+          "done": 1862.199999988079
+        },
+        {
+          "method": "DELETE",
+          "at": 2185.199999988079
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 24.100000023841858,
+      "deleteMs": 18.19999998807907,
+      "clickAt": 2176.100000023842,
+      "states": [
+        {
+          "at": 2196,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 385.2000000476837,
+          "done": 1891.5
+        },
+        {
+          "method": "DELETE",
+          "at": 2202.100000023842
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 24.399999976158142,
+      "deleteMs": 18.899999976158142,
+      "clickAt": 2156.399999976158,
+      "states": [
+        {
+          "at": 2175.099999964237,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 370.5,
+          "done": 1883.199999988079
+        },
+        {
+          "method": "DELETE",
+          "at": 2182.899999976158
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 23.900000035762787,
+      "deleteMs": 18.099999964237213,
+      "clickAt": 2145.399999976158,
+      "states": [
+        {
+          "at": 2164.199999988079,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 353.5,
+          "done": 1865.199999988079
+        },
+        {
+          "method": "DELETE",
+          "at": 2170.899999976158
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 24.899999976158142,
+      "deleteMs": 18.30000001192093,
+      "clickAt": 2151.7000000476837,
+      "states": [
+        {
+          "at": 2170.7000000476837,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 360.9000000357628,
+          "done": 1873.800000011921
+        },
+        {
+          "method": "DELETE",
+          "at": 2178.600000023842
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 24.80000001192093,
+      "deleteMs": 18.19999998807907,
+      "clickAt": 2175.399999976158,
+      "states": [
+        {
+          "at": 2194.899999976158,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 396.80000001192093,
+          "done": 1897.3999999761581
+        },
+        {
+          "method": "DELETE",
+          "at": 2202.699999988079
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 19.19999998807907,
+      "deleteMs": 18.600000023841858,
+      "clickAt": 2164.800000011921,
+      "states": [
+        {
+          "at": 2180.300000011921,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 372.89999997615814,
+          "done": 1873.3999999761581
+        },
+        {
+          "method": "DELETE",
+          "at": 2186
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 24.5,
+      "deleteMs": 18.299999952316284,
+      "clickAt": 2151.800000011921,
+      "states": [
+        {
+          "at": 2172.800000011921,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 373,
+          "done": 1886.6000000238419
+        },
+        {
+          "method": "DELETE",
+          "at": 2178
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 23.80000001192093,
+      "deleteMs": 19.19999998807907,
+      "clickAt": 2164.199999988079,
+      "states": [
+        {
+          "at": 2182.5,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 366.7999999523163,
+          "done": 1867.0999999642372
+        },
+        {
+          "method": "DELETE",
+          "at": 2189.599999964237
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 23.80000001192093,
+      "deleteMs": 18.399999976158142,
+      "clickAt": 2154.400000035763,
+      "states": [
+        {
+          "at": 2173,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 363.19999998807907,
+          "done": 1864
+        },
+        {
+          "method": "DELETE",
+          "at": 2180
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "delete",
+      "openMs": 19.100000023841858,
+      "deleteMs": 18.5,
+      "clickAt": 2168.800000011921,
+      "states": [
+        {
+          "at": 2182.5,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 381.30000001192093,
+          "done": 1885.5
+        },
+        {
+          "method": "DELETE",
+          "at": 2190
+        }
+      ],
+      "rows": 10
+    }
+  ],
+  "early": [
+    {
+      "pending": false,
+      "measure": "early",
+      "openMs": 1526,
+      "deleteMs": null,
+      "clickAt": 276.30000001192093,
+      "states": [
+        {
+          "at": 287.80000001192093,
+          "state": "正在读取最近搜索…"
+        },
+        {
+          "at": 1798.9000000357628,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 279.60000002384186,
+          "done": 1783.199999988079
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "early",
+      "openMs": 1527.300000011921,
+      "deleteMs": null,
+      "clickAt": 259.39999997615814,
+      "states": [
+        {
+          "at": 271,
+          "state": "正在读取最近搜索…"
+        },
+        {
+          "at": 1780.5999999642372,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 262,
+          "done": 1762.2999999523163
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "early",
+      "openMs": 1532.9000000357628,
+      "deleteMs": null,
+      "clickAt": 260.39999997615814,
+      "states": [
+        {
+          "at": 271.60000002384186,
+          "state": "正在读取最近搜索…"
+        },
+        {
+          "at": 1786.699999988079,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 263,
+          "done": 1769.300000011921
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "early",
+      "openMs": 1525.5,
+      "deleteMs": null,
+      "clickAt": 260.69999998807907,
+      "states": [
+        {
+          "at": 271.89999997615814,
+          "state": "正在读取最近搜索…"
+        },
+        {
+          "at": 1785.3999999761581,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 263.39999997615814,
+          "done": 1768.5
+        }
+      ],
+      "rows": 10
+    },
+    {
+      "pending": false,
+      "measure": "early",
+      "openMs": 1526.1000000238419,
+      "deleteMs": null,
+      "clickAt": 250.39999997615814,
+      "states": [
+        {
+          "at": 262.10000002384186,
+          "state": "正在读取最近搜索…"
+        },
+        {
+          "at": 1772.199999988079,
+          "state": "list"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "at": 253.10000002384186,
+          "done": 1757.6000000238419
+        }
+      ],
+      "rows": 10
+    }
+  ],
+  "reopen": {
+    "measurements": [
+      13.300000011920929,
+      13.699999988079071,
+      12.900000035762787,
+      11.199999988079071,
+      11.600000023841858,
+      11.099999964237213,
+      11.800000011920929,
+      12.5,
+      13.100000023841858,
+      12.699999988079071,
+      11.699999988079071,
+      15.600000023841858,
+      12.700000047683716,
+      11.199999988079071,
+      11.600000023841858,
+      12.699999988079071,
+      14.299999952316284,
+      11.699999988079071,
+      12.099999964237213,
+      13.799999952316284,
+      13.100000023841858,
+      13.600000023841858,
+      10.300000011920929,
+      12.399999976158142,
+      11,
+      12.300000011920929,
+      11.399999976158142,
+      13.199999988079071,
+      11.199999988079071,
+      10
+    ],
+    "extraReads": 0
+  },
+  "stateChecks": [
+    {
+      "first": "最近搜索\n\n读取历史记录失败，请重试\n\n重试",
+      "retryRows": 10,
+      "alert": null,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/api/history",
+          "at": 408.39999997615814,
+          "body": {},
+          "done": 438.80000001192093
+        },
+        {
+          "method": "GET",
+          "path": "/api/history",
+          "at": 37166.69999998808,
+          "body": {},
+          "done": 37199.30000001192
+        },
+        {
+          "method": "GET",
+          "path": "/api/history",
+          "at": 37220.19999998808,
+          "body": {},
+          "done": 37255.39999997616
+        }
+      ]
+    },
+    {
+      "text": "最近搜索\n\n暂无搜索历史",
+      "calls": 2
+    },
+    {
+      "first": "测试地点 0",
+      "after": "测试地点 1",
+      "rows": 10,
+      "alert": null,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/api/history",
+          "at": 408.89999997615814,
+          "body": {},
+          "done": 439.5999999642372
+        },
+        {
+          "method": "GET",
+          "path": "/api/history",
+          "at": 36975.69999998808,
+          "body": {},
+          "done": 37009.5
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/history",
+          "at": 37027.19999998808,
+          "body": {
+            "id": "qa-0"
+          },
+          "done": 37528.30000001192
+        },
+        {
+          "method": "GET",
+          "path": "/api/history",
+          "at": 37528.5,
+          "body": {},
+          "done": 37562.30000001192
+        },
+        {
+          "method": "GET",
+          "path": "/api/history",
+          "at": 37564.5,
+          "body": {},
+          "done": 37595.69999998808
+        }
+      ]
+    },
+    {
+      "text": "最近搜索\n\n正在读取最近搜索…",
+      "retry": false,
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/api/history",
+          "at": 411.2999999523163,
+          "body": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/history",
+          "at": 37439.39999997616,
+          "body": {}
+        }
+      ]
+    }
+  ],
+  "multiple": {
+    "before": [
+      "测试地点 0",
+      "测试地点 1",
+      "测试地点 2"
+    ],
+    "immediate": [
+      "测试地点 2",
+      "测试地点 3",
+      "测试地点 4 — 很长的地点名称用于检查移动端自动换行与按钮保持可见"
+    ],
+    "disabled": false,
+    "after": [
+      "测试地点 1",
+      "测试地点 2",
+      "测试地点 3"
+    ],
+    "alert": "删除失败，已恢复这条记录，请重试",
+    "open": true
+  },
+  "last": {
+    "pending": "最近搜索\n\n正在同步删除…",
+    "focus": "history-toggle-button",
+    "final": "最近搜索\n\n暂无搜索历史",
+    "open": true
+  },
+  "replay": {
+    "query": "测试地点 0",
+    "text": "⌖\n地点周边\nEXPLORE NEARBY · LIVE LOCAL\n\n把生活半径，放在一个清晰的地点上\n\n探索身边的美好\n\n输入地点，确认搜索中心，再发现附近值得去的生活服务。\n\n01\n输入地点\n02\n确认位置\n03\n发现附近\n⌖\n\n搜索中心\n\n搜索一个地点\n地点\n⌖\n×\n历史记录\n↗解析地点\n\n已锁定搜索中心\n\n↗修改地点\n⌖\n测试地点 0\n\n测试地点\n\n深圳市 · 南山区\n\n测试地址\n\n114, 22.5\n\n发现范围\n\n附近生活服务\n服务类别\n2/10 已选\n全选\n清空\n住宿\n取消整组\n酒店\n购物\n选中整组\n商场\n餐饮\n选中整组\n火锅\n面包\n甜品\n娱乐\n选中整组\nKTV\n台球厅\n健身房\n交通\n选中整组\n公交站\n地铁站\n搜索半径\n1 km\n2 km\n3 km\n5 km\n搜索附近\n\n附近发现\n\n附近结果\n\n共找到 0 个结果\n\n0\n2 类成功\n全部\n火锅 · 空\n酒店 · 空\n排序\n距离最近\n评分最高\n\n已显示全部 0 个结果。",
+    "calls": [
+      {
+        "method": "POST",
+        "path": "/api/resolve-location",
+        "at": 111289.19999998808,
+        "body": {
+          "query": "测试地点 0"
+        },
+        "done": 111320.60000002384
+      },
+      {
+        "method": "POST",
+        "path": "/api/search",
+        "at": 111321.19999998808,
+        "body": {
+          "center": {
+            "longitude": 114,
+            "latitude": 22.5
+          },
+          "resolvedLocation": {
+            "query": "测试地点 0",
+            "formattedAddress": "测试地址",
+            "province": null,
+            "city": "深圳市",
+            "district": "南山区",
+            "level": "测试地点",
+            "longitude": 114,
+            "latitude": 22.5
+          },
+          "categoryIds": [
+            "hotpot",
+            "hotel"
+          ],
+          "radiusMeters": 3000
+        },
+        "done": 111363.30000001192
+      },
+      {
+        "method": "POST",
+        "path": "/api/history",
+        "at": 111363.89999997616,
+        "body": {
+          "query": "测试地点 0",
+          "categoryIds": [
+            "hotpot",
+            "hotel"
+          ],
+          "radiusMeters": 3000
+        },
+        "done": 111397.69999998808
+      },
+      {
+        "method": "GET",
+        "path": "/api/history",
+        "at": 111401.39999997616,
+        "body": {},
+        "done": 111434.60000002384
+      }
+    ]
+  },
+  "timeout": {
+    "elapsedMs": 8030.800000011921,
+    "error": "读取历史记录失败，请重试",
+    "retryEnabled": true
+  },
+  "backgroundFailure": {
+    "rows": 10,
+    "error": "暂时无法更新，已显示上次记录",
+    "open": true
+  },
+  "viewport": {
+    "mobile": {
+      "width": 390,
+      "docWidth": 390,
+      "scrollBefore": 80,
+      "scrollAfter": 80,
+      "maxDeleteRight": 348.6667
+    },
+    "desktop": {
+      "width": 1280,
+      "docWidth": 1280,
+      "rows": 10
+    }
+  },
+  "fixture": "Injected fetch at actual production-built page; GET/DELETE=1500ms for performance, 30/500ms for error/visual cases; double requestAnimationFrame after DOM match; Windows Chrome154. Backend fixture only; real API separately in real-api.json.",
+  "summary": {
+    "lateFirst": {
+      "n": 30,
+      "min": 17.69999998807907,
+      "median": 23.80000001192093,
+      "p95": 25.099999964237213,
+      "max": 26.399999976158142,
+      "pass100": 30
+    },
+    "delete": {
+      "n": 30,
+      "min": 16.5,
+      "median": 18.400000035762787,
+      "p95": 18.899999976158142,
+      "max": 19.19999998807907,
+      "pass100": 30
+    },
+    "reopen": {
+      "n": 30,
+      "min": 10,
+      "median": 12.399999976158142,
+      "p95": 14.299999952316284,
+      "max": 15.600000023841858,
+      "pass100": 30
+    },
+    "earlyLoading": {
+      "n": 5,
+      "min": 11.199999988079071,
+      "median": 11.5,
+      "p95": 11.700000047683716,
+      "max": 11.700000047683716,
+      "pass100": 5
+    },
+    "earlyList": {
+      "n": 5,
+      "min": 1525.5,
+      "median": 1526.1000000238419,
+      "p95": 1532.9000000357628,
+      "max": 1532.9000000357628,
+      "pass100": 0
+    },
+    "responseToList": {
+      "n": 5,
+      "min": 14.599999964237213,
+      "median": 16.899999976158142,
+      "p95": 18.30000001192093,
+      "max": 18.30000001192093,
+      "pass100": 5
+    }
+  }
+}

@@ -15,6 +15,7 @@ let cookieValue: string | undefined;
 const cookieSets: Array<{ name: string; value: string; options: Record<string, unknown> }> = [];
 let saveInput: Record<string, unknown> | undefined;
 let recentVisitorId: string | undefined;
+let recentLimit: number | undefined;
 let deletedHistoryRows: Array<{ id: string; visitorId: string }> = [];
 let deleteInputs: Array<{ id: string; visitorId: string }> = [];
 
@@ -41,8 +42,9 @@ const serviceMock = {
       dedupeKey: "secret-dedupe-key",
     } satisfies HistoryItem;
   },
-  getRecentSearchHistory: async (visitorId: string) => {
+  getRecentSearchHistory: async (visitorId: string, limit: number) => {
     recentVisitorId = visitorId;
+    recentLimit = limit;
     return [{
       id: "history-2",
       query: "深圳北站",
@@ -98,6 +100,8 @@ function deleteRequest(body: string | object): Request {
 function resetState(visitorId?: string): void {
   cookieValue = visitorId;
   cookieSets.length = 0;
+  recentVisitorId = undefined;
+  recentLimit = undefined;
   saveInput = undefined;
   recentVisitorId = undefined;
   deleteInputs = [];
@@ -215,10 +219,12 @@ test("POST reuses a visitor cookie, passes the business input, and strips privat
 
 test("GET returns serialized items and strips visitor and dedupe identities", async () => {
   resetState("visitor-get");
-  const response = await GET();
+  const response = await GET(new Request(routeUrl));
 
   assert.equal(response.status, 200);
   assert.equal(recentVisitorId, "visitor-get");
+  assert.equal(recentLimit, 10);
+  assert.equal(response.headers.get("cache-control"), "private, no-store");
   const responseBody = await response.json();
   assert.deepEqual(responseBody, {
     items: [{
@@ -231,6 +237,31 @@ test("GET returns serialized items and strips visitor and dedupe identities", as
   });
   assert.equal(JSON.stringify(responseBody).includes("visitorId"), false);
   assert.equal(JSON.stringify(responseBody).includes("dedupeKey"), false);
+});
+
+test("GET requests the bounded reserve and cannot select a different visitor", async () => {
+  resetState("visitor-limit");
+  const response = await GET(new Request(`${routeUrl}?limit=20`));
+  assert.equal(response.status, 200);
+  assert.equal(recentVisitorId, "visitor-limit");
+  assert.equal(recentLimit, 20);
+  for (const query of ["limit=0", "limit=21", "limit=10.0", "limit=", "limit=20&limit=10", "visitorId=visitor-other"]) {
+    resetState("visitor-limit");
+    assert.equal((await GET(new Request(`${routeUrl}?${query}`))).status, 400);
+    assert.equal(recentVisitorId, undefined);
+    assert.equal(cookieSets.length, 0);
+  }
+});
+
+test("GET establishes a new visitor and returns empty without a database read", async () => {
+  resetState();
+  const response = await GET(new Request(`${routeUrl}?limit=20`));
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { items: [] });
+  assert.equal(recentVisitorId, undefined);
+  assert.equal(cookieSets.length, 1);
+  assert.equal(cookieSets[0]?.options.httpOnly, true);
+  assert.equal(response.headers.get("cache-control"), "private, no-store");
 });
 
 test("missing visitor cookie generates and sets a secure cookie contract", async () => {
