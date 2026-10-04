@@ -1,0 +1,38 @@
+[
+  {
+    "file": "src/web/SearchApp.tsx",
+    "sha256": "0BD26CBAB1479F0BCC0A5F22F7EA4D5F22975FABA96C529AA8EE3A5BAC54BC8F"
+  },
+  {
+    "file": "src/web/search-history-store.ts",
+    "sha256": "226E980163E758224EC71D3F5437F4D0E30697D291705108FAE7BF6720D2E877"
+  },
+  {
+    "file": "src/history/contracts.ts",
+    "sha256": "F9A3DD4B96FA82B2C723EDD9F758F84CB158604B9EA0FF3EC28E01EE54539D07"
+  },
+  {
+    "file": "src/history/validation.ts",
+    "sha256": "637DA8FE3EE2C7FE8F6093DB9A169CD8AAF1EC0B7F1DA30F680CB7243264F87B"
+  },
+  {
+    "file": "src/history/service.ts",
+    "sha256": "4312674178F521AF3FE64BB1602BCBB6F902C03755E74C76F9C1585BB96663BC"
+  },
+  {
+    "file": "src/history/repository.ts",
+    "sha256": "ACBF1B855C7B9A52136BDF722CA29F1BEA173646939115CCD34359085044FFDC"
+  },
+  {
+    "file": "app/api/history/route.ts",
+    "sha256": "88AD96AD03E393CC42125C1E371AFD228DBAE0EC3F3BAB4465CA180DEE3EB100"
+  },
+  {
+    "file": "prisma/schema.prisma",
+    "sha256": "2EB6A5634503612E406851A7AF0E00F659DCFA45AA8F002C1565CD7844FFD615"
+  },
+  {
+    "file": "prisma/migrations/20261005000000_add_confirmed_history_location/migration.sql",
+    "sha256": "9FFC76F5B05219BA22457E0A31E305C71DC2BF9FCE5367587949DF01BCEEA588"
+  }
+]

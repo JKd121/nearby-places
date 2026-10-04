@@ -1,12 +1,17 @@
+import type { HistorySearchInput } from "../history/contracts.js";
+import type { LocationCandidate } from "../location/types.js";
+import { isHistorySearchInput } from "../history/validation.js";
+
 export interface SearchHistoryItem {
   id: string;
   query: string;
   categoryIds: string[];
   radiusMeters: number;
   searchedAt: string;
+  confirmedLocation: LocationCandidate;
 }
 
-export type SearchHistoryInput = Pick<SearchHistoryItem, "query" | "categoryIds" | "radiusMeters">;
+export type SearchHistoryInput = HistorySearchInput;
 
 export interface HistorySnapshot {
   items: SearchHistoryItem[];
@@ -21,10 +26,7 @@ export interface HistorySnapshot {
 export function isSearchHistoryItem(value: unknown): value is SearchHistoryItem {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const item = value as Record<string, unknown>;
-  return typeof item.id === "string" && item.id.trim().length > 0 &&
-    typeof item.query === "string" && item.query.trim().length > 0 &&
-    Array.isArray(item.categoryIds) && item.categoryIds.every((id) => typeof id === "string") &&
-    typeof item.radiusMeters === "number" && Number.isInteger(item.radiusMeters) && item.radiusMeters > 0 &&
+  return isHistorySearchInput(value) && typeof item.id === "string" && item.id.trim().length > 0 &&
     typeof item.searchedAt === "string" && Number.isFinite(Date.parse(item.searchedAt));
 }
 

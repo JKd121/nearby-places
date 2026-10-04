@@ -1,0 +1,122 @@
+- main:
+  - generic: ⌖
+  - generic: 地点周边
+  - generic: EXPLORE NEARBY · LIVE LOCAL
+  - paragraph: 把生活半径，放在一个清晰的地点上
+  - heading "探索身边的美好" [level=1]
+  - paragraph: 输入地点，确认搜索中心，再发现附近值得去的生活服务。
+  - list "搜索流程":
+    - generic: "01"
+    - text: 输入地点
+    - generic: "02"
+    - text: 确认位置
+    - generic: "03"
+    - text: 发现附近
+  - generic: ⌖
+  - paragraph: 搜索中心
+  - heading "搜索一个地点" [level=2]
+  - generic: 地点
+  - generic: ⌖
+  - textbox "地点":
+    - /placeholder: 例如：深圳北站
+    - text: 深圳北站
+  - button "清空地点": ×
+  - button "历史记录"
+  - button "解析地点": ↗解析地点
+  - paragraph: 已锁定搜索中心
+  - button "修改地点": ↗修改地点
+  - generic: ⌖
+  - heading "深圳北站西广场" [level=2]
+  - paragraph: 火车站
+  - paragraph: 深圳市 · 龙华区
+  - paragraph: 验收西广场地址
+  - paragraph: 114.025, 22.609
+  - region "搜索条件":
+    - paragraph: 发现范围
+    - heading "附近生活服务" [level=2]
+    - group "服务类别":
+      - generic: 服务类别
+      - generic: 2/10 已选
+      - button "全选"
+      - button "清空"
+      - strong: 住宿
+      - button "取消整组" [pressed]
+      - text: ✓
+      - checkbox "✓ 酒店" [checked]
+      - text: 酒店
+      - strong: 购物
+      - button "选中整组"
+      - checkbox "商场"
+      - text: 商场
+      - strong: 餐饮
+      - button "选中整组"
+      - text: ✓
+      - checkbox "✓ 火锅" [checked]
+      - text: 火锅
+      - checkbox "面包"
+      - text: 面包
+      - checkbox "甜品"
+      - text: 甜品
+      - strong: 娱乐
+      - button "选中整组"
+      - checkbox "KTV"
+      - text: KTV
+      - checkbox "台球厅"
+      - text: 台球厅
+      - checkbox "健身房"
+      - text: 健身房
+      - strong: 交通
+      - button "选中整组"
+      - checkbox "公交站"
+      - text: 公交站
+      - checkbox "地铁站"
+      - text: 地铁站
+    - group "搜索半径":
+      - generic: 搜索半径
+      - radio "1 km"
+      - text: 1 km
+      - radio "2 km" [checked]
+      - text: 2 km
+      - radio "3 km"
+      - text: 3 km
+      - radio "5 km"
+      - text: 5 km
+    - button "搜索附近"
+  - paragraph: 附近发现
+  - heading "附近结果" [level=2]
+  - paragraph: 共找到 2 个结果
+  - strong: "2"
+  - generic: 2 类成功
+  - tablist "结果类别":
+    - tab "全部" [selected]
+    - tab "酒店"
+    - tab "火锅"
+  - generic: 排序
+  - combobox "排序":
+    - option "距离最近" [selected]
+    - option "评分最高"
+  - list:
+    - generic: "01"
+    - generic: 火锅
+    - heading "西广场最新结果 7 · 火锅" [level=4]
+    - generic: ⌖
+    - text: 100 m
+    - paragraph: 营业时间暂无
+    - paragraph: 验收周边地址
+    - link "在高德地图查看「西广场最新结果 7 · 火锅」的位置":
+      - /url: https://uri.amap.com/marker?position=114.025%2C22.609&name=%E8%A5%BF%E5%B9%BF%E5%9C%BA%E6%9C%80%E6%96%B0%E7%BB%93%E6%9E%9C+7+%C2%B7+%E7%81%AB%E9%94%85&src=place-aggregator&coordinate=gaode&callnative=0
+      - text: 查看位置
+      - generic: ↗
+    - generic: "02"
+    - generic: 酒店
+    - heading "西广场最新结果 7 · 酒店" [level=4]
+    - generic: ⌖
+    - text: 100 m
+    - paragraph: 营业时间暂无
+    - paragraph: 验收周边地址
+    - link "在高德地图查看「西广场最新结果 7 · 酒店」的位置":
+      - /url: https://uri.amap.com/marker?position=114.025%2C22.609&name=%E8%A5%BF%E5%B9%BF%E5%9C%BA%E6%9C%80%E6%96%B0%E7%BB%93%E6%9E%9C+7+%C2%B7+%E9%85%92%E5%BA%97&src=place-aggregator&coordinate=gaode&callnative=0
+      - text: 查看位置
+      - generic: ↗
+  - status: 已显示全部 2 个结果。
+- alert

@@ -8,17 +8,16 @@ import {
   getRecentSearchHistory,
   saveSearchHistory,
 } from "../../../src/history/service.js";
+import type { HistorySearchInput } from "../../../src/history/contracts.js";
+import { copyConfirmedLocation, isHistorySearchInput } from "../../../src/history/validation.js";
+import type { LocationCandidate } from "../../../src/location/types.js";
 
 const VISITOR_COOKIE_NAME = "nearby_visitor_id";
 
 const VISITOR_COOKIE_MAX_AGE_SECONDS =
   60 * 60 * 24 * 365;
 
-type SaveHistoryBody = {
-  query: string;
-  categoryIds: string[];
-  radiusMeters: number;
-};
+type SaveHistoryBody = HistorySearchInput;
 
 async function getOrCreateVisitor(): Promise<{ id: string; created: boolean }> {
   const cookieStore = await cookies();
@@ -46,26 +45,8 @@ async function getOrCreateVisitor(): Promise<{ id: string; created: boolean }> {
 function isSaveHistoryBody(
   value: unknown,
 ): value is SaveHistoryBody {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const body = value as Record<string, unknown>;
-
-  return (
-    typeof body.query === "string" &&
-    body.query.trim().length > 0 &&
-    Array.isArray(body.categoryIds) &&
-    body.categoryIds.length > 0 &&
-    body.categoryIds.every(
-      (categoryId) =>
-        typeof categoryId === "string" &&
-        categoryId.length > 0,
-    ) &&
-    typeof body.radiusMeters === "number" &&
-    Number.isInteger(body.radiusMeters) &&
-    body.radiusMeters > 0
-  );
+  return isHistorySearchInput(value) && Object.keys(value).every((field) =>
+    ["query", "categoryIds", "radiusMeters", "confirmedLocation"].includes(field));
 }
 
 function isDeleteHistoryBody(
@@ -90,6 +71,7 @@ function toHistoryResponseItem(history: {
   categoryIds: string[];
   radiusMeters: number;
   searchedAt: Date;
+  confirmedLocation: LocationCandidate;
 }) {
   return {
     id: history.id,
@@ -97,6 +79,7 @@ function toHistoryResponseItem(history: {
     categoryIds: history.categoryIds,
     radiusMeters: history.radiusMeters,
     searchedAt: history.searchedAt.toISOString(),
+    confirmedLocation: copyConfirmedLocation(history.confirmedLocation),
   };
 }
 
@@ -148,6 +131,7 @@ export async function POST(request: Request) {
     query: body.query,
     categoryIds: body.categoryIds,
     radiusMeters: body.radiusMeters,
+    confirmedLocation: copyConfirmedLocation(body.confirmedLocation),
   });
 
   return NextResponse.json({

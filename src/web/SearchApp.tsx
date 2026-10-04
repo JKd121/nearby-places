@@ -3,6 +3,8 @@
 import { useMemo, useRef, useState } from "react";
 import { useSearchHistory } from "./useSearchHistory";
 import type { SearchHistoryItem, SearchHistoryInput } from "./search-history-store";
+import { isSearchHistoryItem } from "./search-history-store";
+import { copyConfirmedLocation } from "../history/validation";
 import { CATEGORIES } from "../amap/categories";
 import type { CategoryKey, CategorySearchResult, GeocodedPlace, Place } from "../amap/types";
 import type { LocationCandidate } from "../location/types";
@@ -52,7 +54,6 @@ export default function SearchApp() {
   const history = useSearchHistory();
   const historyItems = history.items;
   const [historyOpen, setHistoryOpen] = useState(false);
-  const pendingHistoryReplayRef = useRef<HistoryReplaySnapshot | null>(null);
   const requestId = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const availableFilters = useMemo(() => getAvailableFilters(response), [response]);
@@ -76,7 +77,6 @@ export default function SearchApp() {
   }
 
   function invalidateLocation(nextQuery: string): void {
-    pendingHistoryReplayRef.current = null;
     setQuery(nextQuery);
     requestId.current += 1;
     setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false); setPublicError(null); setPhase("initial"); resetView();
@@ -112,72 +112,47 @@ export default function SearchApp() {
   }
 
   function handleHistorySelect(item: SearchHistoryItem): void {
-    const categoryIds = item.categoryIds;
-    const radiusMeters = item.radiusMeters;
-    const hasValidCategories =
-      Array.isArray(categoryIds) &&
-      categoryIds.length > 0 &&
-      new Set(categoryIds).size === categoryIds.length &&
-      categoryIds.every(
-        (categoryId) =>
-          typeof categoryId === "string" &&
-          ALL_CATEGORY_IDS.includes(categoryId as CategoryKey),
-      );
-    const hasValidRadius =
-      typeof radiusMeters === "number" &&
-      Number.isInteger(radiusMeters) &&
-      ALLOWED_RADIUS_METERS.includes(
-        radiusMeters as (typeof ALLOWED_RADIUS_METERS)[number],
-      );
-
-    if (
-      typeof item.query !== "string" ||
-      item.query.trim().length === 0 ||
-      !hasValidCategories ||
-      !hasValidRadius
-    ) {
+    if (!isSearchHistoryItem(item)) {
       console.warn("Ignoring invalid search history item", item);
       return;
     }
 
     const replaySnapshot: HistoryReplaySnapshot = {
       query: item.query,
-      categoryIds: [...categoryIds] as CategoryKey[],
-      radiusMeters: radiusMeters as SearchRadius,
+      categoryIds: [...item.categoryIds] as CategoryKey[],
+      radiusMeters: item.radiusMeters as SearchRadius,
     };
+    const location = copyConfirmedLocation(item.confirmedLocation);
 
     requestId.current += 1;
-    pendingHistoryReplayRef.current = replaySnapshot;
     setQuery(item.query);
     setSelectedCategoryIds(replaySnapshot.categoryIds);
     setRadiusMeters(replaySnapshot.radiusMeters);
-    setResolvedLocation(null);
-    setResolvedQuery(null);
+    setResolvedLocation(location);
+    setResolvedQuery(item.query.trim());
     setCandidates([]);
     setShowAllCandidates(false);
     resetView();
-    setPhase("initial");
     setHistoryOpen(false);
-    void resolveLocationForQuery(replaySnapshot.query);
+    void searchNearbyForSnapshot(location, replaySnapshot);
   }
 
-  function changeCategories(next: CategoryKey[]): void { pendingHistoryReplayRef.current = null; requestId.current += 1; setSelectedCategoryIds(next); resetView(); if (resolvedLocation) setPhase("resolved"); }
+  function changeCategories(next: CategoryKey[]): void { requestId.current += 1; setSelectedCategoryIds(next); resetView(); if (resolvedLocation) setPhase("resolved"); }
 
   function changeRadius(next: string): void {
     const value = Number(next) as SearchRadius;
     if (!ALLOWED_RADIUS_METERS.includes(value as (typeof ALLOWED_RADIUS_METERS)[number])) return;
-    pendingHistoryReplayRef.current = null; requestId.current += 1; setRadiusMeters(value); resetView(); if (resolvedLocation) setPhase("resolved");
+    requestId.current += 1; setRadiusMeters(value); resetView(); if (resolvedLocation) setPhase("resolved");
   }
 
   function resolveLocation(): void {
-    pendingHistoryReplayRef.current = null;
     if (query.trim()) setSelectedCategoryIds(selectAllCategories());
     void resolveLocationForQuery(query);
   }
 
   async function resolveLocationForQuery(queryToResolve: string): Promise<void> {
     const trimmed = queryToResolve.trim();
-    if (!trimmed) { pendingHistoryReplayRef.current = null; setPublicError("请先输入地点名称"); setPhase("resolve-error"); return; }
+    if (!trimmed) { setPublicError("请先输入地点名称"); setPhase("resolve-error"); return; }
     const currentId = requestId.current + 1; requestId.current = currentId;
     setPhase("resolving"); setPublicError(null); resetView(); setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false);
     try {
@@ -186,37 +161,26 @@ export default function SearchApp() {
       if (currentId !== requestId.current) return;
       if (!result.ok) throw new Error(payload?.error?.message ?? "地点解析失败");
       if (payload?.status === "needs_confirmation") { setCandidates(payload.candidates ?? []); setPhase("needs-confirmation"); return; }
-      if (payload?.status === "not_found") { pendingHistoryReplayRef.current = null; setPhase("not-found"); return; }
+      if (payload?.status === "not_found") { setPhase("not-found"); return; }
       if (payload?.status !== "confirmed" || !payload.location) {
-        pendingHistoryReplayRef.current = null;
         throw new Error("地点解析失败");
       }
       setResolvedLocation(payload.location); setResolvedQuery(trimmed); setPhase("resolved");
-      const replaySnapshot = pendingHistoryReplayRef.current;
-      if (replaySnapshot) {
-        pendingHistoryReplayRef.current = null;
-        void searchNearbyForSnapshot(payload.location, replaySnapshot);
-      }
     } catch (error) {
       if (currentId !== requestId.current) return;
-      pendingHistoryReplayRef.current = null;
       setPublicError(error instanceof Error ? error.message : "地点解析失败"); setPhase("resolve-error");
     }
   }
 
   function confirmCandidate(candidate: LocationCandidate): void {
-    const replaySnapshot = pendingHistoryReplayRef.current;
-    pendingHistoryReplayRef.current = null;
     requestId.current += 1;
-    setResolvedLocation(candidate); setResolvedQuery(replaySnapshot?.query.trim() ?? query.trim()); setCandidates([]); setShowAllCandidates(false); setPublicError(null); resetView(); setPhase("resolved");
-    if (replaySnapshot) void searchNearbyForSnapshot(candidate, replaySnapshot);
+    setResolvedLocation(candidate); setResolvedQuery(query.trim()); setCandidates([]); setShowAllCandidates(false); setPublicError(null); resetView(); setPhase("resolved");
   }
 
-  function clearResolved(): void { pendingHistoryReplayRef.current = null; requestId.current += 1; setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false); resetView(); setPublicError(null); setPhase("initial"); }
+  function clearResolved(): void { requestId.current += 1; setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false); resetView(); setPublicError(null); setPhase("initial"); }
 
   async function searchNearby(): Promise<void> {
     if (!resolvedLocation || selectedCategoryIds.length === 0) return;
-    pendingHistoryReplayRef.current = null;
     await searchNearbyForSnapshot(resolvedLocation, {
       query: resolvedQuery ?? query.trim(),
       categoryIds: [...selectedCategoryIds],
@@ -237,6 +201,7 @@ export default function SearchApp() {
         query: searchLocation.query,
         categoryIds: [...snapshot.categoryIds],
         radiusMeters: snapshot.radiusMeters,
+        confirmedLocation: copyConfirmedLocation(location),
       };
       const result = await fetch("/api/search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ center: { longitude: location.location.longitude, latitude: location.location.latitude }, resolvedLocation: searchLocation, categoryIds: snapshot.categoryIds, radiusMeters: snapshot.radiusMeters }) });
       const payload = await readJson(result) as (SearchResponse & { error?: PublicApiError }) | null;
@@ -325,14 +290,12 @@ if (hasSuccessfulCategory) {
     invalidateLocation(event.target.value);
   }}
   placeholder="例如：深圳北站"
-  disabled={phase === "resolving" || phase === "searching"}
-/>{query.length > 0 && <button type="button" className="clear-input-button" aria-label="清空地点" onClick={clearQuery} disabled={phase === "resolving" || phase === "searching"}>×</button>}<button
+/>{query.length > 0 && <button type="button" className="clear-input-button" aria-label="清空地点" onClick={clearQuery}>×</button>}<button
   type="button"
   className="history-toggle-button"
   aria-expanded={historyOpen}
   aria-controls="search-history-panel"
   onClick={toggleSearchHistory}
-  disabled={phase === "resolving" || phase === "searching"}
 >历史记录</button>
         <div
           id="search-history-panel"
@@ -359,7 +322,8 @@ if (hasSuccessfulCategory) {
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={() => handleHistorySelect(item)}
                       >
-                        <strong>{item.query}</strong>
+                        <strong>{item.confirmedLocation.name}</strong>
+                        {item.confirmedLocation.address && <span>{item.confirmedLocation.address}</span>}
                         <span>
                           {Array.isArray(item.categoryIds) ? item.categoryIds.length : 0} 个类别
                           {" · "}
@@ -369,7 +333,7 @@ if (hasSuccessfulCategory) {
                       <button
                         type="button"
                         className="search-history-delete"
-                        aria-label={`删除这条搜索历史：${item.query}`}
+                        aria-label={`删除这条搜索历史：${item.confirmedLocation.name}`}
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={(event) => handleHistoryDelete(item.id, event.currentTarget)}
                       >

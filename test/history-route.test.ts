@@ -1,3 +1,4 @@
+import { confirmedLocation } from "./history-fixtures.js";
 import assert from "node:assert/strict";
 import { mock, test } from "node:test";
 
@@ -7,6 +8,7 @@ type HistoryItem = {
   categoryIds: string[];
   radiusMeters: number;
   searchedAt: Date;
+  confirmedLocation: typeof confirmedLocation;
   visitorId: string;
   dedupeKey: string;
 };
@@ -33,6 +35,7 @@ const serviceMock = {
   saveSearchHistory: async (input: Record<string, unknown>) => {
     saveInput = input;
     return {
+      confirmedLocation: input.confirmedLocation as typeof confirmedLocation,
       id: "history-1",
       query: input.query as string,
       categoryIds: input.categoryIds as string[],
@@ -46,9 +49,10 @@ const serviceMock = {
     recentVisitorId = visitorId;
     recentLimit = limit;
     return [{
+      confirmedLocation,
       id: "history-2",
       query: "深圳北站",
-      categoryIds: ["food"],
+      categoryIds: ["hotpot"],
       radiusMeters: 3000,
       searchedAt: new Date("2026-09-22T04:05:06.000Z"),
       visitorId,
@@ -178,10 +182,10 @@ test("POST rejects invalid JSON with the public error", async () => {
 
 test("POST rejects invalid business input", async () => {
   for (const body of [
-    { query: "", categoryIds: ["food"], radiusMeters: 3000 },
+    { query: "", categoryIds: ["hotpot"], radiusMeters: 3000 },
     { query: "深圳北站", categoryIds: [], radiusMeters: 3000 },
-    { query: "深圳北站", categoryIds: ["food"], radiusMeters: 0 },
-    { query: "深圳北站", categoryIds: ["food"], radiusMeters: -1 },
+    { query: "深圳北站", categoryIds: ["hotpot"], radiusMeters: 0 },
+    { query: "深圳北站", categoryIds: ["hotpot"], radiusMeters: -1 },
   ]) {
     resetState();
     const response = await POST(request(body));
@@ -193,21 +197,23 @@ test("POST rejects invalid business input", async () => {
 
 test("POST reuses a visitor cookie, passes the business input, and strips private fields", async () => {
   resetState("visitor-existing");
-  const response = await POST(request({ query: " 深圳北站 ", categoryIds: ["food", "hotel"], radiusMeters: 3000 }));
+  const response = await POST(request({ confirmedLocation, query: " 深圳北站 ", categoryIds: ["hotpot", "hotel"], radiusMeters: 3000 }));
 
   assert.equal(response.status, 200);
   assert.deepEqual(saveInput, {
+    confirmedLocation,
     visitorId: "visitor-existing",
     query: " 深圳北站 ",
-    categoryIds: ["food", "hotel"],
+    categoryIds: ["hotpot", "hotel"],
     radiusMeters: 3000,
   });
   const responseBody = await response.json();
   assert.deepEqual(responseBody, {
     item: {
+      confirmedLocation,
       id: "history-1",
       query: " 深圳北站 ",
-      categoryIds: ["food", "hotel"],
+      categoryIds: ["hotpot", "hotel"],
       radiusMeters: 3000,
       searchedAt: "2026-09-22T01:02:03.000Z",
     },
@@ -228,15 +234,44 @@ test("GET returns serialized items and strips visitor and dedupe identities", as
   const responseBody = await response.json();
   assert.deepEqual(responseBody, {
     items: [{
+      confirmedLocation,
       id: "history-2",
       query: "深圳北站",
-      categoryIds: ["food"],
+      categoryIds: ["hotpot"],
       radiusMeters: 3000,
       searchedAt: "2026-09-22T04:05:06.000Z",
     }],
   });
   assert.equal(JSON.stringify(responseBody).includes("visitorId"), false);
   assert.equal(JSON.stringify(responseBody).includes("dedupeKey"), false);
+});
+
+test("POST rejects missing or invalid confirmed location and unsupported search conditions before writing", async () => {
+  const valid = { query: "深圳北站", categoryIds: ["hotel"], radiusMeters: 3000, confirmedLocation };
+  const { confirmedLocation: _missing, ...legacy } = valid;
+  for (const body of [
+    legacy, { ...valid, confirmedLocation: null },
+    { ...valid, confirmedLocation: { ...confirmedLocation, name: " " } },
+    { ...valid, confirmedLocation: { ...confirmedLocation, location: { longitude: 181, latitude: 22 } } },
+    { ...valid, confirmedLocation: { ...confirmedLocation, location: { longitude: 114, latitude: -91 } } },
+    { ...valid, confirmedLocation: { name: "深圳北站", location: confirmedLocation.location } },
+    { ...valid, categoryIds: ["food"] }, { ...valid, categoryIds: ["hotel", "hotel"] },
+    { ...valid, radiusMeters: 1234 }, { ...valid, visitorId: "other-visitor" },
+  ]) {
+    resetState();
+    const response = await POST(request(body));
+    assert.equal(response.status, 400);
+    assert.equal(saveInput, undefined);
+    assert.equal(cookieSets.length, 0);
+  }
+});
+
+test("POST accepts address locations without a POI ID and returns all address information", async () => {
+  resetState("visitor-address");
+  const address = { ...confirmedLocation, id: null, placeType: "门址" };
+  const response = await POST(request({ query: "深圳市龙华区民治街道", categoryIds: ["hotel"], radiusMeters: 2000, confirmedLocation: address }));
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).item.confirmedLocation, address);
 });
 
 test("GET requests the bounded reserve and cannot select a different visitor", async () => {
@@ -266,7 +301,7 @@ test("GET establishes a new visitor and returns empty without a database read", 
 
 test("missing visitor cookie generates and sets a secure cookie contract", async () => {
   resetState();
-  const response = await POST(request({ query: "深圳北站", categoryIds: ["food"], radiusMeters: 3000 }));
+  const response = await POST(request({ confirmedLocation, query: "深圳北站", categoryIds: ["hotpot"], radiusMeters: 3000 }));
 
   assert.equal(response.status, 200);
   assert.match(saveInput?.visitorId as string, /^[0-9a-f-]{36}$/);

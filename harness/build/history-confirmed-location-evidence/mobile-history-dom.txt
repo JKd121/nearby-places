@@ -1,0 +1,44 @@
+- main:
+  - generic: ⌖
+  - generic: 地点周边
+  - paragraph: 把生活半径，放在一个清晰的地点上
+  - heading "探索身边的美好" [level=1]
+  - paragraph: 输入地点，确认搜索中心，再发现附近值得去的生活服务。
+  - list "搜索流程":
+    - generic: "01"
+    - text: 输入地点
+    - generic: "02"
+    - text: 确认位置
+    - generic: "03"
+    - text: 发现附近
+  - generic: ⌖
+  - paragraph: 搜索中心
+  - heading "搜索一个地点" [level=2]
+  - generic: 地点
+  - generic: ⌖
+  - textbox "地点":
+    - /placeholder: 例如：深圳北站
+  - button "历史记录" [expanded] [active]
+  - region "最近搜索":
+    - strong: 最近搜索
+    - list:
+      - button "深圳市龙华区民治街道长名称地址展示验收地点 深圳市龙华区民治街道长地址换行验收，确认移动端历史条目完整展示且删除按钮仍然可以操作 1 个类别 · 3 km":
+        - strong: 深圳市龙华区民治街道长名称地址展示验收地点
+        - generic: 深圳市龙华区民治街道长地址换行验收，确认移动端历史条目完整展示且删除按钮仍然可以操作
+        - generic: 1 个类别 · 3 km
+      - button "删除这条搜索历史：深圳市龙华区民治街道长名称地址展示验收地点":
+        - generic: ×
+      - button "深圳北站西广场 验收西广场地址 2 个类别 · 2 km":
+        - strong: 深圳北站西广场
+        - generic: 验收西广场地址
+        - generic: 2 个类别 · 2 km
+      - button "删除这条搜索历史：深圳北站西广场":
+        - generic: ×
+      - button "深圳北站东广场 验收东广场地址 2 个类别 · 2 km":
+        - strong: 深圳北站东广场
+        - generic: 验收东广场地址
+        - generic: 2 个类别 · 2 km
+      - button "删除这条搜索历史：深圳北站东广场":
+        - generic: ×
+  - button "解析地点": ↗解析地点
+- alert

@@ -1,0 +1,19 @@
+{
+  "time": "2026-10-04T18:10:52.677Z",
+  "legacyCount": 14,
+  "legacyUnchanged": true,
+  "column": [
+    {
+      "data_type": "jsonb",
+      "is_nullable": "YES"
+    }
+  ],
+  "migration": [
+    {
+      "migration_name": "20261005000000_add_confirmed_history_location",
+      "finished_at": "2026-10-04T18:10:21.149Z",
+      "rolled_back_at": null
+    }
+  ],
+  "nullCenters": 14
+}
