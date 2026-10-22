@@ -1,0 +1,25 @@
+{
+  "viewport": {
+    "name": "desktop",
+    "width": 1440,
+    "height": 900
+  },
+  "workspace": {
+    "x": 220,
+    "y": 250,
+    "width": 1220,
+    "height": 650
+  },
+  "map": {
+    "x": 720,
+    "y": 250,
+    "width": 720,
+    "height": 650
+  },
+  "list": {
+    "x": 220,
+    "y": 250,
+    "width": 500,
+    "height": 650
+  }
+}

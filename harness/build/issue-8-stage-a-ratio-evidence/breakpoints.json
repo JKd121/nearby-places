@@ -1,0 +1,74 @@
+[
+  {
+    "viewport": {
+      "width": 767,
+      "height": 844
+    },
+    "map": {
+      "x": 0,
+      "y": 292,
+      "width": 767,
+      "height": 320.171875
+    },
+    "list": {
+      "x": 0,
+      "y": 612.171875,
+      "width": 767,
+      "height": 231.828125
+    }
+  },
+  {
+    "viewport": {
+      "width": 768,
+      "height": 1180
+    },
+    "map": {
+      "x": 372,
+      "y": 250,
+      "width": 396,
+      "height": 930
+    },
+    "list": {
+      "x": 72,
+      "y": 250,
+      "width": 300,
+      "height": 930
+    }
+  },
+  {
+    "viewport": {
+      "width": 1279,
+      "height": 900
+    },
+    "map": {
+      "x": 372,
+      "y": 250,
+      "width": 907,
+      "height": 650
+    },
+    "list": {
+      "x": 72,
+      "y": 250,
+      "width": 300,
+      "height": 650
+    }
+  },
+  {
+    "viewport": {
+      "width": 1280,
+      "height": 900
+    },
+    "map": {
+      "x": 720,
+      "y": 250,
+      "width": 560,
+      "height": 650
+    },
+    "list": {
+      "x": 220,
+      "y": 250,
+      "width": 500,
+      "height": 650
+    }
+  }
+]

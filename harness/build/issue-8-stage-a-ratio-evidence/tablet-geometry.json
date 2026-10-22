@@ -1,0 +1,25 @@
+{
+  "viewport": {
+    "name": "tablet",
+    "width": 820,
+    "height": 1180
+  },
+  "workspace": {
+    "x": 72,
+    "y": 250,
+    "width": 748,
+    "height": 930
+  },
+  "map": {
+    "x": 372,
+    "y": 250,
+    "width": 448,
+    "height": 930
+  },
+  "list": {
+    "x": 72,
+    "y": 250,
+    "width": 300,
+    "height": 930
+  }
+}

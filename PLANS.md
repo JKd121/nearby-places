@@ -6,6 +6,7 @@
 - Worktree: `C:\Users\lenovo\.codex\worktrees\nearby-explore-prototype\地点聚合器`; branch `codex/nearby-explore-prototype`; entry c46fac4452cb6cceab0d2edf88350302e733c7ee, clean, equal to remote. SVG blob af7d2ff764c1645061950df38d7808ac54dd25f6 matches design branch and has been viewed in a browser.
 - State: STAGE_A_READY_FOR_VISUAL_REVIEW. Scope/design/verification: `harness/build/2026-10-23-issue-8-stage-a.md` and `harness/build/issue-8-stage-a-evidence/README.md`. Next: prototype-only draft preview/review handoff; await product-owner approval, never auto-enter Stage B.
 - Boundary: runnable isolated visual prototype, screenshots and review handoff only. Do not connect business APIs or enter Stage B before explicit approval; do not change PR #5/master/production.
+- Latest Stage A amendment: PR #9 comment6348830035 and Issue #8 updated2026-10-22T18:58:08Z approve only the desktop500/720 split, retaining tablet/phone strategy. Entry490c7d6 was clean/equal remote. Current verification/evidence: `harness/build/issue-8-stage-a-ratio-evidence/README.md`; await renewed visual review after this revision.
 
 ## Previous phase — Issue #7 / Explore interaction and visual refinement
 

@@ -153,3 +153,10 @@
 - 用户在 `http://localhost:3107/` 隔离测试入口核验后回复“通過”，本地交互人工验收通过。
 - 本次为内存数据库与合成高德数据环境；真实数据库持久化、高德集成及线上迁移/发布仍未验收或执行。
 - 仅更新验收与项目状态记录，没有修改功能代码或新增上线授权。
+
+## 2026-10-23 — Issue #8 Stage A / PR #9 width review
+
+- Applied latest approved desktop ratio only: list500px/map720px at1440×900; one runtime CSS value, no business code or dependencies.
+- PASS: lint, core/web type checks, production build,4/4 targeted prototype browser tests (12.3s), three viewport screenshots and breakpoint bounds767/768/1279/1280.
+- Browser evidence proves desktop top250px and tablet/phone captures unchanged by SHA256. See `build/issue-8-stage-a-ratio-evidence/README.md`.
+- Same prototype branch and draft PR; no master/PR #5 changes or production deployment. Stage B remains unapproved; await visual review.

@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const evidence = "harness/build/issue-8-stage-a-evidence";
+const evidence = "harness/build/issue-8-stage-a-ratio-evidence";
 for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "tablet", width: 820, height: 1180 }, { name: "mobile", width: 390, height: 844 }]) {
   test("prototype Stage A: " + viewport.name, async ({ page, request }) => {
     await page.setViewportSize(viewport);
@@ -32,8 +32,8 @@ for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "
     const list = await page.locator(".proto-results").boundingBox();
     if (viewport.name === "desktop") {
       expect(geometry).toMatchObject({ x: 220, y: 250, width: 1220, height: 650 });
-      expect(map).toMatchObject({ x: 660, y: 250, width: 780, height: 650 });
-      expect(list!.width).toBe(440);
+      expect(map).toMatchObject({ x: 720, y: 250, width: 720, height: 650 });
+      expect(list!.width).toBe(500);
     } else if (viewport.name === "tablet") {
       expect(map!.width).toBeGreaterThan(list!.width);
       expect(list!.width).toBe(300);
@@ -42,6 +42,7 @@ for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "
       expect(map!.height).toBeGreaterThan(list!.height);
     }
     await page.screenshot({ path: evidence + "/" + viewport.name + ".png", fullPage: true, animations: "disabled" });
+    if (viewport.name === "desktop") await page.screenshot({ path: evidence + "/after-top.png", clip: { x: 0, y: 0, width: 1440, height: 250 }, animations: "disabled" });
     await fs.writeFile(evidence + "/" + viewport.name + "-geometry.json", JSON.stringify({ viewport, workspace: geometry, map, list }, null, 2) + "\n");
     const originalRange = await page.getByTestId("prototype-range-circle").boundingBox();
     await page.getByLabel("原型搜索范围", { exact: true }).selectOption("1");
@@ -88,3 +89,32 @@ for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "
     expect(server.requests).toEqual([]);
   });
 }
+test("prototype Stage A: breakpoint bounds", async ({ page }) => {
+  const measurements = [];
+  for (const viewport of [{ width: 767, height: 844 }, { width: 768, height: 1180 }, { width: 1279, height: 900 }, { width: 1280, height: 900 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/prototype/explore");
+    await expect(page.getByRole("heading", { name: "探索地点", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1)).toBe(true);
+    const map = await page.locator(".proto-map").boundingBox();
+    const list = await page.locator(".proto-results").boundingBox();
+    if (viewport.width < 768) {
+      expect(map!.y).toBeLessThan(list!.y);
+      expect(map!.width).toBe(viewport.width);
+    } else {
+      expect(list!.width).toBe(viewport.width < 1280 ? 300 : 500);
+      expect(map!.width).toBeGreaterThan(list!.width);
+    }
+    for (const control of [page.getByRole("button", { name: "搜索附近", exact: true }), page.getByLabel("原型搜索范围", { exact: true })]) {
+      const box = await control.boundingBox();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(viewport.width);
+    }
+    await expect(page.getByTestId("prototype-center-marker")).toHaveCount(1);
+    await expect(page.getByTestId("prototype-range-circle")).toHaveCount(1);
+    measurements.push({ viewport, map, list });
+  }
+  await fs.mkdir(evidence, { recursive: true });
+  await fs.writeFile(evidence + "/breakpoints.json", JSON.stringify(measurements, null, 2) + "\n");
+});

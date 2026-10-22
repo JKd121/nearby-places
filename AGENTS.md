@@ -2,6 +2,7 @@
 
 - Apply the Global Team Workflow to non-trivial software changes in this repository.
 - Current authorized scope: GitHub Issue #8 Stage A only, on `codex/nearby-explore-prototype`. The approved SVG `docs/design/nearby-explore-v2-reference.svg` at c46fac4 is the sole visual standard; no free redesign.
+- Exception approved by latest Issue #8 / PR #9 visual feedback: desktop1440 main split is500px list /720px map. This width-only amendment supersedes SVG440/780; all other visual and Stage A boundaries remain.
 - Build an isolated runnable prototype at `/prototype/explore`; preserve all existing business routes and search/history logic. Use explicit demo data and an illustrative map with exactly one center marker and one range circle, no merchant markers/linkage. Stage B requires explicit product-owner visual approval.
 - No real map SDK, authentication, favorites/list backend, schema/migrations, production config, CI/Preview trigger changes, master merge or production deployment in this phase.
 - Work only in the prototype worktree and branch. Do not modify PR #5's branch, the original checkout or their environment files.

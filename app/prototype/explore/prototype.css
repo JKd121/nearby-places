@@ -56,7 +56,7 @@
 .proto-radius select { width: 112px; flex: none; min-height: 44px; border: 0; padding: 8px; border-radius: 8px; background: white; color: #34494b; }
 .proto-search-button.ui-button { min-width: 164px; height: 46px; background: #08675c; border-radius: 12px; }
 .proto-search-button.ui-button:hover { background: #07584e; }
-.proto-workspace { display: grid; grid-template-columns: 440px minmax(0, 1fr); min-height: 0; flex: 1; }
+.proto-workspace { display: grid; grid-template-columns: 500px minmax(0, 1fr); min-height: 0; flex: 1; }
 .proto-results { min-width: 0; min-height: 0; display: flex; flex-direction: column; border-right: 1px solid #e8ece8; background: white; }
 .proto-results-header { display: flex; align-items: center; gap: 12px; padding: 22px 26px 14px 30px; flex: none; }
 .proto-results-header > div { min-width: 0; flex: 1; }
