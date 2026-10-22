@@ -1,6 +1,13 @@
 # Project Harness
 
-## Current phase — Issue #7 / Explore interaction and visual refinement
+## Current phase — Issue #8 Stage A / approved SVG prototype
+
+- Authority: https://github.com/JKd121/nearby-places/issues/8 and user's explicit Stage A implementation request; subsequent instruction authorizes switching/creating its independent Worktree.
+- Worktree: `C:\Users\lenovo\.codex\worktrees\nearby-explore-prototype\地点聚合器`; branch `codex/nearby-explore-prototype`; entry c46fac4452cb6cceab0d2edf88350302e733c7ee, clean, equal to remote. SVG blob af7d2ff764c1645061950df38d7808ac54dd25f6 matches design branch and has been viewed in a browser.
+- State: STAGE_A_READY_FOR_VISUAL_REVIEW. Scope/design/verification: `harness/build/2026-10-23-issue-8-stage-a.md` and `harness/build/issue-8-stage-a-evidence/README.md`. Next: prototype-only draft preview/review handoff; await product-owner approval, never auto-enter Stage B.
+- Boundary: runnable isolated visual prototype, screenshots and review handoff only. Do not connect business APIs or enter Stage B before explicit approval; do not change PR #5/master/production.
+
+## Previous phase — Issue #7 / Explore interaction and visual refinement
 
 - Sole current task source: https://github.com/JKd121/nearby-places/issues/7. User authorized implementation on PR #5's existing branch and updating that PR; no merge or production deployment.
 - Workspace/branch: `C:\Users\lenovo\.codex\worktrees\nearby-v2-1-package1\地点聚合器` / `codex/nearby-v2.1-package1`; entry `c66dfdcd2dafd43d768b9867adaa6bdc7550e596`, clean and equal to remote/PR head.

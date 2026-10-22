@@ -1,5 +1,13 @@
 # Harness Build Log
 
+## 2026-10-23 — Issue #8 Stage A visual-review handoff
+
+- Created/attached separate prototype Worktree from approved reference c46fac4; branch `codex/nearby-explore-prototype`. Original dirty checkout and PR #5 branch preserved.
+- Read installed frontend-design guidance, actual SVG and browser render; built isolated `/prototype/explore`, existing React/Button/Radix/Lucide, no new dependencies.
+- Desktop geometry matches SVG's220px navigation/440px list/780×650 map. Tablet/mobile get separate layouts; static map only shows one center/range, no merchant markers. All names/addresses/distances are explicit fixtures, no API calls/persistence.
+- Lint/types/production build PASS, existing103 Node tests PASS, final browser17/17 PASS (3 prototype +14 business regressions); actual three viewport screenshots and self-review packet in `build/issue-8-stage-a-evidence/`.
+- Await product-owner visual review. No independent acceptance claimed, no Stage B/formal business integration, no master merge or production deploy. Prototype-only draft Preview targets reference branch; remote observations reported on that PR.
+
 ## 2026-10-23 — Issue #7 local delivery verified
 
 - Reused clean PR #5 branch at `c66dfdc` in the designated Windows Worktree. Implemented bounded Explore interactions first, then authorized shell/Home/History/My Places visual refinement.

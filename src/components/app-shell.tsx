@@ -40,5 +40,8 @@ function ShellContents({ children }: { children: React.ReactNode }) {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  // Stage A owns an isolated, SVG-led shell; business routes keep their shell.
+  if (pathname === "/prototype/explore") return <>{children}</>;
   return <SidebarProvider><ShellContents>{children}</ShellContents></SidebarProvider>;
 }

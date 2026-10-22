@@ -1,10 +1,10 @@
 # Project Agent Instructions
 
 - Apply the Global Team Workflow to non-trivial software changes in this repository.
-- Current authorized scope: GitHub Issue #7, iterating PR #5 on its existing branch. Use Issue #7 as the sole current task specification; Issue #4 and the original CLI Spike are historical context.
-- Preserve the Next.js App Router / React / TypeScript search and history core. Complete Explore interaction restructuring before visual refinement; follow the scope and evidence record in `harness/build/2026-10-23-issue-7-explore.md`.
+- Current authorized scope: GitHub Issue #8 Stage A only, on `codex/nearby-explore-prototype`. The approved SVG `docs/design/nearby-explore-v2-reference.svg` at c46fac4 is the sole visual standard; no free redesign.
+- Build an isolated runnable prototype at `/prototype/explore`; preserve all existing business routes and search/history logic. Use explicit demo data and an illustrative map with exactly one center marker and one range circle, no merchant markers/linkage. Stage B requires explicit product-owner visual approval.
 - No real map SDK, authentication, favorites/list backend, schema/migrations, production config, CI/Preview trigger changes, master merge or production deployment in this phase.
-- Work only in the Issue's designated worktree and branch. Do not modify the original checkout or consume its environment files.
+- Work only in the prototype worktree and branch. Do not modify PR #5's branch, the original checkout or their environment files.
 - Keep historical Harness evidence. Old deployment instructions are historical authorization, not current actions.
 - Known verification commands: `npm test`, `npm run check`, `npm run build`, and `npm run smoke`.
 - UI verification: `npm run lint`, `npm run test:browser` after build (local Chrome, isolated memory DB/synthetic provider). Capture desktop/mobile/tablet evidence. Real-provider smoke requires separate environment readiness and is not a substitute for browser evidence.

@@ -1,0 +1,342 @@
+{
+  "issue": "https://github.com/JKd121/nearby-places/issues/8",
+  "phase": "A only; awaiting product-owner visual review; Stage B unapproved",
+  "branch": "codex/nearby-explore-prototype",
+  "entryHead": "c46fac4452cb6cceab0d2edf88350302e733c7ee",
+  "referenceBlob": "af7d2ff764c1645061950df38d7808ac54dd25f6",
+  "generatedAt": "2026-10-22T18:49:41.509Z",
+  "route": "/prototype/explore",
+  "checks": {
+    "lint": "PASS;0 errors/warnings",
+    "types": "PASS;core + web",
+    "existingNodeTests": {
+      "pass": 103,
+      "fail": 0
+    },
+    "productionBuild": "PASS;Next webpack build, CI localhost placeholders in child only",
+    "browser": {
+      "passed": 17,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationSeconds": 43.5,
+      "prototype": 3,
+      "businessRegression": 14
+    },
+    "diffCheck": "PASS"
+  },
+  "geometry": [
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "workspace": {
+        "x": 220,
+        "y": 250,
+        "width": 1220,
+        "height": 650
+      },
+      "map": {
+        "x": 660,
+        "y": 250,
+        "width": 780,
+        "height": 650
+      },
+      "list": {
+        "x": 220,
+        "y": 250,
+        "width": 440,
+        "height": 650
+      }
+    },
+    {
+      "viewport": {
+        "name": "tablet",
+        "width": 820,
+        "height": 1180
+      },
+      "workspace": {
+        "x": 72,
+        "y": 250,
+        "width": 748,
+        "height": 930
+      },
+      "map": {
+        "x": 372,
+        "y": 250,
+        "width": 448,
+        "height": 930
+      },
+      "list": {
+        "x": 72,
+        "y": 250,
+        "width": 300,
+        "height": 930
+      }
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "workspace": {
+        "x": 0,
+        "y": 292,
+        "width": 390,
+        "height": 552
+      },
+      "map": {
+        "x": 0,
+        "y": 292,
+        "width": 390,
+        "height": 320.171875
+      },
+      "list": {
+        "x": 0,
+        "y": 612.171875,
+        "width": 390,
+        "height": 231.828125
+      }
+    }
+  ],
+  "browserReport": {
+    "total": 17,
+    "expected": 17,
+    "unexpected": 0,
+    "flaky": 0,
+    "skipped": 0,
+    "ok": true
+  },
+  "prototypeContract": {
+    "observedApiRequests": 0,
+    "centerMarkersWhenConfirmed": 1,
+    "radiusCirclesWhenConfirmed": 1,
+    "resultMarkers": 0,
+    "realMapSDK": false,
+    "newDependencies": 0
+  },
+  "review": "Self-review of SVG/browser reference and all3 final prototype captures, not independent or product-owner approval",
+  "limits": [
+    "fixed simulated candidate and local fixtures/bookmark state only",
+    "map geography/scale illustrative, no SDK or real results",
+    "physical phones/keyboard/Firefox/WebKit not tested",
+    "production and Stage B unapproved"
+  ],
+  "sources": [
+    {
+      "path": "app/prototype/explore/page.tsx",
+      "sha256LfNormalized": "da9aae6fe710d6268fa326933e8d9e2cfdfa54274daf1564d3a184519dae14ac"
+    },
+    {
+      "path": "app/prototype/explore/prototype.css",
+      "sha256LfNormalized": "2c994d90fd75ddb350278ff50951277066d18858cb02da27894eb2c50bdff569"
+    },
+    {
+      "path": "src/components/prototype/explore-prototype.tsx",
+      "sha256LfNormalized": "91acc6240039a7d1e6b20fb9ce1e49035d497b260aa3bc3b3550bd704b0f56a0"
+    },
+    {
+      "path": "src/components/app-shell.tsx",
+      "sha256LfNormalized": "b3e8f62af2d4e462aa04ebbaf719144785a20f5e4b2048071ac0a3a946f765b4"
+    },
+    {
+      "path": "public/prototype/illustrative-map.svg",
+      "sha256LfNormalized": "103b0056fec39775737eda17ba004240564cacb082e764bce2f58d27c97a1e7c"
+    },
+    {
+      "path": "test/browser/prototype.spec.ts",
+      "sha256LfNormalized": "85e41a2927a591ae485a582952199b56ea3b65be81c516d764c297141bdce588"
+    },
+    {
+      "path": "docs/design/nearby-explore-v2-reference.svg",
+      "sha256LfNormalized": "b342ea6739b2fa296e1cbe440ecf03083ccd47f255601ee54957d331de9467c4"
+    },
+    {
+      "path": "package.json",
+      "sha256LfNormalized": "f3f72d80a3874fdf610e8247f8bc28f86da821e15c53e4b5faf5bc1dddecb03c"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256LfNormalized": "e79fa6b955b3b65dc8ccf9c91549000f1b1dc6047b533de6f919019c674b97de"
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "business-regression/explore-1440-candidates.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "35a6f7ba25af840bec5277fd50c3f49dd9c2ab277ac38771bf532252ff1e44ae"
+    },
+    {
+      "path": "business-regression/explore-1440-conditions.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "467172db11af09c2f69496696e45ac80aa3334d92695473733e7c7d779eac27d"
+    },
+    {
+      "path": "business-regression/explore-390-candidates.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "1c11b4c868d4c6001c348e38d520a7acd88211f9bb3f9ce7e09a554332f70d19"
+    },
+    {
+      "path": "business-regression/explore-390-conditions.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "447215f3a3a321ece9c4f24f4038077d213ad5f4667ccea233fb55d7f1428559"
+    },
+    {
+      "path": "business-regression/explore-820-candidates.png",
+      "width": 820,
+      "height": 1180,
+      "sha256": "6e2e65700e56b6fc8028f5d94ca43d851f6333bee378e2e988845f803831151b"
+    },
+    {
+      "path": "business-regression/explore-820-conditions.png",
+      "width": 820,
+      "height": 1180,
+      "sha256": "f4e8f92dc00237049bb454eeccfd807b4c716c617cee99dccb6a64f393525d2f"
+    },
+    {
+      "path": "business-regression/explore-desktop-empty.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "5ae1b67a271df93ab8c9068d449b016b7c2e622651740d332696a5a383aa7149"
+    },
+    {
+      "path": "business-regression/explore-desktop-fixture-results.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "2683cdc279479528a6c92668d1c3c6fb0adc3fab0d37ee1055cd5737784dadb8"
+    },
+    {
+      "path": "business-regression/explore-mobile-empty.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "1215f916b0cb12e8955c671cc0e941ded80b6d66d0a5669ab4b5227021cb3b45"
+    },
+    {
+      "path": "business-regression/explore-mobile-fixture-results.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "6f4f8522ed372aa58909aeb3973edc6279f616c09d068d27349ad20aa6a34281"
+    },
+    {
+      "path": "business-regression/explore-mobile-results-collapsed.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "bc47a547aadc432760089e442bb2789e8c689e0da55d86552845b90c8e8579d6"
+    },
+    {
+      "path": "business-regression/explore-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "sha256": "537d2099d34f60cce720dc94b34cced906a4d8a419c5b655d30946941bd7cb6f"
+    },
+    {
+      "path": "business-regression/history-desktop-empty.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "94dd1d1807dcf61af3c1c08fa96ce8deefc1166b7682f14da13f346726d5ed63"
+    },
+    {
+      "path": "business-regression/history-desktop-fixture-records.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "0b8386d179e5c7ec156b19e5eb0afe06a45baedd65cb5422e9c620bb33fb1d97"
+    },
+    {
+      "path": "business-regression/history-mobile-empty.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "81eda92e7a6ef4cc4da98e2e79efa10203bd9e88e587d1ebfaf70a3924203d3d"
+    },
+    {
+      "path": "business-regression/history-mobile-fixture-records.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "c24a0991928590d84c210a48dce5b59ce385e558ae93a2cbe99035a02b3c0a36"
+    },
+    {
+      "path": "business-regression/history-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "sha256": "1df84859133550a6fb4887c7d95784ada9e2bb9f2dec1ebf4de4afc80f127f90"
+    },
+    {
+      "path": "business-regression/home-desktop-empty.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "230afd28753d51492d6ca615b544eef831090ca42edd70b3db2e2403e5fdb686"
+    },
+    {
+      "path": "business-regression/home-desktop-fixture-history.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "95da863438ab2e17fa2918acda9dd8d43aad7a69c349102b31a52d5f4532ab28"
+    },
+    {
+      "path": "business-regression/home-mobile-empty.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "b388b42fe4d477756c73c63b7a0b65dad9590f76028f319f130444125e73a565"
+    },
+    {
+      "path": "business-regression/home-mobile-fixture-history.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "fa55b69f4c56a86c49f4c2361b7d6c8f16493a5c7830bc66ca9af3fbb3905bb7"
+    },
+    {
+      "path": "business-regression/home-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "sha256": "af68b6f6c618c36d388b6330cbadac82566259b5c4542d083cb39645964681d6"
+    },
+    {
+      "path": "business-regression/my-places-desktop-empty.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "b1bbfcd1bbcdb0788eda9dc6c8ff2022638385795686baaed83130629992faaf"
+    },
+    {
+      "path": "business-regression/my-places-mobile-empty.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "863356de93fbd4330c00b0d168692e72b14ad6146efe0999d3f00200d0c43302"
+    },
+    {
+      "path": "business-regression/my-places-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "sha256": "de40874a6953f098c11b67f0867449d2c10263b691b28a1b9f33c762f50c3427"
+    },
+    {
+      "path": "desktop.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "3746f98f04c778aa45cc29befa169fdbff895d58b15e6ba9949400e374ca5fdc"
+    },
+    {
+      "path": "mobile.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "f0169fda30f30830c19d7765434334a739e42395ea976f44e66bea14c132661f"
+    },
+    {
+      "path": "reference-desktop.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "0eed39164bfa40cb2e2ad4f6a0fd6fe9b83b3bf08eb4e74de86989fa3fbe1b4a"
+    },
+    {
+      "path": "tablet.png",
+      "width": 820,
+      "height": 1180,
+      "sha256": "4b3dfdd967cf6379613bdce95de470da07a4f3cbd221fbffcfd20b5445cae668"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="660 250 780 650" width="780" height="650"><title>静态示意底图</title><desc>Derived from approved Nearby reference SVG c46fac4. Illustrative roads and labels only; not live AMap. No result markers.</desc>  <defs>
+    <linearGradient id="park" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e7f2df"/><stop offset="1" stop-color="#d5e9d0"/></linearGradient>
+    <linearGradient id="thumb1" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5e4936"/><stop offset="1" stop-color="#c6a57b"/></linearGradient>
+    <linearGradient id="thumb2" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9c7954"/><stop offset="1" stop-color="#ead7b2"/></linearGradient>
+    <linearGradient id="thumb3" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#202b2a"/><stop offset="1" stop-color="#87918a"/></linearGradient>
+    <clipPath id="mapClip"><rect x="660" y="250" width="780" height="650"/></clipPath>
+    <filter id="pinShadow" x="-40%" y="-30%" width="180%" height="180%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0a554d" flood-opacity=".2"/></filter>
+  </defs>  <g clip-path="url(#mapClip)">
+    <rect x="660" y="250" width="780" height="650" fill="#f5f6f1"/>
+    <path d="M665 263 800 250 875 320 846 402 724 430 660 395Z" fill="#e6f1df"/>
+    <path d="M1208 250H1440V390L1378 414 1300 360Z" fill="url(#park)"/>
+    <path d="M1240 685 1440 630V900H1210L1178 818Z" fill="#e2efdc"/>
+    <path d="M660 765 744 720 824 753 858 900H660Z" fill="#e3f0de"/>
+    <path d="M755 250 810 330 844 399 890 460 928 520 970 590 1005 650 1045 715 1080 790 1115 900" stroke="#fff" stroke-width="22" fill="none"/>
+    <path d="M755 250 810 330 844 399 890 460 928 520 970 590 1005 650 1045 715 1080 790 1115 900" stroke="#e9d8a0" stroke-width="9" fill="none"/>
+    <path d="M660 540 780 526 880 545 985 525 1090 550 1200 545 1315 580 1440 560" stroke="#fff" stroke-width="18" fill="none"/>
+    <path d="M660 540 780 526 880 545 985 525 1090 550 1200 545 1315 580 1440 560" stroke="#e8c97d" stroke-width="7" fill="none"/>
+    <path d="M660 330 760 395 840 460 925 465 1010 420 1110 392 1220 430 1320 410 1440 445" stroke="#fff" stroke-width="13" fill="none"/>
+    <path d="M660 330 760 395 840 460 925 465 1010 420 1110 392 1220 430 1320 410 1440 445" stroke="#e5e7df" stroke-width="5" fill="none"/>
+    <path d="M685 900 775 800 865 722 925 655 1010 615 1080 570 1140 500 1215 450 1300 380 1380 300" stroke="#fff" stroke-width="14" fill="none"/>
+    <path d="M685 900 775 800 865 722 925 655 1010 615 1080 570 1140 500 1215 450 1300 380 1380 300" stroke="#d8e8e5" stroke-width="5" fill="none"/>
+    <path d="M700 250 742 320 786 370 820 432 860 485 900 530 935 600 965 650 990 710 1020 780 1040 900" stroke="#fff" stroke-width="10" fill="none"/>
+    <path d="M700 250 742 320 786 370 820 432 860 485 900 530 935 600 965 650 990 710 1020 780 1040 900" stroke="#d9dcd5" stroke-width="3" fill="none"/>
+    <path d="M1160 250 1150 330 1180 400 1200 470 1230 530 1260 600 1300 660 1330 730 1360 810 1390 900" stroke="#fff" stroke-width="10" fill="none"/>
+    <path d="M1160 250 1150 330 1180 400 1200 470 1230 530 1260 600 1300 660 1330 730 1360 810 1390 900" stroke="#d9dcd5" stroke-width="3" fill="none"/>
+    <g stroke="#e0e4dc" stroke-width="2" fill="none" opacity=".95">
+      <path d="M680 285 1430 285M680 315 1430 315M680 345 1430 345M680 375 1430 375M680 405 1430 405M680 435 1430 435M680 465 1430 465M680 495 1430 495M680 525 1430 525M680 555 1430 555M680 585 1430 585M680 615 1430 615M680 645 1430 645M680 675 1430 675M680 705 1430 705M680 735 1430 735M680 765 1430 765M680 795 1430 795M680 825 1430 825M680 855 1430 855"/>
+      <path d="M700 255V895M735 255V895M770 255V895M805 255V895M840 255V895M875 255V895M910 255V895M945 255V895M980 255V895M1015 255V895M1050 255V895M1085 255V895M1120 255V895M1155 255V895M1190 255V895M1225 255V895M1260 255V895M1295 255V895M1330 255V895M1365 255V895M1400 255V895"/>
+    </g>
+    <!-- Only base-map labels/landmarks; no search-result pins -->
+    <g font-family="Inter, 'Noto Sans SC', sans-serif" fill="#6c8781" font-size="12">
+      <text x="744" y="294">民治社区</text>
+      <text x="815" y="376">龙华街道</text>
+      <text x="1256" y="320" fill="#438353">白石龙公园</text>
+      <text x="1298" y="710" fill="#438353">深圳北站公园</text>
+      <text x="760" y="858" fill="#438353">城市绿地</text>
+      <text x="1334" y="526" fill="#778581">龙华区</text>
+      <text x="1130" y="778">民治大道</text>
+      <text x="824" y="690">玉龙路</text>
+      <text x="1225" y="620">新区大道</text>
+      <text x="1100" y="352">白石龙站周边</text>
+    </g>
+    <g fill="#fff" opacity=".45">
+      <rect x="845" y="300" width="45" height="18" rx="3"/><rect x="930" y="350" width="58" height="20" rx="3"/><rect x="1190" y="480" width="55" height="18" rx="3"/><rect x="845" y="790" width="64" height="18" rx="3"/><rect x="1305" y="790" width="70" height="18" rx="3"/>
+    </g>
+  </g></svg>

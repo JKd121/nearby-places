@@ -1,5 +1,16 @@
 # Nearby · 地点探索工作台
 
+## 当前视觉评审：Issue #8 阶段 A
+
+独立原型入口 `/prototype/explore`，仅使用明确标注的演示列表和静态示意地图，不接入正式搜索/历史。必须经产品负责人视觉确认后才可进入阶段 B；现有 `/explore` 保持不变。
+
+```powershell
+npm ci --ignore-scripts
+npm run dev -- --port 3190 --hostname 127.0.0.1
+```
+
+打开 http://127.0.0.1:3190/prototype/explore 。独立原型不需要环境文件、数据库或地图 Key；全量业务构建仍有原有 Prisma/CI 前置要求。三种实际截图、SVG 对照自检、修改文件/数据和限制见 [阶段 A 评审包](harness/build/issue-8-stage-a-evidence/README.md)。本阶段没有新增依赖、地图商家标记或正式业务重构。以下为既有工作台说明。
+
 当前阶段由 [Issue #7](https://github.com/JKd121/nearby-places/issues/7) 定义，在 [PR #5](https://github.com/JKd121/nearby-places/pull/5) 的四页面外壳上先重构 Explore 交互，再精简视觉。保留既有地点解析、类别/半径选择、筛选排序、分页、历史保存及原中心回放；不接入真实地图、认证或收藏后端。
 
 | 路由 | 功能 |
