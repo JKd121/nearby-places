@@ -1,0 +1,221 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">Nearby Explore — approved visual reference</title>
+  <desc id="desc">A restrained map-first discovery workspace. A compact top search and category toolbar sits above a vertical nearby places list and a large map. The map shows only the confirmed center marker and search-radius circle, with no nearby result pins.</desc>
+  <defs>
+    <linearGradient id="park" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e7f2df"/><stop offset="1" stop-color="#d5e9d0"/></linearGradient>
+    <linearGradient id="thumb1" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5e4936"/><stop offset="1" stop-color="#c6a57b"/></linearGradient>
+    <linearGradient id="thumb2" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9c7954"/><stop offset="1" stop-color="#ead7b2"/></linearGradient>
+    <linearGradient id="thumb3" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#202b2a"/><stop offset="1" stop-color="#87918a"/></linearGradient>
+    <clipPath id="mapClip"><rect x="660" y="250" width="780" height="650"/></clipPath>
+    <filter id="pinShadow" x="-40%" y="-30%" width="180%" height="180%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0a554d" flood-opacity=".2"/></filter>
+  </defs>
+  <rect width="1440" height="900" fill="#fff"/>
+  <!-- Global sidebar: structure from spacing and background, not stacked cards -->
+  <rect width="220" height="900" fill="#fafaf8"/>
+  <path d="M220 0V900" stroke="#eceeea" stroke-width="1"/>
+  <g font-family="Inter, 'Noto Sans SC', 'Microsoft YaHei', sans-serif" fill="#263b3d">
+    <g transform="translate(28 25)">
+      <path d="M10 0C4.5 0 0 4.4 0 9.9 0 17.5 10 27 10 27S20 17.5 20 9.9C20 4.4 15.5 0 10 0Z" fill="#087466"/>
+      <circle cx="10" cy="10" r="3.5" fill="#fff"/>
+      <text x="28" y="20" font-size="25" font-weight="650" letter-spacing="-1" fill="#075f55">nearby</text>
+    </g>
+    <g font-size="16" font-weight="450">
+      <g transform="translate(14 84)" fill="#526164">
+        <path d="M16 2 7 10v13h7v-8h5v8h7V10Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+        <text x="52" y="20" fill="#526164">首页</text>
+      </g>
+      <rect x="14" y="140" width="200" height="56" rx="14" fill="#e3efeb"/>
+      <g transform="translate(31 155)" fill="#075f55">
+        <circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <path d="m15 15 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <text x="37" y="19" font-size="16" font-weight="600" fill="#075f55">探索地点</text>
+      </g>
+      <g transform="translate(31 211)" fill="#526164">
+        <path d="M5 2h16v21l-8-5-8 5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        <text x="37" y="18" fill="#526164">我的地点</text>
+      </g>
+      <g transform="translate(31 267)" fill="#526164">
+        <circle cx="13" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M13 6v6l4 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <text x="37" y="18" fill="#526164">搜索历史</text>
+      </g>
+    </g>
+  </g>
+  <path d="M0 819H220" stroke="#eceeea"/>
+  <g transform="translate(25 844)" font-family="Inter, 'Noto Sans SC', sans-serif">
+    <circle cx="18" cy="18" r="18" fill="#eff2ef"/>
+    <circle cx="18" cy="13" r="5" fill="none" stroke="#5b6b6b" stroke-width="1.6"/>
+    <path d="M8 28c1-6 5-9 10-9s9 3 10 9" fill="none" stroke="#5b6b6b" stroke-width="1.6"/>
+    <text x="48" y="15" font-size="15" font-weight="600" fill="#273d3f">游客模式</text>
+    <text x="48" y="37" font-size="12" fill="#83908f">登录后可保存地点</text>
+    <path d="m170 14 5 5-5 5" fill="none" stroke="#667575" stroke-width="1.6"/>
+  </g>
+  <!-- Top app bar -->
+  <rect x="220" width="1220" height="64" fill="#fff"/>
+  <path d="M220 64H1440" stroke="#eceeea"/>
+  <text x="252" y="39" font-family="Inter, 'Noto Sans SC', sans-serif" font-size="16" fill="#34494b">探索地点</text>
+  <g transform="translate(1276 22)" font-family="Inter, 'Noto Sans SC', sans-serif">
+    <circle cx="10" cy="7" r="5" fill="none" stroke="#536466" stroke-width="1.6"/>
+    <path d="M1 22c1-6 4-9 9-9s8 3 9 9" fill="none" stroke="#536466" stroke-width="1.6"/>
+    <text x="30" y="14" font-size="14" fill="#536466">游客模式</text>
+    <path d="m111 8 4 4 4-4" fill="none" stroke="#536466" stroke-width="1.5"/>
+  </g>
+  <!-- Search row -->
+  <rect x="220" y="64" width="1220" height="92" fill="#fff"/>
+  <g font-family="Inter, 'Noto Sans SC', sans-serif">
+    <rect x="250" y="86" width="575" height="54" rx="12" fill="#fff" stroke="#dfe6e2" stroke-width="1.4"/>
+    <circle cx="273" cy="112" r="7" fill="none" stroke="#34494b" stroke-width="1.8"/>
+    <path d="m278 117 5 5" stroke="#34494b" stroke-width="1.8" stroke-linecap="round"/>
+    <text x="300" y="118" font-size="16" fill="#243a3c">深圳北站西广场</text>
+    <circle cx="802" cy="112" r="8" fill="#e8ece9"/>
+    <path d="m799 109 6 6m0-6-6 6" stroke="#7d8987" stroke-width="1.2"/>
+    <rect x="840" y="86" width="118" height="54" rx="12" fill="#f4f7f5"/>
+    <text x="899" y="118" text-anchor="middle" font-size="15" font-weight="600" fill="#203b3c">解析地点</text>
+    <path d="M980 80V145" stroke="#eef0ed"/>
+    <path d="M1003 99c0-6 5-11 11-11s11 5 11 11c0 9-11 20-11 20s-11-11-11-20Z" fill="#087466"/>
+    <circle cx="1014" cy="99" r="3.7" fill="#fff"/>
+    <text x="1036" y="104" font-size="16" font-weight="600" fill="#243a3c">深圳北站西广场</text>
+    <text x="1036" y="125" font-size="12" fill="#879290">深圳市 · 龙华区</text>
+    <path d="m1280 99 11-11 4 4-11 11-5 1Z" fill="none" stroke="#087466" stroke-width="1.6" stroke-linejoin="round"/>
+    <text x="1302" y="106" font-size="14" fill="#087466" font-weight="550">修改地点</text>
+  </g>
+  <path d="M220 156H1440" stroke="#eef0ed"/>
+  <!-- Horizontal nearby services toolbar -->
+  <rect x="220" y="156" width="1220" height="94" fill="#fff"/>
+  <g font-family="Inter, 'Noto Sans SC', sans-serif">
+    <text x="250" y="208" font-size="15" font-weight="600" fill="#34494b">附近生活服务</text>
+    <rect x="365" y="180" width="92" height="46" rx="23" fill="#087466"/>
+    <text x="411" y="208" text-anchor="middle" font-size="14" font-weight="600" fill="#fff">♨ 火锅</text>
+    <rect x="467" y="180" width="88" height="46" rx="23" fill="#fff"/>
+    <text x="511" y="208" text-anchor="middle" font-size="14" fill="#3b4d4e">☕ 咖啡</text>
+    <rect x="565" y="180" width="84" height="46" rx="23" fill="#fff"/>
+    <text x="607" y="208" text-anchor="middle" font-size="14" fill="#3b4d4e">♫ KTV</text>
+    <rect x="659" y="180" width="90" height="46" rx="23" fill="#fff"/>
+    <text x="704" y="208" text-anchor="middle" font-size="14" fill="#3b4d4e">♧ 健身</text>
+    <rect x="759" y="180" width="88" height="46" rx="23" fill="#fff"/>
+    <text x="803" y="208" text-anchor="middle" font-size="14" fill="#3b4d4e">▤ 书店</text>
+    <rect x="858" y="180" width="103" height="46" rx="23" fill="#fff"/>
+    <text x="909" y="208" text-anchor="middle" font-size="14" fill="#3b4d4e">＋ 更多类别</text>
+    <path d="M980 184V222" stroke="#e8ece8"/>
+    <text x="1004" y="207" font-size="14" fill="#5a6b6b">搜索范围</text>
+    <rect x="1084" y="180" width="112" height="46" rx="11" fill="#fff"/>
+    <text x="1125" y="208" text-anchor="middle" font-size="14" fill="#34494b">3 km</text>
+    <path d="m1172 200 4 4 4-4" fill="none" stroke="#586b6b" stroke-width="1.5"/>
+    <rect x="1240" y="180" width="164" height="46" rx="12" fill="#08675c"/>
+    <circle cx="1265" cy="202" r="6" fill="none" stroke="#fff" stroke-width="1.6"/>
+    <path d="m1270 207 5 5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+    <text x="1320" y="208" text-anchor="middle" font-size="14" font-weight="600" fill="#fff">搜索附近</text>
+  </g>
+  <path d="M220 250H1440" stroke="#e9ede9"/>
+  <!-- Results list: integrated into workspace, minimal dividers -->
+  <rect x="220" y="250" width="440" height="650" fill="#fff"/>
+  <path d="M660 250V900" stroke="#e8ece8"/>
+  <g font-family="Inter, 'Noto Sans SC', sans-serif">
+    <text x="250" y="292" font-size="21" font-weight="650" letter-spacing="-.4" fill="#1d3133">附近地点</text>
+    <text x="250" y="320" font-size="13" fill="#7a8988">24 个结果 · 火锅</text>
+    <text x="552" y="302" font-size="13" fill="#526363">综合排序</text>
+    <path d="m625 296 4 4 4-4" fill="none" stroke="#526363" stroke-width="1.4"/>
+    <!-- selected row is indicated by a soft tint, not a box -->
+    <rect x="238" y="340" width="405" height="102" rx="12" fill="#eff6f3"/>
+    <rect x="252" y="353" width="84" height="76" rx="9" fill="url(#thumb1)"/>
+    <path d="M260 369h68M260 378h68M260 387h68" stroke="#d9bd98" stroke-width="1" opacity=".6"/>
+    <rect x="267" y="361" width="52" height="49" rx="4" fill="#47372a" opacity=".45"/>
+    <circle cx="293" cy="385" r="14" fill="#9e774d"/>
+    <circle cx="293" cy="385" r="9" fill="#d5b587"/>
+    <text x="350" y="372" font-size="15" font-weight="600" fill="#243739">山野火锅</text>
+    <text x="350" y="394" font-size="12" fill="#087466">火锅</text>
+    <text x="389" y="394" font-size="12" fill="#a0aaa8">320 m</text>
+    <text x="350" y="415" font-size="12" fill="#7b8988">深圳市龙华区致远中路附近…</text>
+    <path d="M614 365v19l-7-4-7 4v-19q7-3 14 0Z" fill="#087466"/>
+    <rect x="252" y="457" width="84" height="76" rx="9" fill="url(#thumb2)"/>
+    <ellipse cx="294" cy="495" rx="27" ry="20" fill="#efe4d0"/>
+    <ellipse cx="294" cy="495" rx="21" ry="15" fill="#8b5e35"/>
+    <ellipse cx="294" cy="495" rx="15" ry="10" fill="#d4a45d"/>
+    <text x="350" y="477" font-size="15" font-weight="600" fill="#243739">蜀味老火锅</text>
+    <text x="350" y="499" font-size="12" fill="#879391">火锅　川菜　朋友聚餐</text>
+    <text x="350" y="519" font-size="12" fill="#7b8988">深圳市龙华区民治大道附近…</text>
+    <text x="560" y="477" font-size="12" fill="#788785">540 m</text>
+    <path d="M614 468v19l-7-4-7 4v-19q7-3 14 0Z" fill="none" stroke="#435b5d" stroke-width="1.7" stroke-linejoin="round"/>
+    <rect x="252" y="561" width="84" height="76" rx="9" fill="url(#thumb3)"/>
+    <rect x="262" y="571" width="64" height="54" rx="4" fill="#2a3431"/>
+    <path d="M268 577v41m15-41v41m15-41v41m15-41v41" stroke="#a7a99c" stroke-width="2" opacity=".6"/>
+    <text x="350" y="581" font-size="15" font-weight="600" fill="#243739">城市运动馆</text>
+    <text x="350" y="603" font-size="12" fill="#879391">健身　器械齐全</text>
+    <text x="350" y="623" font-size="12" fill="#7b8988">深圳市龙华区深圳北站东广场…</text>
+    <text x="560" y="581" font-size="12" fill="#788785">760 m</text>
+    <path d="M614 572v19l-7-4-7 4v-19q7-3 14 0Z" fill="none" stroke="#435b5d" stroke-width="1.7" stroke-linejoin="round"/>
+    <rect x="252" y="665" width="84" height="76" rx="9" fill="#d9c7b0"/>
+    <ellipse cx="294" cy="703" rx="28" ry="20" fill="#f5eee2"/>
+    <ellipse cx="294" cy="703" rx="20" ry="14" fill="#7b5234"/>
+    <ellipse cx="294" cy="703" rx="12" ry="8" fill="#e5c78f"/>
+    <text x="350" y="685" font-size="15" font-weight="600" fill="#243739">巷口咖啡</text>
+    <text x="350" y="707" font-size="12" fill="#879391">咖啡　轻食　工作友好</text>
+    <text x="350" y="727" font-size="12" fill="#7b8988">深圳市龙华区民治街道附近…</text>
+    <text x="553" y="685" font-size="12" fill="#788785">1.2 km</text>
+    <path d="M614 676v19l-7-4-7 4v-19q7-3 14 0Z" fill="none" stroke="#435b5d" stroke-width="1.7" stroke-linejoin="round"/>
+    <rect x="252" y="769" width="84" height="76" rx="9" fill="#6a3c50"/>
+    <rect x="261" y="779" width="66" height="55" rx="4" fill="#231f32"/>
+    <path d="M266 788h56M266 797h56M266 806h56" stroke="#d39aa7" stroke-width="2" opacity=".5"/>
+    <text x="350" y="789" font-size="15" font-weight="600" fill="#243739">星聚 KTV</text>
+    <text x="350" y="811" font-size="12" fill="#879391">KTV　聚会　生日派对</text>
+    <text x="350" y="831" font-size="12" fill="#7b8988">深圳市龙华区民治大道附近…</text>
+    <text x="553" y="789" font-size="12" fill="#788785">1.4 km</text>
+    <path d="M614 780v19l-7-4-7 4v-19q7-3 14 0Z" fill="none" stroke="#435b5d" stroke-width="1.7" stroke-linejoin="round"/>
+  </g>
+  <!-- Map canvas: map details only, exactly one Nearby origin pin and one radius circle -->
+  <g clip-path="url(#mapClip)">
+    <rect x="660" y="250" width="780" height="650" fill="#f5f6f1"/>
+    <path d="M665 263 800 250 875 320 846 402 724 430 660 395Z" fill="#e6f1df"/>
+    <path d="M1208 250H1440V390L1378 414 1300 360Z" fill="url(#park)"/>
+    <path d="M1240 685 1440 630V900H1210L1178 818Z" fill="#e2efdc"/>
+    <path d="M660 765 744 720 824 753 858 900H660Z" fill="#e3f0de"/>
+    <path d="M755 250 810 330 844 399 890 460 928 520 970 590 1005 650 1045 715 1080 790 1115 900" stroke="#fff" stroke-width="22" fill="none"/>
+    <path d="M755 250 810 330 844 399 890 460 928 520 970 590 1005 650 1045 715 1080 790 1115 900" stroke="#e9d8a0" stroke-width="9" fill="none"/>
+    <path d="M660 540 780 526 880 545 985 525 1090 550 1200 545 1315 580 1440 560" stroke="#fff" stroke-width="18" fill="none"/>
+    <path d="M660 540 780 526 880 545 985 525 1090 550 1200 545 1315 580 1440 560" stroke="#e8c97d" stroke-width="7" fill="none"/>
+    <path d="M660 330 760 395 840 460 925 465 1010 420 1110 392 1220 430 1320 410 1440 445" stroke="#fff" stroke-width="13" fill="none"/>
+    <path d="M660 330 760 395 840 460 925 465 1010 420 1110 392 1220 430 1320 410 1440 445" stroke="#e5e7df" stroke-width="5" fill="none"/>
+    <path d="M685 900 775 800 865 722 925 655 1010 615 1080 570 1140 500 1215 450 1300 380 1380 300" stroke="#fff" stroke-width="14" fill="none"/>
+    <path d="M685 900 775 800 865 722 925 655 1010 615 1080 570 1140 500 1215 450 1300 380 1380 300" stroke="#d8e8e5" stroke-width="5" fill="none"/>
+    <path d="M700 250 742 320 786 370 820 432 860 485 900 530 935 600 965 650 990 710 1020 780 1040 900" stroke="#fff" stroke-width="10" fill="none"/>
+    <path d="M700 250 742 320 786 370 820 432 860 485 900 530 935 600 965 650 990 710 1020 780 1040 900" stroke="#d9dcd5" stroke-width="3" fill="none"/>
+    <path d="M1160 250 1150 330 1180 400 1200 470 1230 530 1260 600 1300 660 1330 730 1360 810 1390 900" stroke="#fff" stroke-width="10" fill="none"/>
+    <path d="M1160 250 1150 330 1180 400 1200 470 1230 530 1260 600 1300 660 1330 730 1360 810 1390 900" stroke="#d9dcd5" stroke-width="3" fill="none"/>
+    <g stroke="#e0e4dc" stroke-width="2" fill="none" opacity=".95">
+      <path d="M680 285 1430 285M680 315 1430 315M680 345 1430 345M680 375 1430 375M680 405 1430 405M680 435 1430 435M680 465 1430 465M680 495 1430 495M680 525 1430 525M680 555 1430 555M680 585 1430 585M680 615 1430 615M680 645 1430 645M680 675 1430 675M680 705 1430 705M680 735 1430 735M680 765 1430 765M680 795 1430 795M680 825 1430 825M680 855 1430 855"/>
+      <path d="M700 255V895M735 255V895M770 255V895M805 255V895M840 255V895M875 255V895M910 255V895M945 255V895M980 255V895M1015 255V895M1050 255V895M1085 255V895M1120 255V895M1155 255V895M1190 255V895M1225 255V895M1260 255V895M1295 255V895M1330 255V895M1365 255V895M1400 255V895"/>
+    </g>
+    <!-- Only base-map labels/landmarks; no search-result pins -->
+    <g font-family="Inter, 'Noto Sans SC', sans-serif" fill="#6c8781" font-size="12">
+      <text x="744" y="294">民治社区</text>
+      <text x="815" y="376">龙华街道</text>
+      <text x="1256" y="320" fill="#438353">白石龙公园</text>
+      <text x="1298" y="710" fill="#438353">深圳北站公园</text>
+      <text x="760" y="858" fill="#438353">城市绿地</text>
+      <text x="1334" y="526" fill="#778581">龙华区</text>
+      <text x="1130" y="778">民治大道</text>
+      <text x="824" y="690">玉龙路</text>
+      <text x="1225" y="620">新区大道</text>
+      <text x="1100" y="352">白石龙站周边</text>
+    </g>
+    <g fill="#fff" opacity=".45">
+      <rect x="845" y="300" width="45" height="18" rx="3"/><rect x="930" y="350" width="58" height="20" rx="3"/><rect x="1190" y="480" width="55" height="18" rx="3"/><rect x="845" y="790" width="64" height="18" rx="3"/><rect x="1305" y="790" width="70" height="18" rx="3"/>
+    </g>
+    <!-- Radius is the only overlay other than the confirmed center marker -->
+    <circle cx="1060" cy="585" r="184" fill="#0a8b7a" fill-opacity=".10" stroke="#087b6e" stroke-width="2" stroke-dasharray="7 6"/>
+    <rect x="1176" y="408" width="62" height="30" rx="15" fill="#087466"/>
+    <text x="1207" y="428" text-anchor="middle" font-family="Inter, 'Noto Sans SC', sans-serif" font-size="13" font-weight="600" fill="#fff">3 km</text>
+    <g filter="url(#pinShadow)" transform="translate(1060 565)">
+      <path d="M0-25C-14-25-25-14-25 0c0 19 25 44 25 44S25 19 25 0C25-14 14-25 0-25Z" fill="#087466"/>
+      <circle cx="0" cy="0" r="8" fill="#fff"/>
+    </g>
+    <text x="1096" y="582" font-family="Inter, 'Noto Sans SC', sans-serif" font-size="16" font-weight="650" fill="#1b4d49">深圳北站西广场</text>
+    <text x="1096" y="603" font-family="Inter, 'Noto Sans SC', sans-serif" font-size="12" fill="#55716d">已确认的探索中心</text>
+    <!-- map controls are quiet and secondary -->
+    <rect x="1380" y="270" width="42" height="42" rx="10" fill="#fff" fill-opacity=".95"/>
+    <path d="m1391 286 10-7 10 7-10 7Z m0 6 10 7 10-7" fill="none" stroke="#526866" stroke-width="1.5" stroke-linejoin="round"/>
+    <rect x="1380" y="806" width="42" height="86" rx="10" fill="#fff" fill-opacity=".95"/>
+    <path d="M1401 824v12m-6-6h12M1395 859h12" stroke="#526866" stroke-width="1.7" stroke-linecap="round"/>
+  </g>
+  <text x="250" y="883" font-family="Inter, 'Noto Sans SC', sans-serif" font-size="10" fill="#a1aaa8">Nearby Explore · Visual direction reference · not a live map</text>
+</svg>
