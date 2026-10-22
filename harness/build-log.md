@@ -1,5 +1,20 @@
 # Harness Build Log
 
+## 2026-10-22 — Issue #4 local delivery verified
+
+- Shared shell/four routes implemented; search and history core retained; no map/auth/favorites backend or schema/CI changes.
+- 103 existing tests, type checks and production build PASS. Final isolated Chrome browser suite 7/7 PASS; 18 desktop/mobile/tablet PNGs captured.
+- Independent code/visual review found no blocking production regression. A screenshot scroll-position artifact was recaptured and the reviewer confirmed it resolved.
+- Exact scope, evidence and dependency-audit limitations: `build/2026-10-22-issue-4-package-1a.md` and `build/issue-4-evidence/verification.json`.
+- Delivery boundary: commit/push branch and create PR only; no master merge or production deployment.
+
+## 2026-10-22 — Issue #4 / Package 1A entry
+
+- Sole task specification: GitHub Issue #4; direct user authorization covers implementation and branch PR, excludes merge/production deployment.
+- Designated worktree and branch verified clean at required base `3bc08d4`; original checkout untouched.
+- Scope/visual contract/verification plan: `build/2026-10-22-issue-4-package-1a.md`.
+- Existing historical release records below remain intact and do not authorize new deployment actions.
+
 ## 2026-10-05 — 已授权历史直接搜索本地实施与验收
 
 - 用户明确“我确认授权”，覆盖完整本地方案的实施、自审和验证。

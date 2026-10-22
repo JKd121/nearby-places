@@ -1,11 +1,23 @@
-# 高德地点周边数据能力 Spike
+# Nearby · 地点探索工作台
 
-这是一个最小 Node.js + TypeScript + Next.js App Router 产品化骨架：保留 v0.1A 的 AMap 搜索核心，并提供两阶段“解析地点 → 用户确认 → 周边搜索”页面和服务端 API。v0.1B-2A 已加入类别/半径选择、本地过滤、排序、去重和加载更多；最终视觉精修仍未实现。
+当前阶段由 [Issue #4](https://github.com/JKd121/nearby-places/issues/4) 定义：共享 Header、可折叠侧栏和四个业务页面。保留既有地点解析、类别/半径选择、筛选排序、分页、历史保存及原中心回放；不接入真实地图、认证或收藏后端。
+
+| 路由 | 功能 |
+| --- | --- |
+| `/` | 开始探索、当前访客最近三条探索 |
+| `/explore` | 原搜索工作区、内联历史、明确标注的未接入地图区域 |
+| `/my-places` | 诚实的收藏未开放状态与探索/历史入口 |
+| `/history` | 最近十条完整历史、重试、删除、按原条件继续探索 |
+
+Home/History 的继续链接只携带历史记录 ID。Explore 从当前访客的最近记录中读取并校验后，复用原搜索流程。过期/已删除/其他访客记录提示无法恢复，不猜测原中心。仍保留 Explore 内联历史。历史全文检索、完整分页、账户同步属于后续范围。
+
+样式使用 Tailwind v4 构建与共享 CSS tokens；旧搜索样式隔离于 `app/search.css`。shadcn/ui 的裁剪适配与许可见 `THIRD_PARTY_NOTICES.md`。
 
 ## 运行环境
 
-- Node.js 18 或更高版本（需要原生 `fetch`）
+- Node.js 24（与现有 CI 一致）
 - 高德 Web Service API Key
+- 实际历史持久化需要已有 PostgreSQL 连接；本阶段不创建环境文件或执行迁移
 
 ```powershell
 npm install
@@ -20,7 +32,7 @@ npm run dev
 npm run smoke -- "深圳北站"
 ```
 
-Key 只从 `AMAP_WEB_SERVICE_KEY` 环境变量读取；项目不会自动加载 `.env`。`.env.example` 仅说明变量名。
+Key 只在服务端从 `AMAP_WEB_SERVICE_KEY` 读取。Next.js 按框架规则加载本地环境文件；独立 Node smoke 脚本需显式注入变量。不要将凭据放入公开变量或提交 Git。
 
 ## 验证命令
 
@@ -30,7 +42,23 @@ npm run check
 npm run build
 ```
 
-`npm run dev` 启动页面；浏览器调用 `/api/resolve-location` 完成地点解析，确认后调用 `/api/search`。页面默认选择 8 类和 3 km，也支持 1/2/3/5 km、类别分组、结果过滤、排序和本地加载更多。AMap Key 只在服务端从 `AMAP_WEB_SERVICE_KEY` 读取，浏览器请求不会携带 Key。搜索请求直接使用已确认的中心坐标，不会再次 geocode。
+`npm run dev` 启动页面；搜索入口为 `/explore`。浏览器调用 `/api/resolve-location` 完成地点解析，确认后调用 `/api/search`。延续基线默认选择全部 10 类和 3 km，支持 1/2/3/5 km、类别分组、过滤、排序及第二页结果。搜索直接使用已确认中心，不会再次 geocode。
+
+### 隔离浏览器验收
+
+不连接真实数据库或高德。使用真实 production UI 与历史 route/service/repository，在数据库和 Provider 边界提供隔离内存/合成数据。需要本地 Google Chrome；测试使用 3187/3188 端口，无现成服务时自动启动并在结束后停止。
+
+```powershell
+$env:DIRECT_URL = "postgresql://ci:ci@localhost:5432/nearby_ci"
+$env:DATABASE_URL = $env:DIRECT_URL
+npm ci
+npm test
+npm run check
+npm run build
+npm run test:browser
+```
+
+占位连接仅满足生成/构建配置，不建立数据库。项目没有 lint 脚本；测试和类型检查不冒充 lint。桌面 1440×900、手机 390×844、平板 820×1180 截图写入 `harness/build/issue-4-evidence/`；地点/历史结果截图均为明确的测试夹具，不代表真实高德结果或数据库验收。
 
 ## 距离与商业字段说明
 
@@ -48,4 +76,4 @@ npm run build
 
 ## 范围
 
-当前包含 v0.1B-1 基础页面与服务端路由，以及 v0.1B-2A 的功能交互；不包含 v0.1B-2B 最终视觉/响应式/无障碍精修、收藏、地图、数据库、账号或其他产品功能。
+本阶段只交付 Issue #4 的多页面外壳与既有搜索/历史整合。真实地图及联动、认证、收藏与清单持久化由后续独立 Issue 处理。当前 PR 不修改 API、Schema、迁移或 CI/Preview 触发规则。

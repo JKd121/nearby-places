@@ -19,3 +19,7 @@ harness/build/*-real-api-verification.txt
 
 # Generated Prisma Client
 /generated/prisma/
+
+# Local browser test diagnostics (review screenshots live in harness/build/).
+/test-results/
+/playwright-report/

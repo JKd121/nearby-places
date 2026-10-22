@@ -1,0 +1,264 @@
+{
+  "issue": "https://github.com/JKd121/nearby-places/issues/4",
+  "base": "3bc08d4f7636b72c7206f1d9e4cb6272c212e41b",
+  "branch": "codex/nearby-v2.1-package1",
+  "checkedAt": "2026-10-22T20:43:06+08:00",
+  "node": "v24.19.0",
+  "chrome": "155.0.8059.85",
+  "checks": {
+    "diffCheck": "PASS",
+    "types": "PASS",
+    "designDetector": "[]",
+    "independentReview": "no blocking production finding; corrected capture artifact rechecked",
+    "unitTests": {
+      "failed": 0,
+      "passed": 103
+    },
+    "browserTests": {
+      "failed": 0,
+      "durationSeconds": 19.1,
+      "passed": 7
+    },
+    "productionBuild": "PASS",
+    "lint": "NOT_CONFIGURED"
+  },
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "width": 390,
+      "height": 844
+    },
+    {
+      "width": 820,
+      "height": 1180
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "explore-desktop-empty.png",
+      "width": 1440,
+      "height": 900,
+      "dataBoundary": "empty visitor history / production UI",
+      "sha256": "900D6A78BEC3AAC0B43B8989F8C0D7A72650BE0051DD8FD2B906334ADCB5B6D9"
+    },
+    {
+      "file": "explore-desktop-fixture-results.png",
+      "width": 1440,
+      "height": 1666,
+      "dataBoundary": "synthetic provider / isolated in-memory database",
+      "sha256": "CD654EA798C6BDCBE1712C5D18A13AD60203949C750B59EDEF5EB12DB06C4093"
+    },
+    {
+      "file": "explore-mobile-empty.png",
+      "width": 390,
+      "height": 844,
+      "dataBoundary": "empty visitor history / production UI",
+      "sha256": "6A5E4DDB3DA00B9E8315B5FD22D0714EBD092EDD41A0878BE8C86F6EE47E1AD2"
+    },
+    {
+      "file": "explore-mobile-fixture-results.png",
+      "width": 390,
+      "height": 2083,
+      "dataBoundary": "synthetic provider / isolated in-memory database",
+      "sha256": "BD3FCB7DA77D3C17F315F2B8EF2052773A3C1480E6864B012DBF03328D04BC61"
+    },
+    {
+      "file": "explore-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "dataBoundary": "empty visitor history / production UI",
+      "sha256": "31E93796C1CEB9F5032B6713E710F0E47F91B270D785A537FCABD98141F50351"
+    },
+    {
+      "file": "history-desktop-empty.png",
+      "width": 1440,
+      "height": 900,
+      "dataBoundary": "empty visitor history / production UI",
+      "sha256": "C9D5F772DA8D9EA4AC80077EAED0493E1335BF1BBA6C13179EE3761BA6128F0D"
+    },
+    {
+      "file": "history-desktop-fixture-records.png",
+      "width": 1440,
+      "height": 900,
+      "dataBoundary": "synthetic provider / isolated in-memory database",
+      "sha256": "4B122AE435BD3F8E601CF67802C92A26DA948462854230E541F1D6B2AA103390"
+    },
+    {
+      "file": "history-mobile-empty.png",
+      "width": 390,
+      "height": 844,
+      "dataBoundary": "empty visitor history / production UI",
+      "sha256": "479E80782581CDDC49EC566C7E69185DC63E939C2F48598E18D2B091BCF1667C"
+    },
+    {
+      "file": "history-mobile-fixture-records.png",
+      "width": 390,
+      "height": 844,
+      "dataBoundary": "synthetic provider / isolated in-memory database",
+      "sha256": "BDC139B9B772E61D5331F5E005D71758891BDFC54E12D3ED7860236A304D3B98"
+    },
+    {
+      "file": "history-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "dataBoundary": "empty visitor history / production UI",
+      "sha256": "A97536D811FD3EDC8EF39C2C2DD93693D97880BF0071F291012497A7BAD6D9E0"
+    },
+    {
+      "file": "home-desktop-empty.png",
+      "width": 1440,
+      "height": 900,
+      "dataBoundary": "empty visitor history / production UI",
+      "sha256": "25D79C388CF8B1022CCE1E009626BC50DD878A63B9D1594D21F8746A1397D863"
+    },
+    {
+      "file": "home-desktop-fixture-history.png",
+      "width": 1440,
+      "height": 900,
+      "dataBoundary": "synthetic provider / isolated in-memory database",
+      "sha256": "7F5695F6858E3050F629CBF2A1895688ACCBAF113DD2649B17C37514AE52C51C"
+    },
+    {
+      "file": "home-mobile-empty.png",
+      "width": 390,
+      "height": 1059,
+      "dataBoundary": "empty visitor history / production UI",
+      "sha256": "7CB46A64C9E04D1AD0A26729D92701A64A110F2199FFDBA96B50298284E207E3"
+    },
+    {
+      "file": "home-mobile-fixture-history.png",
+      "width": 390,
+      "height": 994,
+      "dataBoundary": "synthetic provider / isolated in-memory database",
+      "sha256": "E775154F97DBF4E18C83F9A0A31D9D5D159F83C4AE6B83F7D0C49F1928D4E279"
+    },
+    {
+      "file": "home-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "dataBoundary": "empty visitor history / production UI",
+      "sha256": "D0F628640DBE0E310C12195F57685D75A0149C123C35879D2CFDA85D4EC8FE63"
+    },
+    {
+      "file": "my-places-desktop-empty.png",
+      "width": 1440,
+      "height": 903,
+      "dataBoundary": "empty visitor history / production UI",
+      "sha256": "9C82BE97031BDB3CA46FE3501CBC0E1BEDDF484E9976139170622995C7312812"
+    },
+    {
+      "file": "my-places-mobile-empty.png",
+      "width": 390,
+      "height": 844,
+      "dataBoundary": "empty visitor history / production UI",
+      "sha256": "9E94C4A9A03692EBC65F4173DB76C0CECA52580CBEE87EAA938D0D4186D19F63"
+    },
+    {
+      "file": "my-places-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "dataBoundary": "empty visitor history / production UI",
+      "sha256": "D0B50E78F73414A188015169482F9121970CB414F16A17C375DD4EB0C4EE04DD"
+    }
+  ],
+  "sourceHashes": [
+    {
+      "file": "app/explore/page.tsx",
+      "sha256": "8EFAAAEE323EBF77310EF2D886A90D4F4788FD83F09D45F6896CE6B58189D337"
+    },
+    {
+      "file": "app/globals.css",
+      "sha256": "9075C3C7A9AFD936A2C2A48F5EB625E8C17CE2B290FCA1D8E412CC66D502C5DA"
+    },
+    {
+      "file": "app/history/page.tsx",
+      "sha256": "C14FA00A515CC00CDAE3EFAD046455695E56C728DBF3764EB797D5FD08B512C1"
+    },
+    {
+      "file": "app/layout.tsx",
+      "sha256": "4094D86AAC1A1EFF38D24C9AE301B6C87CB7C6BAC4CB01D6E61F9D8E8512DD7D"
+    },
+    {
+      "file": "app/my-places/page.tsx",
+      "sha256": "B47DDD04B188F3FF30DD54AEE85F5C2A7EEDA730C4CC2176EDF373D01C4B7830"
+    },
+    {
+      "file": "app/page.tsx",
+      "sha256": "B4B468326476F730C5DD2DF1396511510A1146F6FB39E9825622FB0B93F1EE99"
+    },
+    {
+      "file": "app/search.css",
+      "sha256": "4B17D3D643A58110E65616BEDE2E2E86DBA7F484E345F63C1E0D816C2B22EB4C"
+    },
+    {
+      "file": "components.json",
+      "sha256": "CCEC7882171B3CF39723071737B178C84DE8FA5129086826C8C170CCAFE83D8C"
+    },
+    {
+      "file": "package-lock.json",
+      "sha256": "3D1963404C9CC12E5940AF0D46823287A4F5AF9BF96C2ACE3D2C24B70D0D7F93"
+    },
+    {
+      "file": "package.json",
+      "sha256": "2E6B9244338F0A2B5F43B92DCDF4AFA590E8E0F181A9CAFEF7ED0D8BA1D9F46D"
+    },
+    {
+      "file": "playwright.config.ts",
+      "sha256": "9AD7B4F31447A358BB880C8BEBAF20A6494CF119CE1F17A60A3668BEFD34F010"
+    },
+    {
+      "file": "postcss.config.mjs",
+      "sha256": "A1A188221F064D964DD9958C3D48B0C23252FABBEB6099D95EE8E15C764718B0"
+    },
+    {
+      "file": "src/components/app-shell.tsx",
+      "sha256": "152BE7A584683CADD841C46F9005B3763554DFD8947B68EF2EA4097D23692183"
+    },
+    {
+      "file": "src/components/page-heading.tsx",
+      "sha256": "7F8AC324193C6162658AFFB28725E87A61BA6262AF9618288A1BAA29012AB36B"
+    },
+    {
+      "file": "src/components/recent-history.tsx",
+      "sha256": "C07E7B271FDE43655A3EE760EA31EE35CF88C967ED462D22A289FDA3B3074933"
+    },
+    {
+      "file": "src/components/ui/button.tsx",
+      "sha256": "4D2CF39371CC6B215429689392ED07E3B8062FA6BE761C1956677B308A9AF27F"
+    },
+    {
+      "file": "src/components/ui/sidebar.tsx",
+      "sha256": "02C9FB3AA4FA65A9DC845071B8E301E302A6D6D5CBE2B25ACDDA2B8C20532E06"
+    },
+    {
+      "file": "src/lib/utils.ts",
+      "sha256": "D1F1E0D62CB8D8D1E04C26E14DE842D8A151F75812D81B046C65B5D1FE8E4B27"
+    },
+    {
+      "file": "src/web/SearchApp.tsx",
+      "sha256": "80614064CB94AB3C8A87A7911AC87ECFDCF2AAB5FDFBBEE67B79FF5C9FEE2236"
+    },
+    {
+      "file": "test/browser/shell.spec.ts",
+      "sha256": "C118CD53BE88A9AB7C13C16A396CA53DD815AE4C526880B63B7DD8B2B6A06963"
+    },
+    {
+      "file": "test/history-browser-server.mjs",
+      "sha256": "2CA5F6CFE39757B7B3908CB258C52EA43ABB438D23B62CCC16D8DF78A355A2AD"
+    },
+    {
+      "file": "tsconfig.json",
+      "sha256": "A17F1A2BD72617B8784EA85C94CAAA5AF353198411FE8FA09C52A85FABD09FC5"
+    }
+  ],
+  "limitations": [
+    "No real PostgreSQL/AMap calls",
+    "Chrome viewport emulation only; no physical-device/Firefox/WebKit/long-name proof",
+    "Existing recent-history limits retained",
+    "Baseline Next/Prisma dependency audit findings: 5 high, 1 critical; no framework upgrade",
+    "No master merge or production deployment"
+  ]
+}

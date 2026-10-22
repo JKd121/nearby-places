@@ -8,7 +8,9 @@ import { mock } from "node:test";
 const cookies = new AsyncLocalStorage();
 const records = [];
 const requests = [];
-const state = { version: 1, failNextSearch: false, failCategory: null, slowLongitude: null };
+const state = { version: 1, failNextSearch: false, failCategory: null, slowLongitude: null, failHistoryRead: false, historyDelayMs: 0 };
+const uiPort = Number(process.env.HISTORY_UI_PORT ?? 3108);
+const browserPort = Number(process.env.HISTORY_BROWSER_PORT ?? 3107);
 const dbNull = Object.freeze({ kind: "database-null" });
 let nextId = 0;
 const visitorId = "history-browser-test";
@@ -67,6 +69,13 @@ async function readBody(request) {
 const server = http.createServer(async (request, response) => {
   try {
     const url = new URL(request.url, "http://localhost:3107");
+    if (url.pathname === "/__test/reset" && request.method === "POST") {
+      records.splice(0, records.length);
+      requests.splice(0, requests.length);
+      nextId = 0;
+      Object.assign(state, { version: 1, failNextSearch: false, failCategory: null, slowLongitude: null, failHistoryRead: false, historyDelayMs: 0 });
+      reply(response, { reset: true }); return;
+    }
     if (url.pathname === "/__test/evidence") {
       reply(response, { requests, records, state, candidates }); return;
     }
@@ -79,6 +88,10 @@ const server = http.createServer(async (request, response) => {
       const log = { path: url.pathname, method: request.method, body, at: new Date().toISOString() };
       requests.push(log);
       if (url.pathname === "/api/history") {
+        if (request.method === "GET") {
+          if (state.historyDelayMs) await new Promise((resolve) => setTimeout(resolve, state.historyDelayMs));
+          if (state.failHistoryRead) { reply(response, { error: "Synthetic read failure" }, 503); return; }
+        }
         const cookieHeaders = [];
         const input = new Request(url, { method: request.method, ...(bodyText ? { body: bodyText } : {}) });
         const result = await cookies.run(cookieHeaders, () => history[request.method](input));
@@ -112,11 +125,11 @@ const server = http.createServer(async (request, response) => {
       reply(response, { error: { message: "Unexpected test API" } }, 400); return;
     }
     // Serve the actual production-built Next UI and assets, intercept APIs only.
-    const upstream = http.request({ hostname: "127.0.0.1", port: 3108, path: request.url, method: request.method, headers: { ...request.headers, host: "localhost:3108" } }, (result) => {
+    const upstream = http.request({ hostname: "127.0.0.1", port: uiPort, path: request.url, method: request.method, headers: { ...request.headers, host: `localhost:${uiPort}` } }, (result) => {
       response.writeHead(result.statusCode ?? 502, result.headers); result.pipe(response);
     });
     upstream.on("error", (error) => reply(response, { error: error.message }, 502));
     request.pipe(upstream);
   } catch (error) { reply(response, { error: error.message }, 500); }
 });
-server.listen(3107, "127.0.0.1", () => console.log("Isolated history browser fixture http://localhost:3107"));
+server.listen(browserPort, "127.0.0.1", () => console.log(`Isolated history browser fixture http://localhost:${browserPort}`));

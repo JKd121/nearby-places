@@ -1,5 +1,18 @@
 # Project Harness
 
+## Current phase — Issue #4 / Package 1A
+
+- Task source: https://github.com/JKd121/nearby-places/issues/4. User explicitly requested implementation and a branch PR, without merge or production deployment.
+- Workspace: `C:\Users\lenovo\.codex\worktrees\nearby-v2-1-package1\地点聚合器`.
+- Branch/base: `codex/nearby-v2.1-package1` / `3bc08d4f7636b72c7206f1d9e4cb6272c212e41b`.
+- State: LOCAL_VERIFIED — implementation, independent review and browser evidence passed; branch PR handoff. Scope and executed results: `harness/build/2026-10-22-issue-4-package-1a.md`, `harness/build/issue-4-evidence/verification.json`.
+- Approved: four-page shared shell, retained Explore search/history, real recent-history Home/History surfaces and honest My Places empty state, responsive browser evidence and issue-related documentation.
+- Excluded: real map/markers/linkage, authentication, favorites/list persistence, schema/migrations, unrelated refactors, production config and CI/Preview trigger changes.
+- Original checkout remains at `16503c1` with its existing local changes. Its unpublished release/Preview evidence is not copied or deleted here. This worktree's historical records below can lag that evidence; do not restart old release operations.
+- Next action: deliver the verified branch as a PR to master for human review. The created PR URL belongs to the task attachment/report. No merge or production deploy.
+
+## Previous phase — historical record, not current instructions
+
 - Project: 地点周边生活服务聚合器
 - Repository: `C:\Users\lenovo\Documents\ChatGPT\地点聚合器`
 - Released Baseline: v0.1C COMPLETE

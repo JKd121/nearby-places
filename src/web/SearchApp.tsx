@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Compass, MapPin } from "lucide-react";
+import { PageHeading } from "../components/page-heading";
 import { useSearchHistory } from "./useSearchHistory";
 import type { SearchHistoryItem, SearchHistoryInput } from "./search-history-store";
 import { isSearchHistoryItem } from "./search-history-store";
@@ -35,7 +37,7 @@ function categoryLabel(key: CategoryKey): string { return CATEGORIES.find((categ
 async function readJson(response: Response): Promise<unknown> { try { return await response.json(); } catch { return null; } }
 function sortLabel(mode: SortMode): string { return { "distance-asc": "距离最近", "rating-desc": "评分最高", "cost-asc": "消费最低", "cost-desc": "消费最高" }[mode]; }
 
-export default function SearchApp() {
+export default function SearchApp({ replayHistoryId }: { replayHistoryId?: string | undefined }) {
   const [query, setQuery] = useState("");
   const [resolvedLocation, setResolvedLocation] = useState<LocationCandidate | null>(null);
   const [resolvedQuery, setResolvedQuery] = useState<string | null>(null);
@@ -56,6 +58,8 @@ export default function SearchApp() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const requestId = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const attemptedReplayId = useRef<string | undefined>(undefined);
+  const [replayError, setReplayError] = useState<string | null>(null);
   const availableFilters = useMemo(() => getAvailableFilters(response), [response]);
   const activeResult = useMemo(() => getCategoryResult(response, activeFilter), [response, activeFilter]);
   const activePlaces = useMemo(() => getPlacesForFilter(response, activeFilter), [response, activeFilter]);
@@ -77,6 +81,8 @@ export default function SearchApp() {
   }
 
   function invalidateLocation(nextQuery: string): void {
+    attemptedReplayId.current = replayHistoryId;
+    setReplayError(null);
     setQuery(nextQuery);
     requestId.current += 1;
     setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false); setPublicError(null); setPhase("initial"); resetView();
@@ -136,6 +142,20 @@ export default function SearchApp() {
     setHistoryOpen(false);
     void searchNearbyForSnapshot(location, replaySnapshot);
   }
+
+  useEffect(() => {
+    if (!replayHistoryId || attemptedReplayId.current === replayHistoryId || !history.hasLoaded || history.loadError) return;
+    attemptedReplayId.current = replayHistoryId;
+    const item = history.items.find((entry) => entry.id === replayHistoryId);
+    if (item) {
+      setReplayError(null);
+      handleHistorySelect(item);
+    } else {
+      setReplayError("这条历史已不在当前浏览器的最近记录中。请打开历史记录，或重新选择地点。");
+    }
+    // The current render's replay handler retains the original confirmed-search flow.
+    // Only a new requested ID or a completed history read may trigger a replay.
+  }, [replayHistoryId, history.hasLoaded, history.loadError, history.items]);
 
   function changeCategories(next: CategoryKey[]): void { requestId.current += 1; setSelectedCategoryIds(next); resetView(); if (resolvedLocation) setPhase("resolved"); }
 
@@ -269,7 +289,12 @@ if (hasSuccessfulCategory) {
 
   const noCategoriesSelected = selectedCategoryIds.length === 0;
   return <>
-    <header className="page-header"><div className="hero-topline"><div className="brand-lockup"><span className="brand-mark" aria-hidden="true">⌖</span><span>地点周边</span></div><span className="hero-microcopy">EXPLORE NEARBY · LIVE LOCAL</span></div><div className="hero-copy"><p className="eyebrow">把生活半径，放在一个清晰的地点上</p><h1>探索身边的美好</h1><p className="subtitle">输入地点，确认搜索中心，再发现附近值得去的生活服务。</p></div><ol className="flow-steps" aria-label="搜索流程"><li><span>01</span>输入地点</li><li><span>02</span>确认位置</li><li><span>03</span>发现附近</li></ol><div className="hero-orbit" aria-hidden="true"><span className="orbit-ring orbit-ring-one" /><span className="orbit-ring orbit-ring-two" /><span className="orbit-pin">⌖</span></div></header>
+    <PageHeading title="从一个地点，探索附近。" description="确认目的地，选择类别与半径，发现适合你的生活去处。" />
+    <div className="explore-layout">
+    <div className="search-workspace">
+    {replayHistoryId && !history.hasLoaded && !history.loadError && <p className="replay-message" role="status">正在恢复原来的搜索条件…</p>}
+    {replayHistoryId && history.loadError && <div className="replay-message" role="alert"><p>暂时无法读取用于恢复的历史记录。</p><button type="button" onClick={() => void history.refresh(true)} disabled={history.loading}>重试读取历史</button></div>}
+    {replayError && <p className="replay-message" role="alert">{replayError}</p>}
     <section className="search-panel" aria-busy={phase === "resolving" || phase === "searching"}>
       <div className="search-panel-heading"><div><p className="section-kicker">搜索中心</p><h2>搜索一个地点</h2></div></div><label htmlFor="location-query">地点</label>
       <div className="input-row"><div className={query.length > 0 ? "input-shell has-query" : "input-shell"} onBlur={(event) => {
@@ -365,6 +390,10 @@ if (hasSuccessfulCategory) {
     </>}
     {phase === "searching" && <p className="progress-text" role="status"><span className="spinner" aria-hidden="true" />正在依次搜索 {selectedCategoryIds.length} 个类别…</p>}
     {response && <ResultsView response={response} activeFilter={activeFilter} availableFilters={availableFilters} activeResult={activeResult} providerPageResult={providerPageResult} allowedSortModes={allowedSortModes} sortMode={effectiveSortMode} onFilterChange={changeFilter} onSortChange={changeSort} places={visiblePlaces} totalPlaces={sortedPlaces.length} canLoadMore={canLoadMore} canRequestProviderPage={canRequestProviderPage} canAnyCategoryRequestProviderPage={canAnyCategoryRequestProviderPage} providerPageLoading={providerPageCategory !== null && loadingProviderCategory === providerPageCategory} providerPageError={providerPageCategory ? providerPageErrors[providerPageCategory] ?? null : null} onLoadMore={loadMore} onLoadProviderPage={loadProviderPage} successfulCount={successfulCount} failedCount={failedCount} />}
+    {!response && phase !== "searching" && <div className="search-results-intro"><Compass aria-hidden="true" /><div><h2>附近的发现，在这里展开。</h2><p>先确认一个搜索中心，再选择想探索的类别。</p></div></div>}
+    </div>
+    <aside className="map-reserve" aria-labelledby="map-reserve-title"><div className="map-reserve-top"><MapPin aria-hidden="true" /><span>地图工作区</span><span className="map-reserve-status">尚未接入</span></div><div className="map-reserve-content"><div className="map-reserve-icon"><Compass aria-hidden="true" /></div><h2 id="map-reserve-title">先发现，再出发。</h2><p>本阶段通过列表探索附近地点。<br />地图视图将在后续版本接入。</p>{resolvedLocation && <div className="map-center-note"><MapPin aria-hidden="true" /><div><span>当前搜索中心</span><strong>{resolvedLocation.name}</strong></div></div>}</div><div className="map-reserve-footer"><span className="visitor-dot" />地点卡片可跳转高德查看位置</div></aside>
+    </div>
   </>;
 }
 
