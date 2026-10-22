@@ -1,0 +1,466 @@
+{
+  "issue": "https://github.com/JKd121/nearby-places/issues/7",
+  "pullRequest": "https://github.com/JKd121/nearby-places/pull/5",
+  "entryHead": "c66dfdcd2dafd43d768b9867adaa6bdc7550e596",
+  "branch": "codex/nearby-v2.1-package1",
+  "generatedAt": "2026-10-22T17:51:22.438Z",
+  "boundary": "Production-built UI; synthetic provider, isolated in-memory DB; no live AMap/PostgreSQL",
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "width": 390,
+      "height": 844
+    },
+    {
+      "width": 820,
+      "height": 1180
+    }
+  ],
+  "checks": [
+    {
+      "command": "npm run lint",
+      "exitCode": 0,
+      "result": "0 errors/warnings; scoped frontend and browser tests"
+    },
+    {
+      "command": "npm run check",
+      "exitCode": 0,
+      "result": "core + web"
+    },
+    {
+      "command": "npm test",
+      "exitCode": 0,
+      "passed": 103,
+      "failed": 0
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "result": "Next webpack optimized production build"
+    },
+    {
+      "command": "npm run test:browser",
+      "exitCode": 0,
+      "passed": 14,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationSeconds": 36.3
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  ],
+  "browserReport": {
+    "total": 14,
+    "expected": 14,
+    "unexpected": 0,
+    "flaky": 0,
+    "skipped": 0,
+    "ok": true
+  },
+  "review": {
+    "initialDisposition": "fix",
+    "materialFinding": "Resolver condition editing could strand resolving phase",
+    "correction": "Disable condition entry while resolving; delayed-response regression",
+    "limitedVerdict": "ship; resolver correction resolved, auxiliary contrast confirmed; 13 final captures reopened",
+    "documentation": "Read-only handoff completed; phase pointers finalized"
+  },
+  "contrast": {
+    "tertiary": "#5c6e65",
+    "mapRatio": 4.73,
+    "sidebarRatio": 4.94
+  },
+  "notRun": [
+    "live provider/database integration",
+    "physical mobile/soft keyboard/safe areas",
+    "Firefox/WebKit",
+    "production deployment"
+  ],
+  "unchangedProductionBoundaries": [
+    "app/api/",
+    "src/search/",
+    "src/amap/",
+    "history store/hook/service/repository",
+    "Prisma schema/migrations",
+    "CI/Preview triggers"
+  ],
+  "knownLimitations": [
+    "No real map SDK/markers/linkage/auth/favorites/lists by Issue scope",
+    "Recent-history window semantics retained",
+    "Existing audit: 5 high, 1 critical; no framework upgrade"
+  ],
+  "sources": [
+    {
+      "path": "app/globals.css",
+      "sha256LfNormalized": "de6df3c73f65b9125ecae405b454f5cbaf2f27e68dd72b9f843460ba6bd159f0"
+    },
+    {
+      "path": "app/explore.css",
+      "sha256LfNormalized": "7088794e20f122ccf2852d48c12bb46f52b5a0ece8a358c53d9956e1c5803674"
+    },
+    {
+      "path": "app/page.tsx",
+      "sha256LfNormalized": "37d4278cb2474e11392c816756ae232948d6923d3f9c372f7405bcc4ca9756ab"
+    },
+    {
+      "path": "app/explore/page.tsx",
+      "sha256LfNormalized": "a55d3c99d1c3a9f1a36483beefbbf76e1ea9758f25720c18ea742fe2ce53fb55"
+    },
+    {
+      "path": "app/my-places/page.tsx",
+      "sha256LfNormalized": "59236c62b9745d0cd57f785aa1324283ca7448575c771d93ae9f00182e778531"
+    },
+    {
+      "path": "app/history/page.tsx",
+      "sha256LfNormalized": "500d77985eabd8de35dd9c6fbca3e47bc4a5aeb79498e890f2b92625e75873a5"
+    },
+    {
+      "path": "src/components/app-shell.tsx",
+      "sha256LfNormalized": "1f9c52c48679f7fccd78be9a364cd2a455cab7ce973c5926e3803a0810b06c8c"
+    },
+    {
+      "path": "src/components/recent-history.tsx",
+      "sha256LfNormalized": "14b4f38d5b2436b268a249f3a4b7512f3472bc885685092ca3f6687517f7d034"
+    },
+    {
+      "path": "src/components/explore-dialog.tsx",
+      "sha256LfNormalized": "9968d56efb60e3350c03a72e74d5b73b28400fb6abb236833cce8245b2d2a88d"
+    },
+    {
+      "path": "src/web/SearchApp.tsx",
+      "sha256LfNormalized": "d031d50f181dd2a707b6b99bbf06019ed98df43b4aa278577a3d796c193ef13e"
+    },
+    {
+      "path": "test/browser/explore.spec.ts",
+      "sha256LfNormalized": "f13d27cf1c859894473e4afec0b49e4ecdc7007519e29d3f19d215196271690a"
+    },
+    {
+      "path": "test/browser/shell.spec.ts",
+      "sha256LfNormalized": "eee58f6dccb75fc0a1731b0bd09002f14dede561cdd0bc98af947068545514f0"
+    },
+    {
+      "path": "test/history-browser-server.mjs",
+      "sha256LfNormalized": "2201cc31b0a0efdbfe52e81887e1eec9407b6d444514dec8a56b2702fe54619e"
+    },
+    {
+      "path": "eslint.config.mjs",
+      "sha256LfNormalized": "6e87ae5e727cc66d91f855cd1575d860f59a77d8760ef460745005927872c38b"
+    },
+    {
+      "path": "package.json",
+      "sha256LfNormalized": "f3f72d80a3874fdf610e8247f8bc28f86da821e15c53e4b5faf5bc1dddecb03c"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256LfNormalized": "e79fa6b955b3b65dc8ccf9c91549000f1b1dc6047b533de6f919019c674b97de"
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "before/explore-desktop-empty.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 64001,
+      "sha256": "900d6a78bec3aac0b43b8989f8c0d7a72650be0051dd8fd2b906334adcb5b6d9"
+    },
+    {
+      "path": "before/explore-desktop-fixture-results.png",
+      "width": 1440,
+      "height": 1666,
+      "bytes": 124796,
+      "sha256": "cd654ea798c6bdcbe1712c5d18a13ad60203949c750b59edef5eb12db06c4093"
+    },
+    {
+      "path": "before/explore-mobile-empty.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 37625,
+      "sha256": "6a5e4ddb3da00b9e8315b5fd22d0714ebd092edd41a0878be8c86f6ee47e1ad2"
+    },
+    {
+      "path": "before/explore-mobile-fixture-results.png",
+      "width": 390,
+      "height": 2083,
+      "bytes": 91801,
+      "sha256": "bd3fcb7da77d3c17f315f2b8ef2052773a3c1480e6864b012dbf03328d04bc61"
+    },
+    {
+      "path": "before/explore-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "bytes": 58026,
+      "sha256": "31e93796c1ceb9f5032b6713e710f0e47f91b270d785a537fcabd98141f50351"
+    },
+    {
+      "path": "before/history-desktop-empty.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 59634,
+      "sha256": "c9d5f772da8d9ea4ac80077eaed0493e1335bf1bba6c13179ee3761ba6128f0d"
+    },
+    {
+      "path": "before/history-desktop-fixture-records.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 57385,
+      "sha256": "65b58aabbf07a6b951f8c2ed769fb749218a467113e3e6209df645e23622e82a"
+    },
+    {
+      "path": "before/history-mobile-empty.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 33683,
+      "sha256": "479e80782581cddc49ec566c7e69185dc63e939c2f48598e18d2b091bcf1667c"
+    },
+    {
+      "path": "before/history-mobile-fixture-records.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 30037,
+      "sha256": "bdc139b9b772e61d5331f5e005d71758891bdfc54e12d3ed7860236a304d3b98"
+    },
+    {
+      "path": "before/history-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "bytes": 54808,
+      "sha256": "a97536d811fd3edc8ef39c2c2dd93693d97880bf0071f291012497a7bad6d9e0"
+    },
+    {
+      "path": "before/home-desktop-empty.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 93597,
+      "sha256": "25d79c388cf8b1022cce1e009626bc50dd878a63b9d1594d21f8746a1397d863"
+    },
+    {
+      "path": "before/home-desktop-fixture-history.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 91184,
+      "sha256": "981b1a6e4fb994d16b10c9b7469535989058884a608588c6dfa3be29ad4f04f9"
+    },
+    {
+      "path": "before/home-mobile-empty.png",
+      "width": 390,
+      "height": 1059,
+      "bytes": 48551,
+      "sha256": "7cb46a64c9e04d1ad0a26729d92701a64a110f2199ffdba96b50298284e207e3"
+    },
+    {
+      "path": "before/home-mobile-fixture-history.png",
+      "width": 390,
+      "height": 994,
+      "bytes": 44336,
+      "sha256": "e775154f97dbf4e18c83f9a0a31d9d5d159f83c4ae6b83f7d0c49f1928d4e279"
+    },
+    {
+      "path": "before/home-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "bytes": 69166,
+      "sha256": "d0f628640dbe0e310c12195f57685d75a0149c123c35879d2cfda85d4ec8fe63"
+    },
+    {
+      "path": "before/my-places-desktop-empty.png",
+      "width": 1440,
+      "height": 903,
+      "bytes": 63959,
+      "sha256": "9c82be97031bdb3ca46fe3501cbc0e1beddf484e9976139170622995c7312812"
+    },
+    {
+      "path": "before/my-places-mobile-empty.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 36519,
+      "sha256": "9e94c4a9a03692ebc65f4173db76c0ceca52580cbee87eaa938d0d4186d19f63"
+    },
+    {
+      "path": "before/my-places-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "bytes": 58692,
+      "sha256": "d0b50e78f73414a188015169482f9121970cb414f16a17c375dd4eb0c4ee04dd"
+    },
+    {
+      "path": "after/explore-1440-candidates.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 77750,
+      "sha256": "35a6f7ba25af840bec5277fd50c3f49dd9c2ab277ac38771bf532252ff1e44ae"
+    },
+    {
+      "path": "after/explore-1440-conditions.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 67302,
+      "sha256": "467172db11af09c2f69496696e45ac80aa3334d92695473733e7c7d779eac27d"
+    },
+    {
+      "path": "after/explore-390-candidates.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 41384,
+      "sha256": "1c11b4c868d4c6001c348e38d520a7acd88211f9bb3f9ce7e09a554332f70d19"
+    },
+    {
+      "path": "after/explore-390-conditions.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 32620,
+      "sha256": "447215f3a3a321ece9c4f24f4038077d213ad5f4667ccea233fb55d7f1428559"
+    },
+    {
+      "path": "after/explore-820-candidates.png",
+      "width": 820,
+      "height": 1180,
+      "bytes": 72616,
+      "sha256": "6e2e65700e56b6fc8028f5d94ca43d851f6333bee378e2e988845f803831151b"
+    },
+    {
+      "path": "after/explore-820-conditions.png",
+      "width": 820,
+      "height": 1180,
+      "bytes": 61877,
+      "sha256": "f4e8f92dc00237049bb454eeccfd807b4c716c617cee99dccb6a64f393525d2f"
+    },
+    {
+      "path": "after/explore-desktop-empty.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 36374,
+      "sha256": "5ae1b67a271df93ab8c9068d449b016b7c2e622651740d332696a5a383aa7149"
+    },
+    {
+      "path": "after/explore-desktop-fixture-results.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 44846,
+      "sha256": "2683cdc279479528a6c92668d1c3c6fb0adc3fab0d37ee1055cd5737784dadb8"
+    },
+    {
+      "path": "after/explore-mobile-empty.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 17961,
+      "sha256": "1215f916b0cb12e8955c671cc0e941ded80b6d66d0a5669ab4b5227021cb3b45"
+    },
+    {
+      "path": "after/explore-mobile-fixture-results.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 29885,
+      "sha256": "6f4f8522ed372aa58909aeb3973edc6279f616c09d068d27349ad20aa6a34281"
+    },
+    {
+      "path": "after/explore-mobile-results-collapsed.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 21637,
+      "sha256": "bc47a547aadc432760089e442bb2789e8c689e0da55d86552845b90c8e8579d6"
+    },
+    {
+      "path": "after/explore-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "bytes": 35440,
+      "sha256": "537d2099d34f60cce720dc94b34cced906a4d8a419c5b655d30946941bd7cb6f"
+    },
+    {
+      "path": "after/history-desktop-empty.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 40624,
+      "sha256": "94dd1d1807dcf61af3c1c08fa96ce8deefc1166b7682f14da13f346726d5ed63"
+    },
+    {
+      "path": "after/history-desktop-fixture-records.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 40018,
+      "sha256": "0b8386d179e5c7ec156b19e5eb0afe06a45baedd65cb5422e9c620bb33fb1d97"
+    },
+    {
+      "path": "after/history-mobile-empty.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 25953,
+      "sha256": "81eda92e7a6ef4cc4da98e2e79efa10203bd9e88e587d1ebfaf70a3924203d3d"
+    },
+    {
+      "path": "after/history-mobile-fixture-records.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 24356,
+      "sha256": "c24a0991928590d84c210a48dce5b59ce385e558ae93a2cbe99035a02b3c0a36"
+    },
+    {
+      "path": "after/history-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "bytes": 39694,
+      "sha256": "1df84859133550a6fb4887c7d95784ada9e2bb9f2dec1ebf4de4afc80f127f90"
+    },
+    {
+      "path": "after/home-desktop-empty.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 35651,
+      "sha256": "230afd28753d51492d6ca615b544eef831090ca42edd70b3db2e2403e5fdb686"
+    },
+    {
+      "path": "after/home-desktop-fixture-history.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 34642,
+      "sha256": "95da863438ab2e17fa2918acda9dd8d43aad7a69c349102b31a52d5f4532ab28"
+    },
+    {
+      "path": "after/home-mobile-empty.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 21425,
+      "sha256": "b388b42fe4d477756c73c63b7a0b65dad9590f76028f319f130444125e73a565"
+    },
+    {
+      "path": "after/home-mobile-fixture-history.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 19523,
+      "sha256": "fa55b69f4c56a86c49f4c2361b7d6c8f16493a5c7830bc66ca9af3fbb3905bb7"
+    },
+    {
+      "path": "after/home-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "bytes": 34767,
+      "sha256": "af68b6f6c618c36d388b6330cbadac82566259b5c4542d083cb39645964681d6"
+    },
+    {
+      "path": "after/my-places-desktop-empty.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 31604,
+      "sha256": "b1bbfcd1bbcdb0788eda9dc6c8ff2022638385795686baaed83130629992faaf"
+    },
+    {
+      "path": "after/my-places-mobile-empty.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 17544,
+      "sha256": "863356de93fbd4330c00b0d168692e72b14ad6146efe0999d3f00200d0c43302"
+    },
+    {
+      "path": "after/my-places-tablet-empty.png",
+      "width": 820,
+      "height": 1180,
+      "bytes": 30828,
+      "sha256": "de40874a6953f098c11b67f0867449d2c10263b691b28a1b9f33c762f50c3427"
+    }
+  ]
+}

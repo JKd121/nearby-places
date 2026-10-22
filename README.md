@@ -1,17 +1,17 @@
 # Nearby · 地点探索工作台
 
-当前阶段由 [Issue #4](https://github.com/JKd121/nearby-places/issues/4) 定义：共享 Header、可折叠侧栏和四个业务页面。保留既有地点解析、类别/半径选择、筛选排序、分页、历史保存及原中心回放；不接入真实地图、认证或收藏后端。
+当前阶段由 [Issue #7](https://github.com/JKd121/nearby-places/issues/7) 定义，在 [PR #5](https://github.com/JKd121/nearby-places/pull/5) 的四页面外壳上先重构 Explore 交互，再精简视觉。保留既有地点解析、类别/半径选择、筛选排序、分页、历史保存及原中心回放；不接入真实地图、认证或收藏后端。
 
 | 路由 | 功能 |
 | --- | --- |
 | `/` | 开始探索、当前访客最近三条探索 |
-| `/explore` | 原搜索工作区、内联历史、明确标注的未接入地图区域 |
+| `/explore` | 固定工作区、候选/条件/历史弹层；桌面列表与地图占位并列，手机底部结果面板可收起 |
 | `/my-places` | 诚实的收藏未开放状态与探索/历史入口 |
 | `/history` | 最近十条完整历史、重试、删除、按原条件继续探索 |
 
-Home/History 的继续链接只携带历史记录 ID。Explore 从当前访客的最近记录中读取并校验后，复用原搜索流程。过期/已删除/其他访客记录提示无法恢复，不猜测原中心。仍保留 Explore 内联历史。历史全文检索、完整分页、账户同步属于后续范围。
+Home/History 的继续链接只携带历史记录 ID。Explore 从当前访客的最近记录中读取并校验后，复用原搜索流程。过期/已删除/其他访客记录提示无法恢复，不猜测原中心。Explore 顶部历史按钮可打开最近记录并恢复搜索。历史全文检索、完整分页、账户同步属于后续范围。
 
-样式使用 Tailwind v4 构建与共享 CSS tokens；旧搜索样式隔离于 `app/search.css`。shadcn/ui 的裁剪适配与许可见 `THIRD_PARTY_NOTICES.md`。
+样式使用 Tailwind v4 构建与共享 CSS tokens；当前工作区样式位于 `app/explore.css`，`app/search.css` 是未加载的历史样式。弹层复用现有 Radix Dialog，未增加生产依赖。shadcn/ui 的裁剪适配与许可见 `THIRD_PARTY_NOTICES.md`。
 
 ## 运行环境
 
@@ -38,6 +38,7 @@ Key 只在服务端从 `AMAP_WEB_SERVICE_KEY` 读取。Next.js 按框架规则�
 
 ```powershell
 npm test
+npm run lint
 npm run check
 npm run build
 ```
@@ -58,7 +59,9 @@ npm run build
 npm run test:browser
 ```
 
-占位连接仅满足生成/构建配置，不建立数据库。项目没有 lint 脚本；测试和类型检查不冒充 lint。桌面 1440×900、手机 390×844、平板 820×1180 截图写入 `harness/build/issue-4-evidence/`；地点/历史结果截图均为明确的测试夹具，不代表真实高德结果或数据库验收。
+占位连接仅满足生成/构建配置，不建立数据库。`npm run lint` 使用 ESLint、TypeScript 和 React Hooks 规则检查前端及浏览器测试，未覆盖历史 CLI Spike。桌面 1440×900、手机 390×844、平板 820×1180 的本轮前后截图位于 `harness/build/issue-7-evidence/before/` 和 `after/`；旧 Issue #4 证据保留。地点/历史结果截图均为明确的测试夹具，不代表真实高德结果或数据库验收。完整记录见 `harness/build/2026-10-23-issue-7-explore.md`。
+
+14 项浏览器测试覆盖候选有界滚动/确认/修改、折叠条件保留、移动底部面板与首屏几何、加载/无结果/错误、过期请求、筛选/四种排序、本地展开/Provider 第二页失败重试、高德链接、历史保存/恢复/刷新/删除，以及键盘焦点。使用生产构建；修改 UI 后必须重新 build 再运行测试。可用进程变量 `BROWSER_EVIDENCE_DIR` 指定截图目录，避免覆盖历史证据。
 
 ## 距离与商业字段说明
 
@@ -76,4 +79,4 @@ npm run test:browser
 
 ## 范围
 
-本阶段只交付 Issue #4 的多页面外壳与既有搜索/历史整合。真实地图及联动、认证、收藏与清单持久化由后续独立 Issue 处理。当前 PR 不修改 API、Schema、迁移或 CI/Preview 触发规则。
+本阶段只交付 Issue #7 的 Explore 交互重构及授权页面视觉精简。真实地图及联动、认证、收藏与清单持久化由后续独立 Issue 处理。当前 PR 不修改 API、Schema、迁移或 CI/Preview 触发规则。

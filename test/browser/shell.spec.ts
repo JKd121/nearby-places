@@ -1,12 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
 import fs from "node:fs/promises";
 
-const evidenceDirectory = "harness/build/issue-4-evidence";
+const evidenceDirectory = process.env.BROWSER_EVIDENCE_DIR ?? "harness/build/issue-7-evidence/after";
 const routes = [
-  { path: "/", name: "home", heading: "下一处好地方，从这里发现。", navigation: "首页" },
-  { path: "/explore", name: "explore", heading: "从一个地点，探索附近。", navigation: "探索地点" },
-  { path: "/my-places", name: "my-places", heading: "给喜欢的地方，留个位置。", navigation: "我的地点" },
-  { path: "/history", name: "history", heading: "接着上次，继续发现。", navigation: "搜索历史" },
+  { path: "/", name: "home", heading: "探索你的下一站", navigation: "首页" },
+  { path: "/explore", name: "explore", heading: "探索附近", navigation: "探索地点" },
+  { path: "/my-places", name: "my-places", heading: "我的地点", navigation: "我的地点" },
+  { path: "/history", name: "history", heading: "搜索历史", navigation: "搜索历史" },
 ];
 
 test.beforeEach(async ({ request }) => { await request.post("/__test/reset"); });
@@ -30,10 +30,11 @@ async function search(page: Page) {
   await page.getByLabel("地点", { exact: true }).fill("深圳北站");
   await page.getByRole("button", { name: "解析地点", exact: true }).click();
   await page.getByRole("button", { name: /深圳北站西广场/ }).click();
+  await page.getByRole("button", { name: "附近生活服务", exact: true }).click();
   await page.getByRole("button", { name: "清空", exact: true }).click();
   await page.locator(".checkbox-option").filter({ hasText: /^火锅$/ }).click();
   await page.locator(".option-pill").filter({ hasText: /^1 km$/ }).click();
-  await page.getByRole("button", { name: "搜索附近", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "搜索附近", exact: true }).click();
   await expect(page.getByText("西广场最新结果 1 · 火锅", { exact: true })).toBeVisible();
   await expect.poll(async () => (await (await page.request.get("/__test/evidence")).json()).records.length).toBe(1);
 }
@@ -47,10 +48,10 @@ for (const viewport of [{ width: 1440, height: 900, label: "desktop" }, { width:
     for (const route of routes) {
       await page.goto(route.path);
       await expect(page.getByRole("heading", { level: 1 })).toHaveText(route.heading);
-      if (route.name === "home" || route.name === "history") await expect(page.getByRole("heading", { name: "探索，从第一次出发开始" })).toBeVisible();
+      if (route.name === "home" || route.name === "history") await expect(page.getByRole("heading", { name: "还没有搜索记录" })).toBeVisible();
       await page.reload();
       await expect(page.getByRole("heading", { level: 1 })).toHaveText(route.heading);
-      if (route.name === "home" || route.name === "history") await expect(page.getByRole("heading", { name: "探索，从第一次出发开始" })).toBeVisible();
+      if (route.name === "home" || route.name === "history") await expect(page.getByRole("heading", { name: "还没有搜索记录" })).toBeVisible();
       await noOverflow(page);
       await capture(page, `${route.name}-${viewport.label}-empty`);
       if (viewport.label === "mobile") {
@@ -91,9 +92,11 @@ for (const mobile of [false, true]) {
     await request.post("/__test/control", { data: { version: 2 } });
     await page.getByRole("link", { name: "继续探索：深圳北站西广场", exact: true }).click();
     await expect(page.getByText("西广场最新结果 2 · 火锅", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "附近生活服务", exact: true }).click();
     await expect(page.getByLabel("1 km", { exact: true })).toBeChecked();
     await expect(page.getByLabel("火锅", { exact: true })).toBeChecked();
     await expect(page.getByLabel("酒店", { exact: true })).not.toBeChecked();
+    await page.keyboard.press("Escape");
     await page.goto("/history");
     await expect(page.getByRole("link", { name: "继续探索：深圳北站西广场", exact: true })).toBeVisible();
     await page.reload();
@@ -109,10 +112,10 @@ for (const mobile of [false, true]) {
     }
     expect(evidence.requests.filter((r: { path: string }) => r.path === "/api/resolve-location")).toHaveLength(1);
     await page.getByRole("button", { name: "删除搜索历史：深圳北站西广场" }).click();
-    await expect(page.getByRole("heading", { name: "探索，从第一次出发开始" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "还没有搜索记录" })).toBeVisible();
     await expect.poll(async () => (await (await request.get("/__test/evidence")).json()).records.length).toBe(0);
     await page.reload();
-    await expect(page.getByRole("heading", { name: "探索，从第一次出发开始" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "还没有搜索记录" })).toBeVisible();
   });
 }
 
@@ -120,11 +123,11 @@ test("history error/retry, loading and invalid replay are honest", async ({ page
   await request.post("/__test/control", { data: { failHistoryRead: true } });
   await page.goto("/history");
   await expect(page.locator(".feedback-banner[role=alert]")).toContainText("读取历史记录失败");
-  await expect(page.getByText("探索，从第一次出发开始")).toHaveCount(0);
+  await expect(page.getByText("还没有搜索记录")).toHaveCount(0);
   await request.post("/__test/control", { data: { failHistoryRead: false, historyDelayMs: 700 } });
   await page.getByRole("button", { name: "重试", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("正在读取最近探索");
-  await expect(page.getByText("探索，从第一次出发开始")).toBeVisible();
+  await expect(page.getByText("还没有搜索记录")).toBeVisible();
   await page.goto("/explore?history=missing-record");
   await expect(page.locator(".replay-message[role=alert]")).toContainText("这条历史已不在当前浏览器");
   const evidence = await (await request.get("/__test/evidence")).json();

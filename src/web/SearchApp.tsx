@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Compass, MapPin } from "lucide-react";
-import { PageHeading } from "../components/page-heading";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import { ChevronDown, ChevronUp, History, MapPin, Search, SlidersHorizontal } from "lucide-react";
+import { ExploreDialog } from "../components/explore-dialog";
+import { Button } from "../components/ui/button";
 import { useSearchHistory } from "./useSearchHistory";
 import type { SearchHistoryItem, SearchHistoryInput } from "./search-history-store";
 import { isSearchHistoryItem } from "./search-history-store";
@@ -60,6 +61,12 @@ export default function SearchApp({ replayHistoryId }: { replayHistoryId?: strin
   const inputRef = useRef<HTMLInputElement>(null);
   const attemptedReplayId = useRef<string | undefined>(undefined);
   const [replayError, setReplayError] = useState<string | null>(null);
+  const [conditionsOpen, setConditionsOpen] = useState(false);
+  const [resultsExpanded, setResultsExpanded] = useState(false);
+  const conditionTriggerRef = useRef<HTMLButtonElement>(null);
+  const historyTriggerRef = useRef<HTMLButtonElement>(null);
+  const resultHeadingRef = useRef<HTMLHeadingElement>(null);
+  const focusResultsAfterClose = useRef(false);
   const availableFilters = useMemo(() => getAvailableFilters(response), [response]);
   const activeResult = useMemo(() => getCategoryResult(response, activeFilter), [response, activeFilter]);
   const activePlaces = useMemo(() => getPlacesForFilter(response, activeFilter), [response, activeFilter]);
@@ -143,13 +150,15 @@ export default function SearchApp({ replayHistoryId }: { replayHistoryId?: strin
     void searchNearbyForSnapshot(location, replaySnapshot);
   }
 
+  const replayRecord = useEffectEvent(handleHistorySelect);
+
   useEffect(() => {
     if (!replayHistoryId || attemptedReplayId.current === replayHistoryId || !history.hasLoaded || history.loadError) return;
     attemptedReplayId.current = replayHistoryId;
     const item = history.items.find((entry) => entry.id === replayHistoryId);
     if (item) {
       setReplayError(null);
-      handleHistorySelect(item);
+      replayRecord(item);
     } else {
       setReplayError("这条历史已不在当前浏览器的最近记录中。请打开历史记录，或重新选择地点。");
     }
@@ -197,7 +206,11 @@ export default function SearchApp({ replayHistoryId }: { replayHistoryId?: strin
     setResolvedLocation(candidate); setResolvedQuery(query.trim()); setCandidates([]); setShowAllCandidates(false); setPublicError(null); resetView(); setPhase("resolved");
   }
 
-  function clearResolved(): void { requestId.current += 1; setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false); resetView(); setPublicError(null); setPhase("initial"); }
+  function clearResolved(): void {
+    requestId.current += 1; setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false); resetView(); setPublicError(null); setPhase("initial");
+    setConditionsOpen(false);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
 
   async function searchNearby(): Promise<void> {
     if (!resolvedLocation || selectedCategoryIds.length === 0) return;
@@ -215,6 +228,9 @@ export default function SearchApp({ replayHistoryId }: { replayHistoryId?: strin
     if (snapshot.categoryIds.length === 0) return;
     const currentId = requestId.current + 1; requestId.current = currentId;
     setPhase("searching"); setPublicError(null);
+    setResultsExpanded(true);
+    setConditionsOpen(false);
+    requestAnimationFrame(() => resultHeadingRef.current?.focus());
     try {
       const searchLocation: GeocodedPlace = { query: snapshot.query.trim(), formattedAddress: location.address ?? location.name, province: null, city: location.city, district: location.district, level: location.placeType, longitude: location.location.longitude, latitude: location.location.latitude };
       const historyInput: SearchHistoryInput = {
@@ -288,118 +304,109 @@ if (hasSuccessfulCategory) {
   }
 
   const noCategoriesSelected = selectedCategoryIds.length === 0;
-  return <>
-    <PageHeading title="从一个地点，探索附近。" description="确认目的地，选择类别与半径，发现适合你的生活去处。" />
-    <div className="explore-layout">
-    <div className="search-workspace">
-    {replayHistoryId && !history.hasLoaded && !history.loadError && <p className="replay-message" role="status">正在恢复原来的搜索条件…</p>}
-    {replayHistoryId && history.loadError && <div className="replay-message" role="alert"><p>暂时无法读取用于恢复的历史记录。</p><button type="button" onClick={() => void history.refresh(true)} disabled={history.loading}>重试读取历史</button></div>}
-    {replayError && <p className="replay-message" role="alert">{replayError}</p>}
-    <section className="search-panel" aria-busy={phase === "resolving" || phase === "searching"}>
-      <div className="search-panel-heading"><div><p className="section-kicker">搜索中心</p><h2>搜索一个地点</h2></div></div><label htmlFor="location-query">地点</label>
-      <div className="input-row"><div className={query.length > 0 ? "input-shell has-query" : "input-shell"} onBlur={(event) => {
-        const nextFocusedElement = event.relatedTarget;
-        if (
-          nextFocusedElement instanceof Node &&
-          event.currentTarget.contains(nextFocusedElement)
-        ) {
-          return;
-        }
-        closeSearchHistory();
-      }}><span className="search-field-icon" aria-hidden="true">⌖</span><input
-  ref={inputRef}
-  id="location-query"
-  value={query}
-  onChange={(event) => {
-    setHistoryOpen(false);
-    invalidateLocation(event.target.value);
-  }}
-  placeholder="例如：深圳北站"
-/>{query.length > 0 && <button type="button" className="clear-input-button" aria-label="清空地点" onClick={clearQuery}>×</button>}<button
-  type="button"
-  className="history-toggle-button"
-  aria-expanded={historyOpen}
-  aria-controls="search-history-panel"
-  onClick={toggleSearchHistory}
->历史记录</button>
-        <div
-          id="search-history-panel"
-          className="search-history-panel"
-          role="region"
-          aria-label="最近搜索"
-          hidden={!historyOpen}
-        >
-            <div className="search-history-heading">
-              <strong>最近搜索</strong>
-            </div>
-            {!history.hasLoaded && historyItems.length === 0 && !history.loadError ? (
-              <p className="muted">正在读取最近搜索…</p>
-            ) : historyItems.length === 0 ? (
-              <p className="muted">{history.pendingDeleteCount > 0 ? "正在同步删除…" : history.hasMore ? (history.loadError ? "暂时没有可显示的记录" : "正在读取更多记录…") : history.loadError ? "" : "暂无搜索历史"}</p>
-            ) : (
-              <ul className="search-history-list">
-                {historyItems.map((item) => (
-                  <li key={item.id}>
-                    <div className="search-history-row">
-                      <button
-                        type="button"
-                        className="search-history-item"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => handleHistorySelect(item)}
-                      >
-                        <strong>{item.confirmedLocation.name}</strong>
-                        {item.confirmedLocation.address && <span>{item.confirmedLocation.address}</span>}
-                        <span>
-                          {Array.isArray(item.categoryIds) ? item.categoryIds.length : 0} 个类别
-                          {" · "}
-                          {item.radiusMeters / 1000} km
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        className="search-history-delete"
-                        aria-label={`删除这条搜索历史：${item.confirmedLocation.name}`}
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={(event) => handleHistoryDelete(item.id, event.currentTarget)}
-                      >
-                        <span aria-hidden="true">×</span>
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {history.deleteError && <p className="error-text" role="alert">{history.deleteError}</p>}
-            {history.loadError && <div className="history-feedback">
-              <p className="error-text" role="alert">{history.loadError}</p>
-              <button type="button" className="history-retry" onClick={() => void history.refresh(true)} disabled={history.loading}>重试</button>
-            </div>}
-        </div>
-      </div><button type="button" onClick={resolveLocation} disabled={phase === "resolving" || phase === "searching"}><span aria-hidden="true">↗</span>{phase === "resolving" ? "解析中…" : "解析地点"}</button></div>
-      {publicError && (phase === "resolve-error" || phase === "search-error") && <p className="error-text" role="alert">{publicError}</p>}
-    </section>
-    {phase === "not-found" && <section className="resolution-message" aria-live="polite"><strong>没有找到明确地点</strong><p>请尝试补充城市、行政区或更完整的地点名称。</p></section>}
-    {phase === "needs-confirmation" && <CandidateList candidates={candidates} expanded={showAllCandidates} onExpand={() => setShowAllCandidates(true)} onSelect={confirmCandidate} />}
-    {resolvedLocation && <>
-      <section className="location-confirmation" aria-live="polite"><div className="location-heading"><div className="location-status"><span className="status-dot" aria-hidden="true" /><p className="section-kicker">已锁定搜索中心</p></div><button type="button" className="secondary location-edit" onClick={clearResolved} disabled={phase === "searching"}><span aria-hidden="true">↗</span>修改地点</button></div><div className="location-identity"><span className="location-pin" aria-hidden="true">⌖</span><div><h2>{resolvedLocation.name}</h2>{resolvedLocation.placeType && <p className="location-type">{resolvedLocation.placeType}</p>}</div></div><p className="location-region">{[resolvedLocation.city, resolvedLocation.district].filter(Boolean).join(" · ") || "行政区未知"}</p>{resolvedLocation.address && <p className="location-address">{resolvedLocation.address}</p>}<p className="coordinates">{resolvedLocation.location.longitude}, {resolvedLocation.location.latitude}</p></section>
-      <section className="controls-panel" aria-label="搜索条件"><div className="controls-heading"><div><p className="section-kicker">发现范围</p><h2>附近生活服务</h2></div></div>
-        <CategorySelector selected={selectedCategoryIds} onChange={changeCategories} />
-        {noCategoriesSelected && <p className="control-hint" role="status">至少选择一个类别后才能搜索。</p>}
-        <div className="controls-footer"><fieldset className="radius-selector"><legend>搜索半径</legend><div className="option-row">{ALLOWED_RADIUS_METERS.map((value) => <label key={value} className="option-pill"><input type="radio" name="radius" value={value} checked={radiusMeters === value} onChange={(event) => changeRadius(event.target.value)} />{value / 1000} km</label>)}</div></fieldset><button type="button" onClick={searchNearby} disabled={phase === "searching" || noCategoriesSelected}>{phase === "searching" ? "正在搜索…" : "搜索附近"}</button></div>
-      </section>
-    </>}
-    {phase === "searching" && <p className="progress-text" role="status"><span className="spinner" aria-hidden="true" />正在依次搜索 {selectedCategoryIds.length} 个类别…</p>}
-    {response && <ResultsView response={response} activeFilter={activeFilter} availableFilters={availableFilters} activeResult={activeResult} providerPageResult={providerPageResult} allowedSortModes={allowedSortModes} sortMode={effectiveSortMode} onFilterChange={changeFilter} onSortChange={changeSort} places={visiblePlaces} totalPlaces={sortedPlaces.length} canLoadMore={canLoadMore} canRequestProviderPage={canRequestProviderPage} canAnyCategoryRequestProviderPage={canAnyCategoryRequestProviderPage} providerPageLoading={providerPageCategory !== null && loadingProviderCategory === providerPageCategory} providerPageError={providerPageCategory ? providerPageErrors[providerPageCategory] ?? null : null} onLoadMore={loadMore} onLoadProviderPage={loadProviderPage} successfulCount={successfulCount} failedCount={failedCount} />}
-    {!response && phase !== "searching" && <div className="search-results-intro"><Compass aria-hidden="true" /><div><h2>附近的发现，在这里展开。</h2><p>先确认一个搜索中心，再选择想探索的类别。</p></div></div>}
-    </div>
-    <aside className="map-reserve" aria-labelledby="map-reserve-title"><div className="map-reserve-top"><MapPin aria-hidden="true" /><span>地图工作区</span><span className="map-reserve-status">尚未接入</span></div><div className="map-reserve-content"><div className="map-reserve-icon"><Compass aria-hidden="true" /></div><h2 id="map-reserve-title">先发现，再出发。</h2><p>本阶段通过列表探索附近地点。<br />地图视图将在后续版本接入。</p>{resolvedLocation && <div className="map-center-note"><MapPin aria-hidden="true" /><div><span>当前搜索中心</span><strong>{resolvedLocation.name}</strong></div></div>}</div><div className="map-reserve-footer"><span className="visitor-dot" />地点卡片可跳转高德查看位置</div></aside>
-    </div>
-  </>;
-}
+  const busy = phase === "resolving" || phase === "searching";
+  const conditionSummary = noCategoriesSelected
+    ? "未选择类别"
+    : selectedCategoryIds.length === ALL_CATEGORY_IDS.length
+      ? "全部类别"
+      : selectedCategoryIds.map(categoryLabel).join("、");
+  const resultTitle = phase === "searching" ? "正在搜索附近…" : phase === "search-error" ? "搜索未完成" : response ? "附近结果" : "搜索结果";
 
+  function restoreDialogFocus(event: Event, target: "location" | "conditions" | "history"): void {
+    event.preventDefault();
+    if (focusResultsAfterClose.current) {
+      focusResultsAfterClose.current = false;
+      resultHeadingRef.current?.focus();
+    } else if (target === "location") {
+      (resolvedLocation ? conditionTriggerRef.current : inputRef.current)?.focus();
+    } else {
+      (target === "history" ? historyTriggerRef.current : conditionTriggerRef.current)?.focus();
+    }
+  }
+
+  return <div className="explore-workbench">
+    <div className="workspace-toolbar">
+      <h1>探索附近</h1>
+      <div className="workspace-location-row">
+        {resolvedLocation ? <div className="location-summary" aria-live="polite">
+          <MapPin aria-hidden="true" />
+          <div className="location-summary-copy"><strong>{resolvedLocation.name}</strong><span>{[resolvedLocation.city, resolvedLocation.district, resolvedLocation.address].filter(Boolean).join(" · ") || "地址暂无"}</span></div>
+          <Button variant="ghost" size="sm" onClick={clearResolved}>修改地点</Button>
+        </div> : <form className="location-form" onSubmit={(event) => { event.preventDefault(); resolveLocation(); }}>
+          <label className="sr-only" htmlFor="location-query">地点</label>
+          <div className="location-input-wrap"><Search aria-hidden="true" /><input ref={inputRef} id="location-query" name="location" value={query} onChange={(event) => invalidateLocation(event.target.value)} placeholder="输入地点，例如深圳北站" autoComplete="off" />
+            {query && <button type="button" className="clear-input-button" aria-label="清空地点" onClick={clearQuery}>×</button>}
+          </div>
+          <Button type="submit" variant="outline" disabled={busy}>{phase === "resolving" ? "解析中…" : "解析地点"}</Button>
+        </form>}
+        <Button ref={historyTriggerRef} variant="ghost" size="icon" className="history-toggle-button" aria-label="历史记录" aria-expanded={historyOpen} onClick={toggleSearchHistory}><History aria-hidden="true" /></Button>
+      </div>
+      <div className="workspace-condition-row">
+        <Button ref={conditionTriggerRef} variant="outline" className="condition-trigger" aria-label="附近生活服务" aria-expanded={conditionsOpen} disabled={phase === "resolving"} onClick={() => setConditionsOpen(true)}>
+          <SlidersHorizontal aria-hidden="true" /><span>{conditionSummary}</span><span className="condition-radius">{radiusMeters / 1000} km</span><ChevronDown aria-hidden="true" />
+        </Button>
+        <Button onClick={() => void searchNearby()} disabled={!resolvedLocation || noCategoriesSelected || busy}>{phase === "searching" ? "搜索中…" : "搜索附近"}</Button>
+      </div>
+      <div className="workspace-feedback" aria-live="polite">
+        {phase === "resolving" && <span role="status">正在查找地点…</span>}
+        {phase === "not-found" && <span role="status">没有找到明确地点，请补充城市或更完整的名称。</span>}
+        {phase === "resolve-error" && <span className="error-text" role="alert">{publicError}</span>}
+        {noCategoriesSelected && <span className="error-text">请至少选择一个类别。</span>}
+        {replayHistoryId && !history.hasLoaded && !history.loadError && <span className="replay-message" role="status">正在恢复原来的搜索条件…</span>}
+        {replayHistoryId && history.loadError && <span className="replay-message" role="alert">暂时无法读取历史。<button type="button" onClick={() => void history.refresh(true)} disabled={history.loading}>重试读取历史</button></span>}
+        {replayError && <span className="replay-message" role="alert">{replayError}</span>}
+      </div>
+    </div>
+
+    <div className="workspace-body">
+      <section className="workbench-results" data-expanded={resultsExpanded} aria-label="附近结果面板" aria-busy={phase === "searching"}>
+        <div className="workbench-results-heading">
+          <div><h2 ref={resultHeadingRef} tabIndex={-1}>{resultTitle}</h2>{response && phase === "results" && <p>{sortedPlaces.length} 个结果 · {successfulCount} 类成功{failedCount > 0 ? " · " + failedCount + " 类失败" : ""}</p>}</div>
+          <Button variant="ghost" size="sm" className="results-panel-toggle" aria-expanded={resultsExpanded} aria-controls="workbench-result-content" onClick={() => setResultsExpanded(!resultsExpanded)}>{resultsExpanded ? "收起结果" : "展开结果"}{resultsExpanded ? <ChevronDown aria-hidden="true" /> : <ChevronUp aria-hidden="true" />}</Button>
+        </div>
+        <div id="workbench-result-content" className="workbench-result-content">
+          {phase === "searching" ? <p className="workspace-empty" role="status">正在搜索所选类别，请稍候…</p> : phase === "search-error" ? <div className="workspace-empty" role="alert"><strong>附近搜索失败</strong><p>{publicError}</p><Button variant="outline" onClick={() => void searchNearby()}>重试搜索</Button></div> : response ? <ResultsView
+            response={response} activeFilter={activeFilter} availableFilters={availableFilters} activeResult={activeResult} providerPageResult={providerPageResult}
+            allowedSortModes={allowedSortModes} sortMode={effectiveSortMode} onFilterChange={changeFilter} onSortChange={changeSort}
+            places={visiblePlaces} totalPlaces={sortedPlaces.length} canLoadMore={canLoadMore} canRequestProviderPage={canRequestProviderPage}
+            canAnyCategoryRequestProviderPage={canAnyCategoryRequestProviderPage} providerPageLoading={loadingProviderCategory !== null}
+            providerPageError={providerPageCategory ? providerPageErrors[providerPageCategory] ?? null : null}
+            onLoadMore={loadMore} onLoadProviderPage={() => void loadProviderPage()} successfulCount={successfulCount} failedCount={failedCount}
+          /> : <div className="workspace-empty"><strong>{resolvedLocation ? "已确认搜索中心" : "从一个地点开始"}</strong><p>{resolvedLocation ? "调整类别与半径，搜索附近的地点。" : "输入目的地并确认位置，即可搜索附近。"}</p></div>}
+        </div>
+      </section>
+      <aside className="workspace-map" aria-label="地图工作区">
+        <div className="map-disclosure"><span className="visitor-dot" /><strong>地图工作区</strong><span>地图尚未接入</span></div>
+        {resolvedLocation && <div className="map-center-summary"><MapPin aria-hidden="true" /><span>搜索中心 · {resolvedLocation.name}</span></div>}
+      </aside>
+    </div>
+
+    <ExploreDialog open={phase === "needs-confirmation"} onOpenChange={(open) => { if (!open) setPhase("initial"); }} title="确认地点" description="选择搜索中心，再查看附近。" onCloseAutoFocus={(event) => restoreDialogFocus(event, "location")}>
+      <CandidateList candidates={candidates} expanded={showAllCandidates} onExpand={() => setShowAllCandidates(true)} onSelect={confirmCandidate} />
+    </ExploreDialog>
+    <ExploreDialog open={conditionsOpen} onOpenChange={setConditionsOpen} title="附近生活服务" description="选择服务类别与搜索半径。" onCloseAutoFocus={(event) => restoreDialogFocus(event, "conditions")} footer={<><Button variant="ghost" onClick={() => setConditionsOpen(false)}>收起条件</Button><Button onClick={() => { focusResultsAfterClose.current = true; void searchNearby(); }} disabled={!resolvedLocation || noCategoriesSelected || busy}>搜索附近</Button></>}>
+      <CategorySelector selected={selectedCategoryIds} onChange={changeCategories} />
+      <fieldset className="radius-selector"><legend>搜索半径</legend><div className="radius-options">{ALLOWED_RADIUS_METERS.map((radius) => <label className="option-pill" key={radius}><input type="radio" name="radius" value={radius} checked={radiusMeters === radius} onChange={(event) => changeRadius(event.target.value)} />{radius / 1000} km</label>)}</div></fieldset>
+    </ExploreDialog>
+    <ExploreDialog open={historyOpen} onOpenChange={setHistoryOpen} title="最近搜索" description="恢复当时的地点、类别和半径，并重新搜索。" onCloseAutoFocus={(event) => restoreDialogFocus(event, "history")}>
+      {!history.hasLoaded && historyItems.length === 0 && !history.loadError ? <p role="status">正在读取最近搜索…</p> : historyItems.length === 0 ? <p className="muted">{history.pendingDeleteCount > 0 ? "正在同步删除…" : history.hasMore ? (history.loadError ? "暂时没有可显示的记录" : "正在读取更多记录…") : history.loadError ? "" : "暂无搜索历史"}</p> : <ul className="search-history-list">{historyItems.map((item) => <li key={item.id}><div className="search-history-row">
+        <button type="button" className="search-history-item" onClick={() => { focusResultsAfterClose.current = true; handleHistorySelect(item); }}><strong>{item.confirmedLocation.name}</strong>{item.confirmedLocation.address && <span>{item.confirmedLocation.address}</span>}<span>{item.categoryIds.length} 个类别 · {item.radiusMeters / 1000} km</span></button>
+        <button type="button" className="search-history-delete" aria-label={"删除这条搜索历史：" + item.confirmedLocation.name} onClick={(event) => handleHistoryDelete(item.id, event.currentTarget)}><span aria-hidden="true">×</span></button>
+      </div></li>)}</ul>}
+      {history.deleteError && <p className="error-text" role="alert">{history.deleteError}</p>}
+      {history.loadError && <div className="history-feedback"><p className="error-text" role="alert">{history.loadError}</p><Button variant="outline" onClick={() => void history.refresh(true)} disabled={history.loading}>重试</Button></div>}
+    </ExploreDialog>
+  </div>;
+}
 function CandidateList({ candidates, expanded, onExpand, onSelect }: { candidates: readonly LocationCandidate[]; expanded: boolean; onExpand: () => void; onSelect: (candidate: LocationCandidate) => void }) {
   const visibleCandidates = expanded ? candidates : candidates.slice(0, 5);
-  return <section className="candidate-panel" aria-live="polite"><div className="candidate-heading"><div><p className="section-kicker">位置确认</p><h2>{candidates.length > 1 ? "找到多个可能的地点" : "请确认你想搜索的位置"}</h2></div><span className="candidate-count">{candidates.length} 个候选</span></div><p className="muted">选择最符合你意图的地点，附近搜索会以它为中心。</p><div className="candidate-list">{visibleCandidates.map((candidate, index) => <button type="button" className="candidate-button" key={`${candidate.id ?? candidate.name}-${index}`} onClick={() => onSelect(candidate)}><span className="candidate-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><span className="candidate-content"><strong>{candidate.name}</strong>{candidate.placeType && <span className="candidate-type">{candidate.placeType}</span>}<span>{[candidate.city, candidate.district].filter(Boolean).join(" · ") || "行政区未知"}</span>{candidate.address && <span>{candidate.address}</span>}</span><span className="candidate-arrow" aria-hidden="true">↗</span></button>)}</div>{!expanded && candidates.length > 5 && <button type="button" className="secondary candidate-more" onClick={onExpand}>查看更多地点</button>}</section>;
+  return <section className="candidate-panel" aria-live="polite">
+    <div className="candidate-heading"><h3>{candidates.length > 1 ? "找到多个可能的地点" : "请选择搜索中心"}</h3><span className="candidate-count">{candidates.length} 个候选</span></div>
+    <div className="candidate-list">{visibleCandidates.map((candidate, index) => <button type="button" className="candidate-button" key={(candidate.id ?? candidate.name) + "-" + index} onClick={() => onSelect(candidate)}>
+      <MapPin aria-hidden="true" /><span className="candidate-content"><strong>{candidate.name}</strong>{candidate.placeType && <span>{candidate.placeType}</span>}<span>{[candidate.city, candidate.district].filter(Boolean).join(" · ") || "行政区未知"}</span>{candidate.address && <span>{candidate.address}</span>}</span>
+    </button>)}</div>
+    {!expanded && candidates.length > 5 && <Button variant="outline" className="candidate-more" onClick={onExpand}>查看更多地点</Button>}
+  </section>;
 }
 
 function CategorySelector({ selected, onChange }: { selected: readonly CategoryKey[]; onChange: (next: CategoryKey[]) => void }) {
@@ -414,7 +421,7 @@ function ResultsView({ response, activeFilter, availableFilters, activeResult, p
     : providerPageIsFull
       ? `当前类别最多展示两页，已显示 ${totalPlaces} 个结果。`
       : `已显示全部 ${totalPlaces} 个结果。`;
-  return <section className="results" aria-live="polite"><div className="results-summary"><div><p className="section-kicker">附近发现</p><h2>附近结果</h2><p>{activeFilter === "all" ? `共找到 ${resultCount} 个结果` : `${categoryLabel(activeFilter)} · ${resultCount} 个结果`}</p></div><div className="result-stat"><strong>{resultCount}</strong><span>{successfulCount} 类成功{failedCount > 0 ? ` · ${failedCount} 类失败` : ""}</span></div></div><div className="result-toolbar"><div className="filter-row" role="tablist" aria-label="结果类别">{availableFilters.map((filter) => { const item = filter === "all" ? null : response.categories.find((entry) => entry.category.key === filter); return <button type="button" role="tab" aria-selected={activeFilter === filter} className={activeFilter === filter ? "filter-button active" : "filter-button"} key={filter} onClick={() => onFilterChange(filter)}>{filter === "all" ? "全部" : categoryLabel(filter)}{item?.status === "error" ? " · 失败" : item?.status === "empty" ? " · 空" : ""}</button>; })}</div><label className="sort-control"><span>排序</span><select value={sortMode} onChange={(event) => onSortChange(event.target.value as SortMode)}>{allowedSortModes.map((mode) => <option value={mode} key={mode}>{sortLabel(mode)}</option>)}</select></label></div>{activeFilter !== "all" && activeResult?.status === "error" && <p className="error-text" role="alert">{activeResult.error?.message ?? "该类别暂时无法搜索"}</p>}{activeFilter !== "all" && activeResult?.status === "empty" && <p className="muted">{getEmptyStateMessage(activeFilter)}</p>}{(activeFilter === "all" || activeResult?.status === "success") && <><PlaceList places={places} /><div className="load-more-row">{canLoadMore && <button type="button" className="secondary" onClick={onLoadMore}><span aria-hidden="true">↘</span>加载更多（已显示 {places.length}/{totalPlaces}）</button>}{!canLoadMore && (canRequestProviderPage || providerPageLoading) && <button type="button" className="secondary" onClick={onLoadProviderPage} disabled={providerPageLoading}><span aria-hidden="true">↘</span>{providerPageLoading ? "正在获取更多地点…" : "获取更多附近结果"}</button>}{providerPageError && <p className="error-text" role="status">{providerPageError}</p>}{!canLoadMore && !canRequestProviderPage && !providerPageLoading && !providerPageError && <p className="muted" role="status">{exhaustedMessage}</p>}</div></>}</section>;
+  return <section className="results" aria-live="polite"><div className="results-summary"><div><p className="section-kicker">附近发现</p><h2>附近结果</h2><p>{activeFilter === "all" ? `共找到 ${resultCount} 个结果` : `${categoryLabel(activeFilter)} · ${resultCount} 个结果`}</p></div><div className="result-stat"><strong>{resultCount}</strong><span>{successfulCount} 类成功{failedCount > 0 ? ` · ${failedCount} 类失败` : ""}</span></div></div><div className="result-toolbar"><div className="filter-row" role="tablist" aria-label="结果类别">{availableFilters.map((filter) => { const item = filter === "all" ? null : response.categories.find((entry) => entry.category.key === filter); return <button type="button" role="tab" aria-selected={activeFilter === filter} className={activeFilter === filter ? "filter-button active" : "filter-button"} key={filter} onClick={() => onFilterChange(filter)}>{filter === "all" ? "全部" : categoryLabel(filter)}{item?.status === "error" ? " · 失败" : item?.status === "empty" ? " · 空" : ""}</button>; })}</div><label className="sort-control"><span>排序</span><select aria-label="排序" value={sortMode} onChange={(event) => onSortChange(event.target.value as SortMode)}>{allowedSortModes.map((mode) => <option value={mode} key={mode}>{sortLabel(mode)}</option>)}</select></label></div>{activeFilter !== "all" && activeResult?.status === "error" && <p className="error-text" role="alert">{activeResult.error?.message ?? "该类别暂时无法搜索"}</p>}{activeFilter !== "all" && activeResult?.status === "empty" && <p className="muted">{getEmptyStateMessage(activeFilter)}</p>}{(activeFilter === "all" || activeResult?.status === "success") && <><PlaceList places={places} /><div className="load-more-row">{canLoadMore && <button type="button" className="secondary" onClick={onLoadMore}><span aria-hidden="true">↘</span>加载更多（已显示 {places.length}/{totalPlaces}）</button>}{!canLoadMore && (canRequestProviderPage || providerPageLoading) && <button type="button" className="secondary" onClick={onLoadProviderPage} disabled={providerPageLoading}><span aria-hidden="true">↘</span>{providerPageLoading ? "正在获取更多地点…" : "获取更多附近结果"}</button>}{providerPageError && <p className="error-text" role="status">{providerPageError}</p>}{!canLoadMore && !canRequestProviderPage && !providerPageLoading && !providerPageError && <p className="muted" role="status">{exhaustedMessage}</p>}</div></>}</section>;
 }
 
 function PlaceList({ places }: { places: Place[] }) {

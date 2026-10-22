@@ -1,13 +1,13 @@
 # Project Agent Instructions
 
 - Apply the Global Team Workflow to non-trivial software changes in this repository.
-- Current authorized scope: GitHub Issue #4, Nearby V2.1 Package 1A. Use that Issue as the sole task specification; the original CLI Spike is historical context.
-- Preserve the Next.js App Router / React / TypeScript search and history core. This phase adds the shared shell and four routes with Tailwind v4 and narrowly adapted shadcn/ui primitives.
+- Current authorized scope: GitHub Issue #7, iterating PR #5 on its existing branch. Use Issue #7 as the sole current task specification; Issue #4 and the original CLI Spike are historical context.
+- Preserve the Next.js App Router / React / TypeScript search and history core. Complete Explore interaction restructuring before visual refinement; follow the scope and evidence record in `harness/build/2026-10-23-issue-7-explore.md`.
 - No real map SDK, authentication, favorites/list backend, schema/migrations, production config, CI/Preview trigger changes, master merge or production deployment in this phase.
 - Work only in the Issue's designated worktree and branch. Do not modify the original checkout or consume its environment files.
 - Keep historical Harness evidence. Old deployment instructions are historical authorization, not current actions.
 - Known verification commands: `npm test`, `npm run check`, `npm run build`, and `npm run smoke`.
-- UI verification: `npm run test:browser` after build (local Chrome, isolated memory DB/synthetic provider). There is no lint script. Real-provider smoke requires separate environment readiness and is not a substitute for browser evidence.
+- UI verification: `npm run lint`, `npm run test:browser` after build (local Chrome, isolated memory DB/synthetic provider). Capture desktop/mobile/tablet evidence. Real-provider smoke requires separate environment readiness and is not a substitute for browser evidence.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

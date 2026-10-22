@@ -6,5 +6,5 @@ export const metadata: Metadata = { title: "探索地点" };
 export default async function ExplorePage({ searchParams }: { searchParams: Promise<{ history?: string | string[] }> }) {
   const params = await searchParams;
   const replayHistoryId = typeof params.history === "string" ? params.history : undefined;
-  return <div className="content-page explore-page"><SearchApp replayHistoryId={replayHistoryId} /></div>;
+  return <SearchApp replayHistoryId={replayHistoryId} />;
 }

@@ -8,7 +8,8 @@ import { mock } from "node:test";
 const cookies = new AsyncLocalStorage();
 const records = [];
 const requests = [];
-const state = { version: 1, failNextSearch: false, failCategory: null, slowLongitude: null, failHistoryRead: false, historyDelayMs: 0 };
+const defaults = { version: 1, failNextSearch: false, failCategory: null, slowLongitude: null, failHistoryRead: false, historyDelayMs: 0, resolution: "candidates", resolveDelayMs: 0, candidateCount: 2, resultCount: 1, failPage: false, longNames: false };
+const state = { ...defaults };
 const uiPort = Number(process.env.HISTORY_UI_PORT ?? 3108);
 const browserPort = Number(process.env.HISTORY_BROWSER_PORT ?? 3107);
 const dbNull = Object.freeze({ kind: "database-null" });
@@ -58,6 +59,16 @@ const candidates = [
   { id: "B-test-west", name: "深圳北站西广场", placeType: "火车站", city: "深圳市", district: "龙华区", address: "验收西广场地址", location: { longitude: 114.025, latitude: 22.609 } },
 ];
 
+function fixturePlace(center, category, version, index) {
+  return {
+    id: `${category.key}-${center.longitude}-${index}`, parentId: null, category: category.key,
+    name: `${center.longitude === candidates[1].location.longitude ? "西广场" : "东广场"}最新结果 ${version} · ${category.label}${index ? ` ${index + 1}` : ""}${state.longNames ? "长名称用于验证窄屏换行".repeat(5) : ""}`,
+    longitude: center.longitude, latitude: center.latitude, address: "验收周边地址",
+    distanceMeters: 100 + index * 10, distanceSource: "amap", amapDistanceMeters: 100 + index * 10, computedDistanceMeters: 100 + index * 10,
+    type: null, typecode: null, cost: state.resultCount > 1 ? 100 - index : null, rating: state.resultCount > 1 ? index % 5 : null, tag: null, openTimeToday: null, openTimeWeek: null,
+  };
+}
+
 function reply(response, body, status = 200) {
   response.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" });
   response.end(JSON.stringify(body));
@@ -73,7 +84,7 @@ const server = http.createServer(async (request, response) => {
       records.splice(0, records.length);
       requests.splice(0, requests.length);
       nextId = 0;
-      Object.assign(state, { version: 1, failNextSearch: false, failCategory: null, slowLongitude: null, failHistoryRead: false, historyDelayMs: 0 });
+      Object.assign(state, defaults);
       reply(response, { reset: true }); return;
     }
     if (url.pathname === "/__test/evidence") {
@@ -100,7 +111,18 @@ const server = http.createServer(async (request, response) => {
         response.end(await result.text()); return;
       }
       if (url.pathname === "/api/resolve-location") {
-        reply(response, { status: "needs_confirmation", candidates }); return;
+        const snapshot = { ...state };
+        if (snapshot.resolveDelayMs) await new Promise((resolve) => setTimeout(resolve, snapshot.resolveDelayMs));
+        if (snapshot.resolution === "error") { reply(response, { error: { message: "验收：地点解析暂时失败" } }, 502); return; }
+        if (snapshot.resolution === "empty") { reply(response, { status: "not_found" }); return; }
+        if (snapshot.resolution === "confirmed") { reply(response, { status: "confirmed", location: candidates[1] }); return; }
+        const options = Array.from({ length: snapshot.candidateCount }, (_, index) => index < 2 ? candidates[index] : { ...candidates[1], id: `candidate-${index}`, name: `验收候选地点 ${index} ${snapshot.longNames ? "长名称用于验证窄屏换行".repeat(5) : ""}` });
+        reply(response, { status: "needs_confirmation", candidates: options }); return;
+      }
+      if (url.pathname === "/api/search/page") {
+        if (state.failPage) { reply(response, { error: { message: "验收：第二页暂时失败" } }, 502); return; }
+        const pagePlaces = Array.from({ length: 3 }, (_, index) => fixturePlace(body.center, { key: body.categoryId, label: "第二页" }, state.version, index + 25));
+        reply(response, { categoryId: body.categoryId, page: { pageNumber: 2, pageSize: 25, returnedCount: 3, mayHaveNextApiPage: false, places: pagePlaces } }); return;
       }
       if (url.pathname === "/api/search") {
         const parsed = parseConfirmedSearchRequest(body);
@@ -110,14 +132,9 @@ const server = http.createServer(async (request, response) => {
         const result = await executeResolvedSearch(parsed, {
           geocode: async () => { throw new Error("History must not geocode"); },
           searchNearby: async (center, category) => {
-            if (state.failCategory === category.key) throw new Error("验收：单类别失败");
-            return { pageNumber: 1, pageSize: 25, returnedCount: 1, mayHaveNextApiPage: false, places: [{
-              id: `${category.key}-${center.longitude}`, parentId: null, category: category.key,
-              name: `${center.longitude === candidates[1].location.longitude ? "西广场" : "东广场"}最新结果 ${version} · ${category.label}`,
-              longitude: center.longitude, latitude: center.latitude, address: "验收周边地址",
-              distanceMeters: 100, distanceSource: "amap", amapDistanceMeters: 100, computedDistanceMeters: 100,
-              type: null, typecode: null, cost: null, rating: null, tag: null, openTimeToday: null, openTimeWeek: null,
-            }] };
+            if (state.failCategory === "all" || state.failCategory === category.key) throw new Error("验收：单类别失败");
+            const count = state.resultCount;
+            return { pageNumber: 1, pageSize: 25, returnedCount: count, mayHaveNextApiPage: count === 25, places: Array.from({ length: count }, (_, index) => fixturePlace(center, category, version, index)) };
           },
         }, async () => {});
         log.resultVersion = version; reply(response, result); return;
