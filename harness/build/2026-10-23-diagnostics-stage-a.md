@@ -44,4 +44,13 @@
 - 实际 Chrome 交互：生产构建 UI + 编译后的两条真实 Route Handler，合成高德 fetch、stub history（不连接数据库）。输入地点→候选确认→只选 bakery→搜索→显示结果。2 条 POST 同 session、不同后端 requestId、两条 HTTP 200，24 条结构化日志。证据 `harness/build/diagnostics-stage-a-browser.json`。没有用此结果冒充远程高德或真实数据库证据。
 - 已提供 `docs/diagnostics.md`：Preview 范围开关/重新部署、Chrome 与服务器计时区别、事件、人工小样本、Runtime Logs 筛选/导出、保留期/数量限制、离线 JSONL、故障排查。Preview 变量没有自动更改；远程开启后的真实日志/账户导出权限仍待人工验证。
 
-当前状态：VERIFY（本地通过，远程交付待执行）。下一步：提交/推送当前范围，创建 Draft PR(base master)，等待 Vercel Preview；保持 Draft、不合并，完成后暂停。生产数据库/环境变量未读取或修改，未开展 Stage B。
+## 远程交付与停止点
+
+- 实现提交：`42d97923a11fc91b076e0a819a147428ba9ced6c`，已推送 `origin/perf/search-observability`。
+- Draft PR：[#15](https://github.com/JKd121/nearby-places/pull/15)，base=master，保持 Draft，未标记 Ready、未合并。
+- [Vercel Preview](https://nearby-places-git-perf-search-observability-jk-d.vercel.app) 已由 Git 集成触发，Vercel 状态 **success / Ready**；[部署详情](https://vercel.com/jk-d/nearby-places/657AkVWHSfEwZYaBWCSYxLWcdhUr)。
+- GitHub [CI run 39964667516](https://github.com/JKd121/nearby-places/actions/runs/39964667516)：Tests, types and build **success**；安装、tests、check、build 均成功，基于实现提交 42d9792。
+- 远程无上游探针：Preview 首页重定向 Vercel 登录页；两条 API 无效空请求均被平台保护拦截为 401，不进入业务 handler。没有更改访问保护；远程业务/真实日志/导出需有权限的人工登录会话验证。未执行真实高德采样，未验证本账户套餐/导出权限。
+- 后续仅提交此交付记录和手册链接，不变更已验证实现。临时浏览器代理与本地 Next 测试进程已停止。
+
+当前状态：**STAGE_A_DELIVERED — AWAITING_HUMAN_REVIEW**。Stage A 代码、测试、Draft PR 与 Preview 已交付；远程真实日志验收受上述访问/变量前提限制。暂停开发，等待人工诊断结果和 Stage B 明确授权。生产数据库/环境变量未读取或修改，未开展 Stage B。

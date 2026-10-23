@@ -2,6 +2,8 @@
 
 仅观测。需求：[Issue #14](https://github.com/JKd121/nearby-places/issues/14)。Stage A 结束后等待人工诊断与 Stage B 授权；本版本没有性能优化结论。真实采样尚未执行。
 
+本轮交付：[Draft PR #15](https://github.com/JKd121/nearby-places/pull/15)、[Preview](https://nearby-places-git-perf-search-observability-jk-d.vercel.app)。Vercel 已报告部署 Ready；此 Preview 有访问保护，需在有权限的 Vercel 登录会话中打开。未登录 API 探针返回平台 401、首页跳转登录页，不能当成业务 handler 的响应。不要为测试关闭访问保护；登录后按下列步骤操作。本次没有替用户开启 Preview 日志变量。
+
 ## 开启与关闭（Preview）
 
 1. 打开 Draft PR 的 Vercel Preview，核对部署 commit 与 PR head 一致。不要使用正式域名做本轮诊断。

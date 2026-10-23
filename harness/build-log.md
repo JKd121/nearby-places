@@ -128,4 +128,4 @@
 - 启动 clean、HEAD=最新 origin/master 3bc08d4；独立分支 perf/search-observability，无其他任务修改。
 - 诊断接口注入 + server-only JSON logger/timer/handler，默认关闭详细日志，保留去重脱敏错误；未变更结果、算法、调用顺序、500ms 等待、数据库或 UI。
 - 同 Agent 自审后，116/116、check、build、diff --check PASS；实际 Chrome mock 两条 POST 同 session 不同 request ID、HTTP 200；真实高德/数据库未调用。
-- 方案、环境阻碍与证据：`harness/build/2026-10-23-diagnostics-stage-a.md`；runbook：`docs/diagnostics.md`。远程 Draft PR/Preview 待交付。
+- 方案、环境阻碍与证据：`harness/build/2026-10-23-diagnostics-stage-a.md`；runbook：`docs/diagnostics.md`。实现提交 42d9792，Draft PR #15、Preview Ready、GitHub CI run 39964667516 PASS；Preview 访问保护 401，真实日志采样/导出待人工登录与 Preview 变量开启。当前 STAGE_A_DELIVERED — AWAITING_HUMAN_REVIEW，暂停，不进入 Stage B。

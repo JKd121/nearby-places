@@ -1,10 +1,10 @@
 # Project Harness
 
-- Current State: VERIFY — Nearby Diagnostics v1 Stage A，本地 116/116 + check/build + 实际 Chrome mock 链路通过，仅观测。
+- Current State: STAGE_A_DELIVERED — AWAITING_HUMAN_REVIEW。116/116 + check/build + Chrome mock PASS；Draft PR #15 / Vercel Preview Ready；暂停等待人工诊断与 Stage B 授权。
 - Active Approved Phase: Issue #14 Stage A；用户 2026-10-23 明确要求开发、验证、独立分支提交、Draft PR 和 Vercel Preview，完成后暂停。
 - Current Plan / Evidence: `harness/build/2026-10-23-diagnostics-stage-a.md`
 - Baseline: latest fetched origin/master `3bc08d4f7636b72c7206f1d9e4cb6272c212e41b`; worktree b368; branch `perf/search-observability`。
-- Next Action: 提交 Draft PR，确认 Preview；真实日志采样由人工执行。禁止 Stage B、生产配置/数据库变更、搜索行为或 UI 变更。
+- Next Action: 人工通过有权限的 Vercel 登录会话打开 PR #15 Preview，仅在 Preview 开启日志并重新部署，按 docs/diagnostics.md 采样/导出；未登录 API 受平台保护返回 401。禁止 Stage B、生产配置/数据库变更、搜索行为或 UI 变更。
 - Reconciliation: 旧记录中的历史发布已在 master 的 PR #3 合并；本轮不继续或重复旧任务。
 
 - Project: 地点周边生活服务聚合器
