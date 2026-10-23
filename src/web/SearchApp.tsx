@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, History, MapPin, Search, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, ChevronUp, History, MapPin, Plus, Search } from "lucide-react";
 import { ExploreDialog } from "../components/explore-dialog";
+import { ExploreMapState } from "../components/explore-map-state";
 import { Button } from "../components/ui/button";
 import { useSearchHistory } from "./useSearchHistory";
 import type { SearchHistoryItem, SearchHistoryInput } from "./search-history-store";
@@ -326,26 +327,23 @@ if (hasSuccessfulCategory) {
 
   return <div className="explore-workbench">
     <div className="workspace-toolbar">
-      <h1>探索附近</h1>
+      <h1 className="sr-only">探索附近</h1>
       <div className="workspace-location-row">
-        {resolvedLocation ? <div className="location-summary" aria-live="polite">
-          <MapPin aria-hidden="true" />
-          <div className="location-summary-copy"><strong>{resolvedLocation.name}</strong><span>{[resolvedLocation.city, resolvedLocation.district, resolvedLocation.address].filter(Boolean).join(" · ") || "地址暂无"}</span></div>
-          <Button variant="ghost" size="sm" onClick={clearResolved}>修改地点</Button>
-        </div> : <form className="location-form" onSubmit={(event) => { event.preventDefault(); resolveLocation(); }}>
+        <form className="location-form" onSubmit={(event) => { event.preventDefault(); resolveLocation(); }}>
           <label className="sr-only" htmlFor="location-query">地点</label>
           <div className="location-input-wrap"><Search aria-hidden="true" /><input ref={inputRef} id="location-query" name="location" value={query} onChange={(event) => invalidateLocation(event.target.value)} placeholder="输入地点，例如深圳北站" autoComplete="off" />
             {query && <button type="button" className="clear-input-button" aria-label="清空地点" onClick={clearQuery}>×</button>}
+            <Button type="button" ref={historyTriggerRef} variant="ghost" size="icon" className="history-toggle-button" aria-label="历史记录" aria-expanded={historyOpen} onClick={toggleSearchHistory}><History aria-hidden="true" /></Button>
           </div>
-          <Button type="submit" variant="outline" disabled={busy}>{phase === "resolving" ? "解析中…" : "解析地点"}</Button>
-        </form>}
-        <Button ref={historyTriggerRef} variant="ghost" size="icon" className="history-toggle-button" aria-label="历史记录" aria-expanded={historyOpen} onClick={toggleSearchHistory}><History aria-hidden="true" /></Button>
-      </div>
-      <div className="workspace-condition-row">
-        <Button ref={conditionTriggerRef} variant="outline" className="condition-trigger" aria-label="附近生活服务" aria-expanded={conditionsOpen} disabled={phase === "resolving"} onClick={() => setConditionsOpen(true)}>
-          <SlidersHorizontal aria-hidden="true" /><span>{conditionSummary}</span><span className="condition-radius">{radiusMeters / 1000} km</span><ChevronDown aria-hidden="true" />
-        </Button>
-        <Button onClick={() => void searchNearby()} disabled={!resolvedLocation || noCategoriesSelected || busy}>{phase === "searching" ? "搜索中…" : "搜索附近"}</Button>
+          <Button type="submit" variant="outline" className="location-parse" disabled={busy}>{phase === "resolving" ? "解析中…" : "解析地点"}</Button>
+        </form>
+        <div className="location-summary" aria-live="polite">
+          {resolvedLocation ? <>
+          <MapPin aria-hidden="true" />
+          <div className="location-summary-copy"><strong>{resolvedLocation.name}</strong><span>{[resolvedLocation.city, resolvedLocation.district, resolvedLocation.address].filter(Boolean).join(" · ") || "地址暂无"}</span></div>
+          <Button variant="ghost" size="sm" onClick={clearResolved}>修改地点</Button>
+          </> : <span className="location-unconfirmed">解析地点后，选择并确认搜索中心</span>}
+        </div>
       </div>
       <div className="workspace-feedback" aria-live="polite">
         {phase === "resolving" && <span role="status">正在查找地点…</span>}
@@ -356,6 +354,16 @@ if (hasSuccessfulCategory) {
         {replayHistoryId && history.loadError && <span className="replay-message" role="alert">暂时无法读取历史。<button type="button" onClick={() => void history.refresh(true)} disabled={history.loading}>重试读取历史</button></span>}
         {replayError && <span className="replay-message" role="alert">{replayError}</span>}
       </div>
+    </div>
+
+    <div className="workspace-condition-row" aria-label="附近搜索条件">
+      <h2>附近生活服务</h2>
+      <div className="workspace-category-strip">
+        {CATEGORIES.slice(0, 5).map((category) => <button type="button" className="workspace-category" key={category.key} aria-pressed={selectedCategoryIds.includes(category.key)} disabled={phase === "resolving"} onClick={() => changeCategories(toggleCategory(selectedCategoryIds, category.key))}>{category.label}</button>)}
+        <Button ref={conditionTriggerRef} variant="ghost" className="condition-trigger" aria-label="附近生活服务" aria-expanded={conditionsOpen} disabled={phase === "resolving"} onClick={() => setConditionsOpen(true)}><Plus aria-hidden="true" /><span>更多类别</span><span className="sr-only">{conditionSummary} · {radiusMeters / 1000} km</span></Button>
+      </div>
+      <label className="workspace-radius"><span>搜索范围</span><select aria-label="搜索范围" value={radiusMeters} disabled={phase === "resolving"} onChange={(event) => changeRadius(event.target.value)}>{ALLOWED_RADIUS_METERS.map((radius) => <option key={radius} value={radius}>{radius / 1000} km</option>)}</select></label>
+      <Button className="workspace-search" onClick={() => void searchNearby()} disabled={!resolvedLocation || noCategoriesSelected || busy}><Search aria-hidden="true" />{phase === "searching" ? "搜索中…" : "搜索附近"}</Button>
     </div>
 
     <div className="workspace-body">
@@ -375,10 +383,7 @@ if (hasSuccessfulCategory) {
           /> : <div className="workspace-empty"><strong>{resolvedLocation ? "已确认搜索中心" : "从一个地点开始"}</strong><p>{resolvedLocation ? "调整类别与半径，搜索附近的地点。" : "输入目的地并确认位置，即可搜索附近。"}</p></div>}
         </div>
       </section>
-      <aside className="workspace-map" aria-label="地图工作区">
-        <div className="map-disclosure"><span className="visitor-dot" /><strong>地图工作区</strong><span>地图尚未接入</span></div>
-        {resolvedLocation && <div className="map-center-summary"><MapPin aria-hidden="true" /><span>搜索中心 · {resolvedLocation.name}</span></div>}
-      </aside>
+      <ExploreMapState location={resolvedLocation} radiusMeters={radiusMeters} />
     </div>
 
     <ExploreDialog open={phase === "needs-confirmation"} onOpenChange={(open) => { if (!open) setPhase("initial"); }} title="确认地点" description="选择搜索中心，再查看附近。" onCloseAutoFocus={(event) => restoreDialogFocus(event, "location")}>

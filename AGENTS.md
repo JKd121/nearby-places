@@ -1,8 +1,9 @@
 # Project Agent Instructions
 
 - Apply the Global Team Workflow to non-trivial software changes in this repository.
-- Current authorized scope: GitHub Issue #7, iterating PR #5 on its existing branch. Use Issue #7 as the sole current task specification; Issue #4 and the original CLI Spike are historical context.
-- Preserve the Next.js App Router / React / TypeScript search and history core. Complete Explore interaction restructuring before visual refinement; follow the scope and evidence record in `harness/build/2026-10-23-issue-7-explore.md`.
+- Current authority: GitHub Issue #10 Stage B only. Base is PR #5 at6975b3d; approved visual reference is PR #9 atcc88851. Use the independent Stage B worktree/branch, never merge the whole prototype branch.
+- Preserve SearchApp API/search/history contracts and the shared Shell; selectively adapt approved Explore layout, then implement UX #6 in a separate commit with dedicated tests. Plan/evidence: `harness/build/2026-10-23-issue-10-stage-b.md`.
+- No demo data/bookmarks or fake geographic roads in production UI. Map integration is deferred pending browser SDK/key/domain readiness; clearly label the non-geographic center/radius schematic. Existing navigation size discontinuity is non-blocking, not a reason to redesign navigation.
 - No real map SDK, authentication, favorites/list backend, schema/migrations, production config, CI/Preview trigger changes, master merge or production deployment in this phase.
 - Work only in the Issue's designated worktree and branch. Do not modify the original checkout or consume its environment files.
 - Keep historical Harness evidence. Old deployment instructions are historical authorization, not current actions.

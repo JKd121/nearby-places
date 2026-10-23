@@ -1,6 +1,13 @@
 # Project Harness
 
-## Current phase — Issue #7 / Explore interaction and visual refinement
+## Current phase — Issue #10 / Stage B integration
+
+- Authority: Issue #10 (created2026-10-23T04:33:46Z), expressly authorizes B1, B2 UX #6, checks and a separate stacked PR; no merge/production/Issue closure.
+- Worktree `C:\Users\lenovo\.codex\worktrees\nearby-v2-1-stage-b\地点聚合器`, branch `codex/nearby-v2-1-stage-b`, entry6975b3d clean. PR #5/base master and PR #9/reference heads verified unchanged. Original dirty checkout and both existing Worktrees preserved.
+- State B1_VERIFIED:103 Node tests,18 browser tests40.1s, lint/types/build passed. Goal/scope/mapping/checkpoints/verification: `harness/build/2026-10-23-issue-10-stage-b.md`. Next: commit B1 independently, then implement B2 UX #6 and its own tests. No whole-branch prototype merge; no copied demo route/assets/evidence/instructions.
+- Map: no existing browser SDK/key/domain readiness proven; use clearly disclosed non-geographic center/radius schematic without invented roads/positions. Real map is an explicit pre-release follow-up, no credentials/config edits.
+
+## Previous phase — Issue #7 / Explore interaction and visual refinement
 
 - Sole current task source: https://github.com/JKd121/nearby-places/issues/7. User authorized implementation on PR #5's existing branch and updating that PR; no merge or production deployment.
 - Workspace/branch: `C:\Users\lenovo\.codex\worktrees\nearby-v2-1-package1\地点聚合器` / `codex/nearby-v2.1-package1`; entry `c66dfdcd2dafd43d768b9867adaa6bdc7550e596`, clean and equal to remote/PR head.
