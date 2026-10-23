@@ -6,7 +6,7 @@ test.beforeEach(async ({ request }) => { await request.post("/__test/reset"); })
 
 for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "tablet", width: 820, height: 1180 }, { name: "mobile", width: 390, height: 844 }]) {
   test("B1 formal layout and actual API state " + viewport.name, async ({ page, request }) => {
-    await fs.mkdir(evidence + "/b1", { recursive: true });
+    await fs.mkdir(evidence + "/final", { recursive: true });
     await page.setViewportSize(viewport);
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
@@ -38,8 +38,8 @@ for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "
       expect(map!.x).toBeGreaterThan(list!.x);
     } else expect(map!.y + map!.height).toBeCloseTo(list!.y, 0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight + 1)).toBe(true);
-    await page.screenshot({ path: evidence + "/b1/explore-" + viewport.name + ".png", fullPage: true, animations: "disabled" });
-    await fs.writeFile(evidence + "/b1/" + viewport.name + "-geometry.json", JSON.stringify({ viewport, workspace, list, map }, null, 2));
+    await page.screenshot({ path: evidence + "/final/explore-" + viewport.name + ".png", fullPage: true, animations: "disabled" });
+    await fs.writeFile(evidence + "/final/" + viewport.name + "-geometry.json", JSON.stringify({ viewport, workspace, list, map }, null, 2));
     const data = await (await request.get("/__test/evidence")).json();
     const searches = data.requests.filter((r: { path: string }) => r.path === "/api/search");
     expect(searches).toHaveLength(1);
@@ -74,6 +74,31 @@ test("B1 formal workspace breakpoint bounds and controls", async ({ page }) => {
     await expect(page.getByRole("button", { name: "附近生活服务", exact: true })).toBeFocused();
     geometry.push({ width, workspace, list, map });
   }
-  await fs.mkdir(evidence + "/b1", { recursive: true });
-  await fs.writeFile(evidence + "/b1/breakpoints.json", JSON.stringify(geometry, null, 2));
+  await fs.mkdir(evidence + "/final", { recursive: true });
+  await fs.writeFile(evidence + "/final/breakpoints.json", JSON.stringify(geometry, null, 2));
+});
+
+test("B1 horizontal category and radius controls submit the current real snapshot", async ({ page, request }) => {
+  await page.goto("/explore");
+  await page.getByLabel("地点", { exact: true }).fill("深圳北站");
+  await page.getByRole("button", { name: "解析地点", exact: true }).click();
+  await page.getByRole("button", { name: /深圳北站西广场/ }).click();
+  await page.getByRole("button", { name: "酒店", exact: true }).click();
+  await expect(page.getByRole("button", { name: "酒店", exact: true })).toHaveAttribute("aria-pressed", "false");
+  await page.getByLabel("搜索范围", { exact: true }).selectOption("2000");
+  await expect(page.getByTestId("search-range-indicator")).toHaveText("2 km");
+  await page.getByRole("button", { name: "搜索附近", exact: true }).click();
+  await expect(page.locator(".place-row")).toHaveCount(9);
+  const data = await (await request.get("/__test/evidence")).json();
+  const searches = data.requests.filter((r: { path: string }) => r.path === "/api/search");
+  expect(searches).toHaveLength(1);
+  expect(searches[0].body.radiusMeters).toBe(2000);
+  expect(searches[0].body.categoryIds).toHaveLength(9);
+  expect(searches[0].body.categoryIds).not.toContain("hotel");
+  await page.getByRole("button", { name: "附近生活服务", exact: true }).click();
+  await expect(page.getByLabel("2 km", { exact: true })).toBeChecked();
+  await page.getByRole("button", { name: "清空", exact: true }).click();
+  await page.getByRole("button", { name: "收起条件" }).click();
+  await expect(page.getByRole("button", { name: "搜索附近", exact: true })).toBeDisabled();
+  await expect(page.getByText("请至少选择一个类别。")).toBeVisible();
 });

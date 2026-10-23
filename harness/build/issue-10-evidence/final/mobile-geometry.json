@@ -1,0 +1,25 @@
+{
+  "viewport": {
+    "name": "mobile",
+    "width": 390,
+    "height": 844
+  },
+  "workspace": {
+    "x": 0,
+    "y": 299,
+    "width": 390,
+    "height": 545
+  },
+  "list": {
+    "x": 0,
+    "y": 615.109375,
+    "width": 390,
+    "height": 228.890625
+  },
+  "map": {
+    "x": 0,
+    "y": 299,
+    "width": 390,
+    "height": 316.109375
+  }
+}

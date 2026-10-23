@@ -1,0 +1,44 @@
+{
+  "baseline": "6975b3d89918827fa94dc53ac8af24ad69d6f528",
+  "visualReference": "cc88851791f1f513b758d2d0c0a0915c1739716f",
+  "runtimeHashes": {
+    "app/explore.css": "896904253376ac05709897e6c999bebddb3857d87508790eeb5104d2d1a3f48a",
+    "src/web/SearchApp.tsx": "051e29a1fb4db94195e364bb37212be8e8e1d85ef5e9d89ea9d8372ee5f13c75",
+    "src/components/explore-map-state.tsx": "669e04f1aed2dd69669bf53943320d5f217ba4653115755c1537c49bd4c72f9e"
+  },
+  "screenshots": [
+    {
+      "path": "harness/build/issue-10-evidence/final/explore-desktop.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "15c915a6dd6b4a1c2d8a6879307a622b03fefbab5d4e2b5ab3052a075755ec07"
+    },
+    {
+      "path": "harness/build/issue-10-evidence/final/explore-tablet.png",
+      "width": 820,
+      "height": 1180,
+      "sha256": "f1e2f67d460733d06acf01eb740669610d1546fa46aa92d36dc19f1849a65aa4"
+    },
+    {
+      "path": "harness/build/issue-10-evidence/final/explore-mobile.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "4e65706a56a5917544b61540f97d816de2b6ef3fcc05d4d3fbbdb6f84f9c6faa"
+    }
+  ],
+  "verification": {
+    "lint": "PASS",
+    "types": "PASS",
+    "nodeTests": {
+      "passed": 103,
+      "failed": 0
+    },
+    "productionBuild": "PASS",
+    "browserTests": {
+      "passed": 25,
+      "failed": 0
+    },
+    "liveAmapAndDatabase": "NOT_RUN",
+    "independentVisualReview": "PENDING"
+  }
+}
