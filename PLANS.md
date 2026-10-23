@@ -4,7 +4,7 @@
 
 - Authority: Issue #10 (created2026-10-23T04:33:46Z), expressly authorizes B1, B2 UX #6, checks and a separate stacked PR; no merge/production/Issue closure.
 - Worktree `C:\Users\lenovo\.codex\worktrees\nearby-v2-1-stage-b\地点聚合器`, branch `codex/nearby-v2-1-stage-b`, entry6975b3d clean. PR #5/base master and PR #9/reference heads verified unchanged. Original dirty checkout and both existing Worktrees preserved.
-- State B1_VERIFIED:103 Node tests,18 browser tests40.1s, lint/types/build passed. Goal/scope/mapping/checkpoints/verification: `harness/build/2026-10-23-issue-10-stage-b.md`. Next: commit B1 independently, then implement B2 UX #6 and its own tests. No whole-branch prototype merge; no copied demo route/assets/evidence/instructions.
+- State B2_VERIFIED: B1 commit2eb9253 independently verified18 browser cases; B2 six dedicated UX cases and full24 browser tests48.8s,103 Node tests, lint/types/build PASS. Plan/evidence: `harness/build/2026-10-23-issue-10-stage-b.md`. Next: independent B2 commit, final review/evidence and stacked PR, then wait for human review. No whole-branch prototype merge; no copied demo route/assets/evidence/instructions.
 - Map: no existing browser SDK/key/domain readiness proven; use clearly disclosed non-geographic center/radius schematic without invented roads/positions. Real map is an explicit pre-release follow-up, no credentials/config edits.
 
 ## Previous phase — Issue #7 / Explore interaction and visual refinement

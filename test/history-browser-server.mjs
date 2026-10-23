@@ -8,7 +8,7 @@ import { mock } from "node:test";
 const cookies = new AsyncLocalStorage();
 const records = [];
 const requests = [];
-const defaults = { version: 1, failNextSearch: false, failCategory: null, slowLongitude: null, failHistoryRead: false, historyDelayMs: 0, resolution: "candidates", resolveDelayMs: 0, candidateCount: 2, resultCount: 1, failPage: false, longNames: false };
+const defaults = { version: 1, failNextSearch: false, failCategory: null, slowLongitude: null, failHistoryRead: false, historyDelayMs: 0, resolution: "candidates", resolveDelayMs: 0, candidateCount: 2, candidateLabel: null, resultCount: 1, failPage: false, longNames: false };
 const state = { ...defaults };
 const uiPort = Number(process.env.HISTORY_UI_PORT ?? 3108);
 const browserPort = Number(process.env.HISTORY_BROWSER_PORT ?? 3107);
@@ -117,7 +117,7 @@ const server = http.createServer(async (request, response) => {
         if (snapshot.resolution === "empty") { reply(response, { status: "not_found" }); return; }
         if (snapshot.resolution === "confirmed") { reply(response, { status: "confirmed", location: candidates[1] }); return; }
         const options = Array.from({ length: snapshot.candidateCount }, (_, index) => index < 2 ? candidates[index] : { ...candidates[1], id: `candidate-${index}`, name: `验收候选地点 ${index} ${snapshot.longNames ? "长名称用于验证窄屏换行".repeat(5) : ""}` });
-        reply(response, { status: "needs_confirmation", candidates: options }); return;
+        reply(response, { status: "needs_confirmation", candidates: snapshot.candidateLabel ? options.map((option, index) => ({ ...option, name: `${snapshot.candidateLabel} ${index + 1}` })) : options }); return;
       }
       if (url.pathname === "/api/search/page") {
         if (state.failPage) { reply(response, { error: { message: "验收：第二页暂时失败" } }, 502); return; }

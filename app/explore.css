@@ -81,6 +81,9 @@
 .explore-dialog .history-feedback { margin-top: 14px; }
 .explore-dialog .history-feedback .ui-button { margin-top: 8px; }
 .error-text { color: var(--danger); }
+.location-refine-help { color: #617471; font-size: 12px; overflow-wrap: anywhere; }
+.refine-location-button { width: 100%; min-height: 44px; padding: 6px 0; border: 0; background: transparent; color: #526b63; text-align: left; font-size: 13px; line-height: 1.6; white-space: normal; overflow-wrap: anywhere; }
+.refine-location-button:hover { color: #087466; text-decoration: underline; text-underline-offset: 3px; }
 .workbench-results .results-summary { display: none; }
 .workbench-results .result-toolbar { padding: 12px 20px; border-bottom: 1px solid var(--border); }
 .workbench-results .filter-row { display: flex; gap: 5px; flex-wrap: wrap; }
