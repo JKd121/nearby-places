@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "node:fs/promises";
 
-const evidence = "harness/build/issue-10-evidence";
+const evidence = process.env.STAGE_B_EVIDENCE_DIR ?? "harness/build/issue-10-evidence";
 test.beforeEach(async ({ request }) => { await request.post("/__test/reset"); });
 
 for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "tablet", width: 820, height: 1180 }, { name: "mobile", width: 390, height: 844 }]) {
@@ -14,7 +14,8 @@ for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "
     await page.goto("/explore");
     await page.getByLabel("地点", { exact: true }).fill("深圳北站");
     await page.getByRole("button", { name: "解析地点", exact: true }).click();
-    await expect(page.getByRole("dialog", { name: "确认地点" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "地点解析候选" })).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     await page.getByRole("button", { name: /深圳北站西广场/ }).click();
     await page.getByRole("button", { name: "附近生活服务", exact: true }).click();
     await page.getByRole("button", { name: "清空", exact: true }).click();

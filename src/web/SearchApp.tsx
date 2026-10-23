@@ -61,6 +61,7 @@ export default function SearchApp({ replayHistoryId }: { replayHistoryId?: strin
   const [historyOpen, setHistoryOpen] = useState(false);
   const requestId = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const candidateRegionRef = useRef<HTMLDivElement>(null);
   const attemptedReplayId = useRef<string | undefined>(undefined);
   const [replayError, setReplayError] = useState<string | null>(null);
   const [conditionsOpen, setConditionsOpen] = useState(false);
@@ -204,14 +205,15 @@ export default function SearchApp({ replayHistoryId }: { replayHistoryId?: strin
       const payload = await readJson(result) as ResolutionApiResponse | null;
       if (currentId !== requestId.current) return;
       if (!result.ok) throw new Error(payload?.error?.message ?? "地点解析失败");
-      if (payload?.status === "needs_confirmation") { setIsRefiningQuery(false); setCandidates(payload.candidates ?? []); setPhase("needs-confirmation"); return; }
-      if (payload?.status === "not_found") { setPhase("not-found"); return; }
+      if (payload?.status === "needs_confirmation") { setIsRefiningQuery(false); setCandidates(payload.candidates ?? []); setPhase("needs-confirmation"); requestAnimationFrame(() => candidateRegionRef.current?.focus()); return; }
+      if (payload?.status === "not_found") { setPhase("not-found"); requestAnimationFrame(() => candidateRegionRef.current?.focus()); return; }
       if (payload?.status !== "confirmed" || !payload.location) {
         throw new Error("地点解析失败");
       }
       // Resolver confidence is not user consent. Even an address response must
       // be clicked once; saved confirmed-history replay remains a separate path.
       setIsRefiningQuery(false); setCandidates([payload.location]); setPhase("needs-confirmation");
+      requestAnimationFrame(() => candidateRegionRef.current?.focus());
     } catch (error) {
       if (currentId !== requestId.current) return;
       setPublicError(error instanceof Error ? error.message : "地点解析失败"); setPhase("resolve-error");
@@ -222,6 +224,7 @@ export default function SearchApp({ replayHistoryId }: { replayHistoryId?: strin
     setIsRefiningQuery(false);
     requestId.current += 1;
     setResolvedLocation(candidate); setResolvedQuery(query.trim()); setCandidates([]); setShowAllCandidates(false); setPublicError(null); resetView(); setPhase("resolved");
+    requestAnimationFrame(() => conditionTriggerRef.current?.focus());
   }
 
   function clearResolved(): void {
@@ -347,26 +350,28 @@ if (hasSuccessfulCategory) {
     <div className="workspace-toolbar">
       <h1 className="sr-only">探索附近</h1>
       <div className="workspace-location-row">
-        <form className="location-form" onSubmit={(event) => { event.preventDefault(); resolveLocation(); }}>
+        {!resolvedLocation ? <form className="location-form" onSubmit={(event) => { event.preventDefault(); resolveLocation(); }}>
           <label className="sr-only" htmlFor="location-query">地点</label>
           <div className="location-input-wrap"><Search aria-hidden="true" /><input ref={inputRef} id="location-query" name="location" value={query} onChange={(event) => invalidateLocation(event.target.value)} aria-describedby={isRefiningQuery ? "location-refine-help" : undefined} placeholder="输入地点，例如深圳北站" autoComplete="off" />
             {query && <button type="button" className="clear-input-button" aria-label="清空地点" onClick={clearQuery}>×</button>}
-            <Button type="button" ref={historyTriggerRef} variant="ghost" size="icon" className="history-toggle-button" aria-label="历史记录" aria-expanded={historyOpen} onClick={toggleSearchHistory}><History aria-hidden="true" /></Button>
           </div>
-          <Button type="submit" variant="outline" className="location-parse" disabled={busy}>{phase === "resolving" ? "解析中…" : "解析地点"}</Button>
-        </form>
-        <div className="location-summary" aria-live="polite">
-          {resolvedLocation ? <>
+          <Button type="submit" variant="outline" className="location-parse" aria-controls="location-candidates" aria-expanded={phase === "needs-confirmation" || phase === "not-found"} disabled={busy}>{phase === "resolving" ? "解析中…" : "解析地点"}</Button>
+        </form> : <div className="location-summary location-summary-compact" aria-live="polite">
           <MapPin aria-hidden="true" />
           <div className="location-summary-copy"><strong>{resolvedLocation.name}</strong><span>{[resolvedLocation.city, resolvedLocation.district, resolvedLocation.address].filter(Boolean).join(" · ") || "地址暂无"}</span></div>
           <Button variant="ghost" size="sm" onClick={clearResolved}>修改地点</Button>
-          </> : <span className="location-unconfirmed">解析地点后，选择并确认搜索中心</span>}
-        </div>
+        </div>}
+        <Button type="button" ref={historyTriggerRef} variant="ghost" size="icon" className="history-toggle-button" aria-label="历史记录" aria-expanded={historyOpen} onClick={toggleSearchHistory}><History aria-hidden="true" /></Button>
       </div>
+      {(phase === "needs-confirmation" || phase === "not-found") && <div id="location-candidates" className="location-candidates" role="region" aria-label="地点解析候选" tabIndex={-1} ref={candidateRegionRef} onKeyDown={(event) => {
+        if (event.key === "Escape") { event.preventDefault(); setCandidates([]); setShowAllCandidates(false); setPhase("initial"); inputRef.current?.focus(); }
+      }}>
+        {phase === "not-found" ? <p role="status">暂未找到匹配地点，请补充更完整的名称。</p> : <CandidateList candidates={candidates} expanded={showAllCandidates} onExpand={() => { setShowAllCandidates(true); requestAnimationFrame(() => candidateRegionRef.current?.focus()); }} onSelect={confirmCandidate} />}
+        <button type="button" className="refine-location-button" onClick={refineLocationQuery}>{phase === "not-found" ? "暂未找到匹配地点，试试补充城市或区域信息 →" : "没找到想要的地点？试试补充城市、区域或街道信息 →"}</button>
+      </div>}
       <div className="workspace-feedback" aria-live="polite">
         {isRefiningQuery && <p id="location-refine-help" className="location-refine-help">可在原名称后补充城市、区域、商圈或街道，例如：全季酒店 上海静安</p>}
         {phase === "resolving" && <span role="status">正在查找地点…</span>}
-        {phase === "not-found" && <span role="status">没有找到明确地点，请补充城市或更完整的名称。</span>}
         {phase === "resolve-error" && <span className="error-text" role="alert">{publicError}</span>}
         {noCategoriesSelected && <span className="error-text">请至少选择一个类别。</span>}
         {replayHistoryId && !history.hasLoaded && !history.loadError && <span className="replay-message" role="status">正在恢复原来的搜索条件…</span>}
@@ -405,9 +410,6 @@ if (hasSuccessfulCategory) {
       <ExploreMapState location={resolvedLocation} radiusMeters={radiusMeters} />
     </div>
 
-    <ExploreDialog open={phase === "needs-confirmation" || phase === "not-found"} onOpenChange={(open) => { if (!open) setPhase("initial"); }} title="确认地点" description="选择搜索中心，再查看附近。" onCloseAutoFocus={(event) => restoreDialogFocus(event, "location")} footer={<button type="button" className="refine-location-button" onClick={refineLocationQuery}>{phase === "not-found" ? "暂未找到匹配地点，试试补充城市或区域信息 →" : "没找到想要的地点？试试补充城市、区域或街道信息 →"}</button>}>
-      {phase === "not-found" ? <p role="status">暂未找到匹配地点，请补充更完整的名称。</p> : <CandidateList candidates={candidates} expanded={showAllCandidates} onExpand={() => setShowAllCandidates(true)} onSelect={confirmCandidate} />}
-    </ExploreDialog>
     <ExploreDialog open={conditionsOpen} onOpenChange={setConditionsOpen} title="附近生活服务" description="选择服务类别与搜索半径。" onCloseAutoFocus={(event) => restoreDialogFocus(event, "conditions")} footer={<><Button variant="ghost" onClick={() => setConditionsOpen(false)}>收起条件</Button><Button onClick={() => { focusResultsAfterClose.current = true; void searchNearby(); }} disabled={!resolvedLocation || noCategoriesSelected || busy}>搜索附近</Button></>}>
       <CategorySelector selected={selectedCategoryIds} onChange={changeCategories} />
       <fieldset className="radius-selector"><legend>搜索半径</legend><div className="radius-options">{ALLOWED_RADIUS_METERS.map((radius) => <label className="option-pill" key={radius}><input type="radio" name="radius" value={radius} checked={radiusMeters === radius} onChange={(event) => changeRadius(event.target.value)} />{radius / 1000} km</label>)}</div></fieldset>

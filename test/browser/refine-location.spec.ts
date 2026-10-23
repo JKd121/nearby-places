@@ -1,7 +1,7 @@
 import { test, expect, type Page, type APIRequestContext } from "@playwright/test";
 import fs from "node:fs/promises";
 
-const evidence = "harness/build/issue-10-evidence/ux6";
+const evidence = process.env.UX6_EVIDENCE_DIR ?? "harness/build/issue-10-evidence/ux6";
 const refineButton = (page: Page) => page.getByRole("button", { name: /没找到想要的地点？试试补充/ });
 const input = (page: Page) => page.getByLabel("地点", { exact: true });
 const parse = (page: Page) => page.getByRole("button", { name: "解析地点", exact: true });
@@ -70,7 +70,8 @@ test("UX6 not-found entry, helper clear and empty-query validation", async ({ pa
   await page.goto("/explore");
   await input(page).fill("未命中名称");
   await parse(page).click();
-  await expect(page.getByRole("dialog", { name: "确认地点" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "地点解析候选" })).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: /暂未找到匹配地点，试试补充/ }).click();
   await expect(input(page)).toBeFocused();
   await expect(input(page)).toHaveValue("未命中名称");
@@ -94,7 +95,8 @@ test("UX6 fresh confirmed address requires a click and retains coordinates", asy
   await input(page).fill("深圳市龙华区某街道地址");
   await parse(page).click();
   await expect(page.locator(".candidate-button")).toHaveCount(1);
-  await expect(page.getByRole("dialog")).toContainText("验收西广场地址");
+  await expect(page.getByRole("region", { name: "地点解析候选" })).toContainText("验收西广场地址");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.getByTestId("search-center-indicator")).toHaveCount(0);
   await noNearby(request);
   await page.keyboard.press("Escape");
@@ -133,6 +135,7 @@ test("UX6 out-of-order response cannot replace new candidates or edited input", 
   await staleResponse;
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(input(page)).toHaveValue("再次编辑而未提交");
+  await expect(page.getByRole("region", { name: "地点解析候选" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "搜索附近", exact: true })).toBeDisabled();
   await noNearby(request);
 });
@@ -144,6 +147,7 @@ test("UX6 history replay closes helper and directly reuses saved confirmed cente
   await page.getByRole("button", { name: /深圳北站西广场/ }).click();
   await page.getByRole("button", { name: "搜索附近", exact: true }).click();
   await expect.poll(async () => (await apiEvidence(request)).records.length).toBe(1);
+  await page.getByRole("button", { name: "修改地点" }).click();
   await input(page).fill("全季酒店");
   await parse(page).click();
   await refineButton(page).click();
@@ -151,6 +155,7 @@ test("UX6 history replay closes helper and directly reuses saved confirmed cente
   await page.getByRole("button", { name: "历史记录", exact: true }).click();
   await page.getByRole("button", { name: /深圳北站西广场.*10 个类别/ }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "地点解析候选" })).toHaveCount(0);
   await expect(page.locator("#location-refine-help")).toHaveCount(0);
   await expect(page.locator(".location-summary")).toContainText("深圳北站西广场");
   await expect.poll(async () => (await apiEvidence(request)).requests.filter((r: { path: string }) => r.path === "/api/search").length).toBe(2);

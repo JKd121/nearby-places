@@ -1,6 +1,12 @@
 # Project Harness
 
-## Current phase — Issue #10 / Stage B integration
+## Current phase — Issue #12 / inline location candidates
+
+- Sole current task: Issue #12; PR #11 existing branch/worktree. Entrya5cfc93 clean, equal PR/remote. No baseline conflict. Only candidate placement/collapse and top input↔confirmed-summary lifecycle; retain UX #6, explicit selection, stale-response guards and direct history replay.
+- Plan: SearchApp replaces only the candidate ExploreDialog with a bounded in-flow region below original input; candidate-only CSS, necessary top-summary rules and affected tests. Conditions/history Dialog, categories/radius/map/results/global navigation and API/DB unchanged. Desktop/phone actual expanded→confirmed screenshots plus related regressions/lint/types/build. Preserve prior evidence; one Issue #12 commit and update PR #11, then stop.
+- State LOCAL_VERIFIED / AWAITING_REVIEW:27/27 browser tests50.4s,103 Node tests,lint/types/build PASS; four actual expanded/confirmed screenshots self-reviewed. Scope/results: `harness/build/issue-12-evidence/README.md`. One independent Issue #12 commit, update existing PR #11, then stop for the next human review; no next repair authorized.
+
+## Previous phase — Issue #10 / Stage B integration
 
 - Authority: Issue #10 (created2026-10-23T04:33:46Z), expressly authorizes B1, B2 UX #6, checks and a separate stacked PR; no merge/production/Issue closure.
 - Worktree `C:\Users\lenovo\.codex\worktrees\nearby-v2-1-stage-b\地点聚合器`, branch `codex/nearby-v2-1-stage-b`, entry6975b3d clean. PR #5/base master and PR #9/reference heads verified unchanged. Original dirty checkout and both existing Worktrees preserved.

@@ -34,14 +34,15 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 820, height: 1180
     await bounded(page);
     await page.getByLabel("地点", { exact: true }).fill("深圳北站");
     await page.getByRole("button", { name: "解析地点", exact: true }).click();
-    const dialog = page.getByRole("dialog", { name: "确认地点" });
+    const dialog = page.getByRole("region", { name: "地点解析候选" });
     await expect(dialog).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     await capture(page, "explore-" + viewport.width + "-candidates");
     await page.getByRole("button", { name: "查看更多地点" }).click();
     await expect(page.locator(".candidate-button")).toHaveCount(14);
     const geometry = await dialog.boundingBox();
     expect(geometry!.height).toBeLessThan(viewport.height);
-    await expect(page.locator(".explore-dialog-body")).toBeVisible();
+    await expect(page.locator(".candidate-list")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.getByLabel("地点", { exact: true })).toBeFocused();
     await page.getByRole("button", { name: "解析地点", exact: true }).click();
@@ -91,8 +92,8 @@ test("resolver loading, not found, failure, direct confirmation and stale respon
   // it stuck in resolving. The editing entry is unavailable until it settles.
   await expect(page.getByRole("button", { name: "附近生活服务", exact: true })).toBeDisabled();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page.getByText(/没有找到明确地点/)).toBeVisible();
-  await expect(page.getByRole("dialog", { name: "确认地点" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "地点解析候选" })).toContainText("暂未找到匹配地点");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: /暂未找到匹配地点，试试补充/ }).click();
   await expect(page.getByRole("button", { name: "附近生活服务", exact: true })).toBeEnabled();
   await setConditions(page);
@@ -106,11 +107,11 @@ test("resolver loading, not found, failure, direct confirmation and stale respon
   await page.getByRole("button", { name: "解析地点", exact: true }).click();
   await page.getByLabel("地点", { exact: true }).fill("另一个地点");
   await page.waitForTimeout(950); // Wait past the deliberately stale fixture response.
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "地点解析候选" })).toHaveCount(0);
   await request.post("/__test/control", { data: { resolution: "confirmed", resolveDelayMs: 0 } });
   await page.getByRole("button", { name: "解析地点", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "确认地点" })).toBeVisible();
-  await expect(page.locator(".location-summary")).not.toContainText("深圳北站西广场");
+  await expect(page.getByRole("region", { name: "地点解析候选" })).toBeVisible();
+  await expect(page.locator(".location-summary")).toHaveCount(0);
   await page.getByRole("button", { name: /深圳北站西广场/ }).click();
   await expect(page.locator(".location-summary")).toContainText("深圳北站西广场");
 });

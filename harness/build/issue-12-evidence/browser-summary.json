@@ -1,0 +1,704 @@
+{
+  "source": "Issue12 final full Playwright HTML report",
+  "stats": {
+    "total": 27,
+    "expected": 27,
+    "unexpected": 0,
+    "flaky": 0,
+    "skipped": 0,
+    "ok": true
+  },
+  "files": [
+    {
+      "fileId": "068fad9605609506583e",
+      "fileName": "explore.spec.ts",
+      "tests": [
+        {
+          "testId": "068fad9605609506583e-7ba0de4da54afad51397",
+          "title": "bounded candidates, persistent conditions and focus 1440",
+          "projectName": "",
+          "location": {
+            "file": "explore.spec.ts",
+            "line": 30,
+            "column": 3
+          },
+          "duration": 1369,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:28:42.59Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "068fad9605609506583e-3291d51629922652a46f",
+          "title": "bounded candidates, persistent conditions and focus 820",
+          "projectName": "",
+          "location": {
+            "file": "explore.spec.ts",
+            "line": 30,
+            "column": 3
+          },
+          "duration": 1120,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:28:44.165Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "068fad9605609506583e-96842b065f21d5c8aaa6",
+          "title": "bounded candidates, persistent conditions and focus 390",
+          "projectName": "",
+          "location": {
+            "file": "explore.spec.ts",
+            "line": 30,
+            "column": 3
+          },
+          "duration": 1169,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:28:45.297Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "068fad9605609506583e-cf434435fbba1f496bed",
+          "title": "resolver loading, not found, failure, direct confirmation and stale response",
+          "projectName": "",
+          "location": {
+            "file": "explore.spec.ts",
+            "line": 85,
+            "column": 1
+          },
+          "duration": 2697,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:28:46.477Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "068fad9605609506583e-e6525b0f673b429e4607",
+          "title": "filters, all sort modes, local reveal, page 2 failure/retry and AMap links",
+          "projectName": "",
+          "location": {
+            "file": "explore.spec.ts",
+            "line": 119,
+            "column": 1
+          },
+          "duration": 1125,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:28:49.184Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "068fad9605609506583e-d0c1e7535537197b45c3",
+          "title": "search loading, partial failure, empty, all failed and transport retry",
+          "projectName": "",
+          "location": {
+            "file": "explore.spec.ts",
+            "line": 155,
+            "column": 1
+          },
+          "duration": 5415,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:28:50.319Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "068fad9605609506583e-5c1c5fc15e5301f43447",
+          "title": "stale nearby search cannot replace a new center",
+          "projectName": "",
+          "location": {
+            "file": "explore.spec.ts",
+            "line": 181,
+            "column": 1
+          },
+          "duration": 4930,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:28:55.746Z",
+              "workerIndex": 0
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "total": 7,
+        "expected": 7,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "ok": true
+      }
+    },
+    {
+      "fileId": "d68f550dea909c03766f",
+      "fileName": "inline-candidates.spec.ts",
+      "tests": [
+        {
+          "testId": "d68f550dea909c03766f-0dade4e6f3eb8c85a18e",
+          "title": "Issue12 inline candidates, explicit confirmation and automatic collapse desktop",
+          "projectName": "",
+          "location": {
+            "file": "inline-candidates.spec.ts",
+            "line": 6,
+            "column": 3
+          },
+          "duration": 900,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:00.704Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "d68f550dea909c03766f-a729b9ce21d601e2c411",
+          "title": "Issue12 inline candidates, explicit confirmation and automatic collapse mobile",
+          "projectName": "",
+          "location": {
+            "file": "inline-candidates.spec.ts",
+            "line": 6,
+            "column": 3
+          },
+          "duration": 814,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:01.613Z",
+              "workerIndex": 0
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "total": 2,
+        "expected": 2,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "ok": true
+      }
+    },
+    {
+      "fileId": "93bc11b08948b02d433a",
+      "fileName": "refine-location.spec.ts",
+      "tests": [
+        {
+          "testId": "93bc11b08948b02d433a-ecd4f65f49706b8a0a25",
+          "title": "UX6 repeated refinement, explicit selection and keyboard 1440",
+          "projectName": "",
+          "location": {
+            "file": "refine-location.spec.ts",
+            "line": 15,
+            "column": 3
+          },
+          "duration": 1753,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:02.45Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "93bc11b08948b02d433a-5788802e0e0fc38a4697",
+          "title": "UX6 repeated refinement, explicit selection and keyboard 390",
+          "projectName": "",
+          "location": {
+            "file": "refine-location.spec.ts",
+            "line": 15,
+            "column": 3
+          },
+          "duration": 1645,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:04.214Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "93bc11b08948b02d433a-bacb31c0a35dc86ef68a",
+          "title": "UX6 not-found entry, helper clear and empty-query validation",
+          "projectName": "",
+          "location": {
+            "file": "refine-location.spec.ts",
+            "line": 68,
+            "column": 1
+          },
+          "duration": 662,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:05.868Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "93bc11b08948b02d433a-1a69ac1644993f2b0711",
+          "title": "UX6 fresh confirmed address requires a click and retains coordinates",
+          "projectName": "",
+          "location": {
+            "file": "refine-location.spec.ts",
+            "line": 92,
+            "column": 1
+          },
+          "duration": 699,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:06.541Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "93bc11b08948b02d433a-0275b3100b9249ddef24",
+          "title": "UX6 out-of-order response cannot replace new candidates or edited input",
+          "projectName": "",
+          "location": {
+            "file": "refine-location.spec.ts",
+            "line": 116,
+            "column": 1
+          },
+          "duration": 1951,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:07.25Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "93bc11b08948b02d433a-d6982b42eac357dae299",
+          "title": "UX6 history replay closes helper and directly reuses saved confirmed center",
+          "projectName": "",
+          "location": {
+            "file": "refine-location.spec.ts",
+            "line": 143,
+            "column": 1
+          },
+          "duration": 790,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:09.214Z",
+              "workerIndex": 0
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "total": 6,
+        "expected": 6,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "ok": true
+      }
+    },
+    {
+      "fileId": "3420664513cb0bae123e",
+      "fileName": "shell.spec.ts",
+      "tests": [
+        {
+          "testId": "3420664513cb0bae123e-5b78ce548bfaa95c441f",
+          "title": "four routes, refresh and responsive navigation: desktop",
+          "projectName": "",
+          "location": {
+            "file": "shell.spec.ts",
+            "line": 43,
+            "column": 3
+          },
+          "duration": 2217,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:10.019Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "3420664513cb0bae123e-2ea3e690f6fcbebbad50",
+          "title": "four routes, refresh and responsive navigation: mobile",
+          "projectName": "",
+          "location": {
+            "file": "shell.spec.ts",
+            "line": 43,
+            "column": 3
+          },
+          "duration": 2414,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:12.247Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "3420664513cb0bae123e-0f4160c483b7c84b8371",
+          "title": "four routes, refresh and responsive navigation: tablet",
+          "projectName": "",
+          "location": {
+            "file": "shell.spec.ts",
+            "line": 43,
+            "column": 3
+          },
+          "duration": 2182,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:14.672Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "3420664513cb0bae123e-6f747c20a39d27b01648",
+          "title": "search, save, route replay, refresh and delete: desktop",
+          "projectName": "",
+          "location": {
+            "file": "shell.spec.ts",
+            "line": 79,
+            "column": 3
+          },
+          "duration": 2647,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:16.865Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "3420664513cb0bae123e-141d2ae4d32741f83af5",
+          "title": "search, save, route replay, refresh and delete: mobile",
+          "projectName": "",
+          "location": {
+            "file": "shell.spec.ts",
+            "line": 79,
+            "column": 3
+          },
+          "duration": 2557,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:19.522Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "3420664513cb0bae123e-3c2401981c3ce0ead6d3",
+          "title": "history error/retry, loading and invalid replay are honest",
+          "projectName": "",
+          "location": {
+            "file": "shell.spec.ts",
+            "line": 122,
+            "column": 1
+          },
+          "duration": 2943,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:22.089Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "3420664513cb0bae123e-59921283a27090f0b8f0",
+          "title": "mobile keyboard navigation closes with Escape and returns focus",
+          "projectName": "",
+          "location": {
+            "file": "shell.spec.ts",
+            "line": 137,
+            "column": 1
+          },
+          "duration": 418,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:25.042Z",
+              "workerIndex": 0
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "total": 7,
+        "expected": 7,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "ok": true
+      }
+    },
+    {
+      "fileId": "2f82ea08af2b0c5d9d54",
+      "fileName": "stage-b.spec.ts",
+      "tests": [
+        {
+          "testId": "2f82ea08af2b0c5d9d54-1d8c6a4d410ab89ee70f",
+          "title": "B1 formal layout and actual API state desktop",
+          "projectName": "",
+          "location": {
+            "file": "stage-b.spec.ts",
+            "line": 8,
+            "column": 3
+          },
+          "duration": 872,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:25.492Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "2f82ea08af2b0c5d9d54-50ac3d415bf5236a5e92",
+          "title": "B1 formal layout and actual API state tablet",
+          "projectName": "",
+          "location": {
+            "file": "stage-b.spec.ts",
+            "line": 8,
+            "column": 3
+          },
+          "duration": 866,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:26.374Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "2f82ea08af2b0c5d9d54-b640fc4c8024431b681d",
+          "title": "B1 formal layout and actual API state mobile",
+          "projectName": "",
+          "location": {
+            "file": "stage-b.spec.ts",
+            "line": 8,
+            "column": 3
+          },
+          "duration": 892,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:27.25Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "2f82ea08af2b0c5d9d54-ce0fb2c88b7971197b43",
+          "title": "B1 formal workspace breakpoint bounds and controls",
+          "projectName": "",
+          "location": {
+            "file": "stage-b.spec.ts",
+            "line": 54,
+            "column": 1
+          },
+          "duration": 1718,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:28.152Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "2f82ea08af2b0c5d9d54-2abf7e381f4424b9e482",
+          "title": "B1 horizontal category and radius controls submit the current real snapshot",
+          "projectName": "",
+          "location": {
+            "file": "stage-b.spec.ts",
+            "line": 82,
+            "column": 1
+          },
+          "duration": 750,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T05:29:29.88Z",
+              "workerIndex": 0
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "total": 5,
+        "expected": 5,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "ok": true
+      }
+    }
+  ]
+}

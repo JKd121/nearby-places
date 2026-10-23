@@ -1,0 +1,31 @@
+{
+  "viewport": {
+    "name": "mobile",
+    "width": 390,
+    "height": 844
+  },
+  "top": {
+    "x": 0,
+    "y": 60,
+    "width": 390,
+    "height": 76
+  },
+  "expanded": {
+    "x": 0,
+    "y": 136,
+    "width": 390,
+    "height": 260
+  },
+  "map": {
+    "x": 0,
+    "y": 509,
+    "width": 390,
+    "height": 274
+  },
+  "collapsed": {
+    "x": 0,
+    "y": 60,
+    "width": 390,
+    "height": 77
+  }
+}

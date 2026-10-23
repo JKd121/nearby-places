@@ -1,0 +1,31 @@
+{
+  "viewport": {
+    "name": "desktop",
+    "width": 1440,
+    "height": 900
+  },
+  "top": {
+    "x": 208,
+    "y": 60,
+    "width": 1232,
+    "height": 92
+  },
+  "expanded": {
+    "x": 208,
+    "y": 152,
+    "width": 1232,
+    "height": 340
+  },
+  "map": {
+    "x": 708,
+    "y": 587,
+    "width": 732,
+    "height": 313
+  },
+  "collapsed": {
+    "x": 208,
+    "y": 60,
+    "width": 1232,
+    "height": 93
+  }
+}
