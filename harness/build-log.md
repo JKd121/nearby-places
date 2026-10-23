@@ -121,3 +121,11 @@
 - 用户在 `http://localhost:3107/` 隔离测试入口核验后回复“通過”，本地交互人工验收通过。
 - 本次为内存数据库与合成高德数据环境；真实数据库持久化、高德集成及线上迁移/发布仍未验收或执行。
 - 仅更新验收与项目状态记录，没有修改功能代码或新增上线授权。
+
+## 2026-10-23 — Nearby Diagnostics v1 Stage A
+
+- 用户明确授权 Issue #14 Stage A 开发/测试/提交/Draft PR/Preview，完成后暂停，不授权 Stage B。
+- 启动 clean、HEAD=最新 origin/master 3bc08d4；独立分支 perf/search-observability，无其他任务修改。
+- 诊断接口注入 + server-only JSON logger/timer/handler，默认关闭详细日志，保留去重脱敏错误；未变更结果、算法、调用顺序、500ms 等待、数据库或 UI。
+- 同 Agent 自审后，116/116、check、build、diff --check PASS；实际 Chrome mock 两条 POST 同 session 不同 request ID、HTTP 200；真实高德/数据库未调用。
+- 方案、环境阻碍与证据：`harness/build/2026-10-23-diagnostics-stage-a.md`；runbook：`docs/diagnostics.md`。远程 Draft PR/Preview 待交付。

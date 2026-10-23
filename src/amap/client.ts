@@ -1,3 +1,4 @@
+import { measureAsync, measureSync, type Diagnostics } from "../diagnostics.js";
 import { computeDistanceMeters } from "./distance.js";
 import type { CategoryConfig, Coordinates, GeocodedPlace, NearbySearchOptions, Place, PlacePage, SearchStrategy } from "./types.js";
 
@@ -42,13 +43,30 @@ function assertAmapSuccess(payload: unknown, operation: string): UnknownRecord {
   }
   return payload;
 }
-async function requestJson(url: URL, operation: string, fetchImpl: typeof fetch): Promise<UnknownRecord> {
-  const response = await fetchImpl(url);
-  const body = await response.text();
-  if (!response.ok) throw new AmapApiError(`${operation}: HTTP ${response.status} ${response.statusText}; ${body}`);
+async function requestJson(url: URL, operation: string, fetchImpl: typeof fetch, diagnostics?: Diagnostics): Promise<UnknownRecord> {
+  const response = await measureAsync(diagnostics, "amap.fetch", () => fetchImpl(url));
+  const body = await measureAsync(diagnostics, "amap.read", () => response.text());
+  if (!response.ok) return measureSync(diagnostics, "amap.validate", () => {
+    const error = new AmapApiError(`${operation}: HTTP ${response.status} ${response.statusText}; ${body}`);
+    diagnostics?.annotate(error, "upstream_http", String(response.status));
+    throw error;
+  });
   let payload: unknown;
-  try { payload = JSON.parse(body); } catch { throw new AmapApiError(`${operation}: response was not valid JSON; ${body}`); }
-  return assertAmapSuccess(payload, operation);
+  payload = measureSync(diagnostics, "amap.json", () => {
+    try { return JSON.parse(body); }
+    catch {
+      const error = new AmapApiError(`${operation}: response was not valid JSON; ${body}`);
+      diagnostics?.annotate(error, "invalid_json");
+      throw error;
+    }
+  });
+  return measureSync(diagnostics, "amap.validate", () => {
+    try { return assertAmapSuccess(payload, operation); }
+    catch (error) {
+      diagnostics?.annotate(error, isRecord(payload) ? "upstream_business" : "invalid_payload", error instanceof AmapApiError ? error.infocode : null);
+      throw error;
+    }
+  });
 }
 function validateOptions(options: NearbySearchOptions): void {
   if (!Number.isInteger(options.pageNumber) || options.pageNumber < 1) throw new RangeError("pageNumber must be an integer >= 1");
@@ -60,13 +78,13 @@ function applySearchStrategy(params: URLSearchParams, category: CategoryConfig, 
   if (strategy === "types-only" || strategy === "keyword-and-types") params.set("types", category.types.join("|"));
 }
 
-export function createAmapClient(key: string, fetchImpl: typeof fetch = fetch) {
+export function createAmapClient(key: string, fetchImpl: typeof fetch = fetch, diagnostics?: Diagnostics) {
   if (key.trim() === "") throw new Error("Missing AMAP_WEB_SERVICE_KEY. Set it in the process environment before running the smoke test.");
   return {
     async geocode(query: string): Promise<GeocodedPlace> {
       const url = new URL(GEOCODE_URL);
       url.search = new URLSearchParams({ key, address: query, output: "JSON" }).toString();
-      const payload = await requestJson(url, `Geocoding '${query}' failed`, fetchImpl);
+      const payload = await requestJson(url, `Geocoding '${query}' failed`, fetchImpl, diagnostics);
       const first = (Array.isArray(payload.geocodes) ? payload.geocodes : [])[0];
       if (!isRecord(first)) throw new AmapApiError(`No geocoding result found for '${query}'.`);
       const location = parseLocation(first.location);
@@ -80,9 +98,9 @@ export function createAmapClient(key: string, fetchImpl: typeof fetch = fetch) {
       applySearchStrategy(params, category, strategy);
       const url = new URL(NEARBY_URL);
       url.search = params.toString();
-      const payload = await requestJson(url, `Nearby search '${category.label}' failed`, fetchImpl);
+      const payload = await requestJson(url, `Nearby search '${category.label}' failed`, fetchImpl, diagnostics);
       const rawPois = Array.isArray(payload.pois) ? payload.pois : [];
-      const places = rawPois.flatMap((candidate): Place[] => {
+      const places = measureSync(diagnostics, "amap.transform", () => rawPois.flatMap((candidate): Place[] => {
         if (!isRecord(candidate)) return [];
         const typecode = optionalString(candidate.typecode);
         if (category.acceptedTypecodes && (typecode === null || !category.acceptedTypecodes.includes(typecode))) return [];
@@ -93,7 +111,7 @@ export function createAmapClient(key: string, fetchImpl: typeof fetch = fetch) {
         const nativeDistance = optionalNumber(candidate.distance);
         const amapDistanceMeters = nativeDistance !== null && nativeDistance >= 0 ? nativeDistance : null;
         return [{ id: requiredString(candidate.id), parentId: optionalString(candidate.parent), name: requiredString(candidate.name, "(unnamed POI)"), category: category.key, distanceMeters: amapDistanceMeters ?? computedDistanceMeters, distanceSource: amapDistanceMeters === null ? "computed" : "amap", amapDistanceMeters, computedDistanceMeters, type: optionalString(candidate.type), typecode, cost: optionalNumber(business.cost), rating: optionalNumber(business.rating), tag: optionalString(business.tag), openTimeToday: optionalString(business.opentime_today), openTimeWeek: optionalString(business.opentime_week), address: requiredString(candidate.address), ...location }];
-      }).sort((left, right) => left.distanceMeters - right.distanceMeters);
+      }).sort((left, right) => left.distanceMeters - right.distanceMeters), { category: category.key });
       // `count` is an API total-count hint, not the number returned on this page.
       // Keep this contract page-local so it cannot be mistaken for a total page count.
       return { places, pageNumber: options.pageNumber, pageSize: options.pageSize, returnedCount: rawPois.length, mayHaveNextApiPage: rawPois.length === options.pageSize };

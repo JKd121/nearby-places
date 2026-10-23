@@ -49,3 +49,7 @@ npm run build
 ## 范围
 
 当前包含 v0.1B-1 基础页面与服务端路由，以及 v0.1B-2A 的功能交互；不包含 v0.1B-2B 最终视觉/响应式/无障碍精修、收藏、地图、数据库、账号或其他产品功能。
+
+## Nearby Diagnostics v1
+
+Stage A 的日志开关、Preview 采样、事件说明及手动导出操作见 [诊断手册](docs/diagnostics.md)。默认关闭详细日志；仅 `PERF_LOG_ENABLED=true` 启用服务端诊断，环境变量修改后须重新部署。Stage B 必须另行授权。

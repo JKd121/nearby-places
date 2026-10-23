@@ -1,19 +1,21 @@
-import { createServerAmapClient } from "../../../src/server/amap";
-import { jsonError, mapServerError } from "../../../src/server/http";
-import { executeResolvedSearch } from "../../../src/search/service";
-import { parseConfirmedSearchRequest, SearchRequestValidationError } from "../../../src/search/validation";
+import { withDiagnostics } from "../../../src/server/diagnostics/request.js";
+import { createServerAmapClient } from "../../../src/server/amap.js";
+import { jsonError, mapServerError } from "../../../src/server/http.js";
+import { executeResolvedSearch } from "../../../src/search/service.js";
+import { parseConfirmedSearchRequest, SearchRequestValidationError } from "../../../src/search/validation.js";
 
 export const runtime = "nodejs";
 
-export async function POST(request: Request): Promise<Response> {
+export const POST = withDiagnostics("/api/search", async (request, diagnostics): Promise<Response> => {
   let body: unknown;
-  try { body = await request.json(); } catch { return jsonError("请求必须是有效 JSON", 400); }
+  try { body = await diagnostics.measure("request.json", () => request.json()); } catch (error) { diagnostics.error(error, "request.json", true, { status: 400 }); return jsonError("请求必须是有效 JSON", 400); }
   let parsed;
-  try { parsed = parseConfirmedSearchRequest(body); }
+  try { parsed = diagnostics.measureSync("request.validation", () => parseConfirmedSearchRequest(body)); }
   catch (error) {
+    diagnostics.error(error, "request.validation", true, { status: 400 });
     if (error instanceof SearchRequestValidationError) return jsonError(error.message, 400);
     return jsonError("请求校验失败", 400);
   }
-  try { return Response.json(await executeResolvedSearch(parsed, createServerAmapClient())); }
-  catch (error) { return mapServerError(error, "周边搜索"); }
-}
+  try { return Response.json(await executeResolvedSearch(parsed, createServerAmapClient(diagnostics), undefined, diagnostics)); }
+  catch (error) { diagnostics.error(error, "request", true); return mapServerError(error, "周边搜索"); }
+});

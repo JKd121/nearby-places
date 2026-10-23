@@ -55,6 +55,7 @@ export default function SearchApp() {
   const historyItems = history.items;
   const [historyOpen, setHistoryOpen] = useState(false);
   const requestId = useRef(0);
+  const diagnosticSessionId = useRef<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const availableFilters = useMemo(() => getAvailableFilters(response), [response]);
   const activeResult = useMemo(() => getCategoryResult(response, activeFilter), [response, activeFilter]);
@@ -123,6 +124,7 @@ export default function SearchApp() {
       radiusMeters: item.radiusMeters as SearchRadius,
     };
     const location = copyConfirmedLocation(item.confirmedLocation);
+    diagnosticSessionId.current = globalThis.crypto?.randomUUID?.() ?? null;
 
     requestId.current += 1;
     setQuery(item.query);
@@ -154,9 +156,10 @@ export default function SearchApp() {
     const trimmed = queryToResolve.trim();
     if (!trimmed) { setPublicError("请先输入地点名称"); setPhase("resolve-error"); return; }
     const currentId = requestId.current + 1; requestId.current = currentId;
+    diagnosticSessionId.current = globalThis.crypto?.randomUUID?.() ?? null;
     setPhase("resolving"); setPublicError(null); resetView(); setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false);
     try {
-      const result = await fetch("/api/resolve-location", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: trimmed }) });
+      const result = await fetch("/api/resolve-location", { method: "POST", headers: { "content-type": "application/json", ...(diagnosticSessionId.current ? { "x-diagnostic-session-id": diagnosticSessionId.current } : {}) }, body: JSON.stringify({ query: trimmed }) });
       const payload = await readJson(result) as ResolutionApiResponse | null;
       if (currentId !== requestId.current) return;
       if (!result.ok) throw new Error(payload?.error?.message ?? "地点解析失败");
@@ -203,7 +206,7 @@ export default function SearchApp() {
         radiusMeters: snapshot.radiusMeters,
         confirmedLocation: copyConfirmedLocation(location),
       };
-      const result = await fetch("/api/search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ center: { longitude: location.location.longitude, latitude: location.location.latitude }, resolvedLocation: searchLocation, categoryIds: snapshot.categoryIds, radiusMeters: snapshot.radiusMeters }) });
+      const result = await fetch("/api/search", { method: "POST", headers: { "content-type": "application/json", ...(diagnosticSessionId.current ? { "x-diagnostic-session-id": diagnosticSessionId.current } : {}) }, body: JSON.stringify({ center: { longitude: location.location.longitude, latitude: location.location.latitude }, resolvedLocation: searchLocation, categoryIds: snapshot.categoryIds, radiusMeters: snapshot.radiusMeters }) });
       const payload = await readJson(result) as (SearchResponse & { error?: PublicApiError }) | null;
       if (currentId !== requestId.current) return;
 
