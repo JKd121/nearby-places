@@ -1,0 +1,277 @@
+[
+  {
+    "viewport": {
+      "width": 767,
+      "height": 844
+    },
+    "workspace": {
+      "x": 0,
+      "y": 292,
+      "width": 767,
+      "height": 552
+    },
+    "sidebar": null,
+    "map": {
+      "x": 0,
+      "y": 292,
+      "width": 767,
+      "height": 320.171875
+    },
+    "list": {
+      "x": 0,
+      "y": 612.171875,
+      "width": 767,
+      "height": 231.828125
+    },
+    "listRatio": 1,
+    "overflow": {
+      "horizontal": false,
+      "vertical": false
+    }
+  },
+  {
+    "viewport": {
+      "width": 768,
+      "height": 900
+    },
+    "workspace": {
+      "x": 72,
+      "y": 250,
+      "width": 696,
+      "height": 650
+    },
+    "sidebar": {
+      "x": 0,
+      "y": 0,
+      "width": 72,
+      "height": 900
+    },
+    "map": {
+      "x": 372,
+      "y": 250,
+      "width": 396,
+      "height": 650
+    },
+    "list": {
+      "x": 72,
+      "y": 250,
+      "width": 300,
+      "height": 650
+    },
+    "listRatio": 0.43103448275862066,
+    "overflow": {
+      "horizontal": false,
+      "vertical": false
+    }
+  },
+  {
+    "viewport": {
+      "width": 820,
+      "height": 1180
+    },
+    "workspace": {
+      "x": 72,
+      "y": 250,
+      "width": 748,
+      "height": 930
+    },
+    "sidebar": {
+      "x": 0,
+      "y": 0,
+      "width": 72,
+      "height": 1180
+    },
+    "map": {
+      "x": 378.671875,
+      "y": 250,
+      "width": 441.328125,
+      "height": 930
+    },
+    "list": {
+      "x": 72,
+      "y": 250,
+      "width": 306.671875,
+      "height": 930
+    },
+    "listRatio": 0.40998913770053474,
+    "overflow": {
+      "horizontal": false,
+      "vertical": false
+    }
+  },
+  {
+    "viewport": {
+      "width": 1024,
+      "height": 900
+    },
+    "workspace": {
+      "x": 72,
+      "y": 250,
+      "width": 952,
+      "height": 650
+    },
+    "sidebar": {
+      "x": 0,
+      "y": 0,
+      "width": 72,
+      "height": 900
+    },
+    "map": {
+      "x": 462.3125,
+      "y": 250,
+      "width": 561.6875,
+      "height": 650
+    },
+    "list": {
+      "x": 72,
+      "y": 250,
+      "width": 390.3125,
+      "height": 650
+    },
+    "listRatio": 0.4099921218487395,
+    "overflow": {
+      "horizontal": false,
+      "vertical": false
+    }
+  },
+  {
+    "viewport": {
+      "width": 1180,
+      "height": 900
+    },
+    "workspace": {
+      "x": 72,
+      "y": 250,
+      "width": 1108,
+      "height": 650
+    },
+    "sidebar": {
+      "x": 0,
+      "y": 0,
+      "width": 72,
+      "height": 900
+    },
+    "map": {
+      "x": 526.265625,
+      "y": 250,
+      "width": 653.734375,
+      "height": 650
+    },
+    "list": {
+      "x": 72,
+      "y": 250,
+      "width": 454.265625,
+      "height": 650
+    },
+    "listRatio": 0.4099870261732852,
+    "overflow": {
+      "horizontal": false,
+      "vertical": false
+    }
+  },
+  {
+    "viewport": {
+      "width": 1279,
+      "height": 900
+    },
+    "workspace": {
+      "x": 72,
+      "y": 250,
+      "width": 1207,
+      "height": 650
+    },
+    "sidebar": {
+      "x": 0,
+      "y": 0,
+      "width": 72,
+      "height": 900
+    },
+    "map": {
+      "x": 566.859375,
+      "y": 250,
+      "width": 712.140625,
+      "height": 650
+    },
+    "list": {
+      "x": 72,
+      "y": 250,
+      "width": 494.859375,
+      "height": 650
+    },
+    "listRatio": 0.40999119718309857,
+    "overflow": {
+      "horizontal": false,
+      "vertical": false
+    }
+  },
+  {
+    "viewport": {
+      "width": 1280,
+      "height": 900
+    },
+    "workspace": {
+      "x": 220,
+      "y": 250,
+      "width": 1060,
+      "height": 650
+    },
+    "sidebar": {
+      "x": 0,
+      "y": 0,
+      "width": 220,
+      "height": 900
+    },
+    "map": {
+      "x": 654.59375,
+      "y": 250,
+      "width": 625.40625,
+      "height": 650
+    },
+    "list": {
+      "x": 220,
+      "y": 250,
+      "width": 434.59375,
+      "height": 650
+    },
+    "listRatio": 0.4099941037735849,
+    "overflow": {
+      "horizontal": false,
+      "vertical": false
+    }
+  },
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "workspace": {
+      "x": 220,
+      "y": 250,
+      "width": 1220,
+      "height": 650
+    },
+    "sidebar": {
+      "x": 0,
+      "y": 0,
+      "width": 220,
+      "height": 900
+    },
+    "map": {
+      "x": 720,
+      "y": 250,
+      "width": 720,
+      "height": 650
+    },
+    "list": {
+      "x": 220,
+      "y": 250,
+      "width": 500,
+      "height": 650
+    },
+    "listRatio": 0.4098360655737705,
+    "overflow": {
+      "horizontal": false,
+      "vertical": false
+    }
+  }
+]

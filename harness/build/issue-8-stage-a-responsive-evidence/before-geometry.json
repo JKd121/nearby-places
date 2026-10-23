@@ -1,0 +1,149 @@
+[
+  {
+    "width": 768,
+    "workspace": {
+      "x": 72,
+      "y": 250,
+      "width": 696,
+      "height": 650
+    },
+    "list": {
+      "x": 72,
+      "y": 250,
+      "width": 300,
+      "height": 650
+    },
+    "map": {
+      "x": 372,
+      "y": 250,
+      "width": 396,
+      "height": 650
+    }
+  },
+  {
+    "width": 820,
+    "workspace": {
+      "x": 72,
+      "y": 250,
+      "width": 748,
+      "height": 930
+    },
+    "list": {
+      "x": 72,
+      "y": 250,
+      "width": 300,
+      "height": 930
+    },
+    "map": {
+      "x": 372,
+      "y": 250,
+      "width": 448,
+      "height": 930
+    }
+  },
+  {
+    "width": 1024,
+    "workspace": {
+      "x": 72,
+      "y": 250,
+      "width": 952,
+      "height": 650
+    },
+    "list": {
+      "x": 72,
+      "y": 250,
+      "width": 300,
+      "height": 650
+    },
+    "map": {
+      "x": 372,
+      "y": 250,
+      "width": 652,
+      "height": 650
+    }
+  },
+  {
+    "width": 1180,
+    "workspace": {
+      "x": 72,
+      "y": 250,
+      "width": 1108,
+      "height": 650
+    },
+    "list": {
+      "x": 72,
+      "y": 250,
+      "width": 300,
+      "height": 650
+    },
+    "map": {
+      "x": 372,
+      "y": 250,
+      "width": 808,
+      "height": 650
+    }
+  },
+  {
+    "width": 1279,
+    "workspace": {
+      "x": 72,
+      "y": 250,
+      "width": 1207,
+      "height": 650
+    },
+    "list": {
+      "x": 72,
+      "y": 250,
+      "width": 300,
+      "height": 650
+    },
+    "map": {
+      "x": 372,
+      "y": 250,
+      "width": 907,
+      "height": 650
+    }
+  },
+  {
+    "width": 1280,
+    "workspace": {
+      "x": 220,
+      "y": 250,
+      "width": 1060,
+      "height": 650
+    },
+    "list": {
+      "x": 220,
+      "y": 250,
+      "width": 500,
+      "height": 650
+    },
+    "map": {
+      "x": 720,
+      "y": 250,
+      "width": 560,
+      "height": 650
+    }
+  },
+  {
+    "width": 1440,
+    "workspace": {
+      "x": 220,
+      "y": 250,
+      "width": 1220,
+      "height": 650
+    },
+    "list": {
+      "x": 220,
+      "y": 250,
+      "width": 500,
+      "height": 650
+    },
+    "map": {
+      "x": 720,
+      "y": 250,
+      "width": 720,
+      "height": 650
+    }
+  }
+]

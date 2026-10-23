@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const evidence = "harness/build/issue-8-stage-a-ratio-evidence";
+const evidence = "harness/build/issue-8-stage-a-responsive-evidence";
 for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "tablet", width: 820, height: 1180 }, { name: "mobile", width: 390, height: 844 }]) {
   test("prototype Stage A: " + viewport.name, async ({ page, request }) => {
     await page.setViewportSize(viewport);
@@ -36,7 +36,7 @@ for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "
       expect(list!.width).toBe(500);
     } else if (viewport.name === "tablet") {
       expect(map!.width).toBeGreaterThan(list!.width);
-      expect(list!.width).toBe(300);
+      expect(list!.width).toBeCloseTo(306.68, 1);
     } else {
       expect(map!.y).toBeLessThan(list!.y);
       expect(map!.height).toBeGreaterThan(list!.height);
@@ -91,7 +91,9 @@ for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "
 }
 test("prototype Stage A: breakpoint bounds", async ({ page }) => {
   const measurements = [];
-  for (const viewport of [{ width: 767, height: 844 }, { width: 768, height: 1180 }, { width: 1279, height: 900 }, { width: 1280, height: 900 }]) {
+  let previousListWidth = 0;
+  await fs.mkdir(evidence, { recursive: true });
+  for (const viewport of [{ width: 767, height: 844 }, ...[768, 820, 1024, 1180, 1279, 1280, 1440].map((width) => ({ width, height: width === 820 ? 1180 : 900 }))]) {
     await page.setViewportSize(viewport);
     await page.goto("/prototype/explore");
     await expect(page.getByRole("heading", { name: "探索地点", exact: true })).toBeVisible();
@@ -99,12 +101,21 @@ test("prototype Stage A: breakpoint bounds", async ({ page }) => {
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1)).toBe(true);
     const map = await page.locator(".proto-map").boundingBox();
     const list = await page.locator(".proto-results").boundingBox();
+    const workspace = await page.locator(".proto-workspace").boundingBox();
+    const sidebar = await page.locator(".proto-sidebar").boundingBox();
     if (viewport.width < 768) {
       expect(map!.y).toBeLessThan(list!.y);
       expect(map!.width).toBe(viewport.width);
     } else {
-      expect(list!.width).toBe(viewport.width < 1280 ? 300 : 500);
+      expect(list!.width).toBeGreaterThanOrEqual(300);
+      expect(list!.width).toBeLessThanOrEqual(500);
+      if (viewport.width > 768) expect(list!.width / workspace!.width).toBeCloseTo(.41, 2);
+      else expect(list!.width).toBe(300);
+      expect(sidebar!.width).toBe(viewport.width < 1280 ? 72 : 220);
+      expect(list!.width + map!.width).toBeCloseTo(workspace!.width, 1);
       expect(map!.width).toBeGreaterThan(list!.width);
+      if (viewport.width > 768 && viewport.width < 1280) expect(list!.width).toBeGreaterThan(previousListWidth);
+      previousListWidth = list!.width;
     }
     for (const control of [page.getByRole("button", { name: "搜索附近", exact: true }), page.getByLabel("原型搜索范围", { exact: true })]) {
       const box = await control.boundingBox();
@@ -113,8 +124,11 @@ test("prototype Stage A: breakpoint bounds", async ({ page }) => {
     }
     await expect(page.getByTestId("prototype-center-marker")).toHaveCount(1);
     await expect(page.getByTestId("prototype-range-circle")).toHaveCount(1);
-    measurements.push({ viewport, map, list });
+    if (viewport.width >= 768) {
+      await page.screenshot({ path: evidence + "/viewport-" + viewport.width + ".png", fullPage: true, animations: "disabled" });
+      await page.screenshot({ path: evidence + "/top-" + viewport.width + ".png", clip: { x: 0, y: 0, width: viewport.width, height: 250 }, animations: "disabled" });
+    }
+    measurements.push({ viewport, workspace, sidebar, map, list, listRatio: list!.width / workspace!.width, overflow: await page.evaluate(() => ({ horizontal: document.documentElement.scrollWidth > innerWidth, vertical: document.documentElement.scrollHeight > innerHeight + 1 })) });
   }
-  await fs.mkdir(evidence, { recursive: true });
   await fs.writeFile(evidence + "/breakpoints.json", JSON.stringify(measurements, null, 2) + "\n");
 });

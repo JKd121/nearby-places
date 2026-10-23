@@ -1,0 +1,119 @@
+{
+  "source": "Final Playwright HTML report embedded report.json",
+  "stats": {
+    "total": 4,
+    "expected": 4,
+    "unexpected": 0,
+    "flaky": 0,
+    "skipped": 0,
+    "ok": true
+  },
+  "files": [
+    {
+      "fileId": "19b1a4b9c75f61794625",
+      "fileName": "prototype.spec.ts",
+      "tests": [
+        {
+          "testId": "19b1a4b9c75f61794625-2ba4641a4a5e083c007d",
+          "title": "prototype Stage A: desktop",
+          "projectName": "",
+          "location": {
+            "file": "prototype.spec.ts",
+            "line": 8,
+            "column": 3
+          },
+          "duration": 3400,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T04:14:07.574Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "19b1a4b9c75f61794625-dce6bbb242493a0e6ca1",
+          "title": "prototype Stage A: tablet",
+          "projectName": "",
+          "location": {
+            "file": "prototype.spec.ts",
+            "line": 8,
+            "column": 3
+          },
+          "duration": 2685,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T04:14:11.185Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "19b1a4b9c75f61794625-64174ae8e9336b33a2ce",
+          "title": "prototype Stage A: mobile",
+          "projectName": "",
+          "location": {
+            "file": "prototype.spec.ts",
+            "line": 8,
+            "column": 3
+          },
+          "duration": 2793,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T04:14:13.881Z",
+              "workerIndex": 0
+            }
+          ]
+        },
+        {
+          "testId": "19b1a4b9c75f61794625-284008362247236a9d90",
+          "title": "prototype Stage A: breakpoint bounds",
+          "projectName": "",
+          "location": {
+            "file": "prototype.spec.ts",
+            "line": 92,
+            "column": 1
+          },
+          "duration": 2534,
+          "annotations": [],
+          "tags": [],
+          "outcome": "expected",
+          "path": [],
+          "ok": true,
+          "results": [
+            {
+              "attachments": [],
+              "startTime": "2026-10-23T04:14:16.684Z",
+              "workerIndex": 0
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "total": 4,
+        "expected": 4,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "ok": true
+      }
+    }
+  ]
+}

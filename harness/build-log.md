@@ -160,3 +160,10 @@
 - PASS: lint, core/web type checks, production build,4/4 targeted prototype browser tests (12.3s), three viewport screenshots and breakpoint bounds767/768/1279/1280.
 - Browser evidence proves desktop top250px and tablet/phone captures unchanged by SHA256. See `build/issue-8-stage-a-ratio-evidence/README.md`.
 - Same prototype branch and draft PR; no master/PR #5 changes or production deployment. Stage B remains unapproved; await visual review.
+
+## 2026-10-23 — PR #9 responsive ratio follow-up
+
+- Latest visual comment6357164853 requests progressive medium list growth. Runtime change limited to clamp300–500px at41% of workspace and removal of fixed300 override.
+- PASS final lint/types/Next production build and4/4 targeted browser tests13.9s;768/820/1024/1180/1279/1280/1440 measured, no document overflow; original three captures plus1024/1279 provided.
+- 1440 remains500/720, phone unchanged. Existing1280 nav expansion still causes absolute size discontinuity; disclosed with a minimal CSS-only proposal, not implemented. See `build/issue-8-stage-a-responsive-evidence/README.md`.
+- Stage A only, no business/nav logic/dependencies/production changes. Await visual review, Stage B unapproved.

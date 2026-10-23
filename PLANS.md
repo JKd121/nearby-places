@@ -7,6 +7,7 @@
 - State: STAGE_A_READY_FOR_VISUAL_REVIEW. Scope/design/verification: `harness/build/2026-10-23-issue-8-stage-a.md` and `harness/build/issue-8-stage-a-evidence/README.md`. Next: prototype-only draft preview/review handoff; await product-owner approval, never auto-enter Stage B.
 - Boundary: runnable isolated visual prototype, screenshots and review handoff only. Do not connect business APIs or enter Stage B before explicit approval; do not change PR #5/master/production.
 - Latest Stage A amendment: PR #9 comment6348830035 and Issue #8 updated2026-10-22T18:58:08Z approve only the desktop500/720 split, retaining tablet/phone strategy. Entry490c7d6 was clean/equal remote. Current verification/evidence: `harness/build/issue-8-stage-a-ratio-evidence/README.md`; await renewed visual review after this revision.
+- Current responsive follow-up: PR #9 comment6357164853 accepts1440/820/390 but requests progressive medium-width list sizing and768/820/1024/1180/1279/1280/1440 geometry, including1024/1279 screenshots. Clean entrya865ab3 equals remote. Plan: container-relative41% bounded300–500px, remove fixed300px override; preserve phone/top/map/nav code. Measure the existing72→220px navigation jump separately and propose, not implement, a navigation fix. Verification: targeted prototype/browser screenshots, breakpoint overflow/ratio checks, lint/types/build; evidence in `harness/build/issue-8-stage-a-responsive-evidence/`. Stage B remains unapproved.
 
 ## Previous phase — Issue #7 / Explore interaction and visual refinement
 
