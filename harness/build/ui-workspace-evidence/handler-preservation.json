@@ -1,0 +1,15 @@
+{
+  "resetView": true,
+  "invalidateLocation": true,
+  "changeCategories": true,
+  "changeRadius": true,
+  "resolveLocation": true,
+  "resolveLocationForQuery": true,
+  "clearResolved": true,
+  "searchNearby": true,
+  "searchNearbyForSnapshot": true,
+  "changeFilter": true,
+  "changeSort": true,
+  "loadMore": true,
+  "loadProviderPage": true
+}

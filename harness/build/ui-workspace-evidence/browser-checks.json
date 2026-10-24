@@ -1,0 +1,77 @@
+{
+  "date": "2026-10-24",
+  "fixture": "http://localhost:3117",
+  "productionBuild": "http://127.0.0.1:3110",
+  "finalCandidates": {
+    "candidates": 12,
+    "contentHeight": 1540,
+    "listHeight": 481,
+    "pageWidth": 1440,
+    "width": 1440
+  },
+  "finalDesktop": {
+    "alerts": 0,
+    "bodyHeight": 1000,
+    "height": 1000,
+    "pageWidth": 1440,
+    "places": 20,
+    "width": 1440
+  },
+  "tabletObservation": {
+    "client": 805,
+    "conditions": "true",
+    "listHeight": 767,
+    "page": 805,
+    "viewport": [
+      820,
+      1180
+    ]
+  },
+  "tabletCollapsedImmediate": {
+    "client": 805,
+    "page": 805,
+    "width": 240
+  },
+  "narrowObservation": {
+    "client": 360,
+    "listHeight": 528,
+    "page": 360,
+    "sidebar": 72,
+    "viewport": [
+      375,
+      812
+    ]
+  },
+  "lowHeightObservation": {
+    "bodyHeight": 1698,
+    "client": 705,
+    "listHeight": 325,
+    "listOverflow": "auto",
+    "page": 705,
+    "viewport": [
+      720,
+      500
+    ]
+  },
+  "finalVisualCheck": {
+    "alerts": 0,
+    "client": 1440,
+    "page": 1440,
+    "sidebar": 240,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "visibleHeadings": [
+      "探索附近",
+      "附近结果",
+      "搜索条件"
+    ]
+  },
+  "consoleWarningsAndErrors": [],
+  "notes": [
+    "Measurements immediately after transitions may precede final layout; finalVisualCheck records settled desktop sidebar.",
+    "390px has 375px content width because of the vertical scrollbar.",
+    "Browser requests use in-memory history and synthetic provider data; production AMap/database smoke not run."
+  ]
+}

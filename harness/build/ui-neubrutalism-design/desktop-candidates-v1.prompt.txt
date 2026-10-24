@@ -1,0 +1,16 @@
+Use case ui-mockup. Edit the provided desktop screenshot-style UI design mockup to show the EARLIER "candidate location confirmation" state of exactly the same Chinese app. Preserve canvas 1536x1024, all positions, sidebar branding and navigation, header, cream canvas, black crisp borders, offset shadows, corner radii, pink/mint/yellow/lilac palette, Chinese typography, sizes, spacing. Do NOT redesign the page. Keep small top-right “设计稿 · 示例数据”. This is a representative design image with synthetic candidates, not real geocoding evidence.
+
+Critical UX: candidate choices REPLACE the contents of the large LEFT "附近结果" panel within its EXACT same outer box. No new stacked panel, modal, overlay or extra page height. The right panel stays same outer box but waits for candidate confirmation and does not offer category selection or an active nearby search yet. Four summary cards remain in their existing positions.
+
+Changes:
+1) Header input remains “深圳北站”; button stays “解析地点”.
+2) First summary card label “搜索中心”, large value “待确认”, YELLOW status pill “请选择地点”, no green confirmed label. Second summary card “搜索半径” “3 km” unchanged. Third card “已选类别” “10 / 10” unchanged. Fourth summary card “本次已获取”, large em dash “—”, small helper “尚未搜索附近”; MUST NOT show "0" or "3 个地点".
+3) Left main panel heading becomes “请确认搜索中心”; subtitle “找到多个可能的地点，请选择你想搜索的位置”. Under it show a small yellow capsule “3 个候选 · 示例”. Remove all category filter tabs, sorting dropdown, nearby shops, business hours and result distances. Render three clearly separated candidate rows, substantial heights, readable real-world-like locations, but no automatically selected candidate:
+Row 1: bold “深圳北站”; secondary capsule “铁路车站”; line “深圳市 · 龙华区”; address “示例地址：致远中路”; on right a small pink outlined button “选用此地点”.
+Row 2: bold “深圳北站（西进站口）”; secondary capsule “进站口”; line “深圳市 · 龙华区”; address “示例地址：车站西侧”; on right same pink button “选用此地点”.
+Row 3: bold “深圳北站（东广场）”; secondary capsule “车站广场”; line “深圳市 · 龙华区”; address “示例地址：车站东侧”; on right same button.
+Use numbered small colored squares matching the reference row positions. Footer explanation “选定后，以该地点为中心搜索附近服务”. All three candidates fit the current left panel.
+4) Right panel heading “搜索条件”. Replace its inner form entirely with a restrained deliberate waiting layout: at top small yellow pill “等待确认”; strong text “先选定一个搜索中心”; paragraph “在左侧选择候选地点后，可设置服务类别和搜索半径。” Below a thin divider, small section heading “接下来”, a simple numbered two-row guide “1 选择候选地点” and “2 设置条件，搜索附近”. Use original crisp typography and spacing, no illustration or giant icon. Near bottom a full-width clearly disabled light neutral gray button with label “请先确认地点”; no pink nearby-search button. Do not keep selected center, checkboxes, radius buttons, "修改地点" or any indication that a center is already confirmed.
+5) Sidebar remains selected “探索附近” with “最近搜索” below. Keep all other composition unchanged.
+
+The whole visual must read as the SAME app, SAME fixed layout, different phase. Accurate Chinese text, clean line breaks, nothing clipped. Flat UI design image only.
