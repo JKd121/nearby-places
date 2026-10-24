@@ -1,0 +1,94 @@
+{
+  "checks": [
+    "解析请求带signal",
+    "输入变化取消旧解析",
+    "忽略不配合取消的旧解析响应",
+    "输入变化取消附近搜索",
+    "旧搜索响应不保存历史",
+    "整体失败复用现有错误与重试组件",
+    "搜索请求带signal",
+    "第二页失败保留第一页结果",
+    "新条件取消第二页请求",
+    "历史回放沿用中心及条件",
+    "历史回放不重复解析",
+    "历史回放可取消",
+    "主动取消不显示搜索失败",
+    "没有未处理Promise拒绝"
+  ],
+  "durationMs": 476,
+  "calls": [
+    {
+      "path": "/api/resolve-location",
+      "method": "POST",
+      "aborted": true,
+      "hasSignal": true
+    },
+    {
+      "path": "/api/resolve-location",
+      "method": "POST",
+      "aborted": false,
+      "hasSignal": true
+    },
+    {
+      "path": "/api/history?limit=20",
+      "method": "GET",
+      "aborted": false,
+      "hasSignal": true
+    },
+    {
+      "path": "/api/search",
+      "method": "POST",
+      "aborted": true,
+      "hasSignal": true
+    },
+    {
+      "path": "/api/resolve-location",
+      "method": "POST",
+      "aborted": false,
+      "hasSignal": true
+    },
+    {
+      "path": "/api/search",
+      "method": "POST",
+      "aborted": false,
+      "hasSignal": true
+    },
+    {
+      "path": "/api/search",
+      "method": "POST",
+      "aborted": false,
+      "hasSignal": true
+    },
+    {
+      "path": "/api/history",
+      "method": "POST",
+      "aborted": false,
+      "hasSignal": true
+    },
+    {
+      "path": "/api/history?limit=20",
+      "method": "GET",
+      "aborted": false,
+      "hasSignal": true
+    },
+    {
+      "path": "/api/search/page",
+      "method": "POST",
+      "aborted": false,
+      "hasSignal": true
+    },
+    {
+      "path": "/api/search/page",
+      "method": "POST",
+      "aborted": true,
+      "hasSignal": true
+    },
+    {
+      "path": "/api/search",
+      "method": "POST",
+      "aborted": true,
+      "hasSignal": true
+    }
+  ],
+  "unhandled": []
+}

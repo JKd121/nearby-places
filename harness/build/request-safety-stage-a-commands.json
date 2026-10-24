@@ -1,0 +1,17 @@
+[
+  {
+    "command": "npm run test",
+    "exitCode": 0,
+    "durationMs": 6127
+  },
+  {
+    "command": "npm run check",
+    "exitCode": 0,
+    "durationMs": 4254
+  },
+  {
+    "command": "npm run build",
+    "exitCode": 0,
+    "durationMs": 14987
+  }
+]

@@ -1,5 +1,19 @@
 # Project Harness
 
+## 当前任务：高德请求安全工程 Stage A（2026-10-25）
+
+- Branch / Baseline: `高德请求安全基线` / `df84cf2f6f788596a6e5e2de418b6ad38d515313`（UI PR #19 合并提交）；当前目录，无新增 Worktree。旧 `界面开发` 分支及性能 Worktree 原样保留。
+- Workflow State: LOCAL_GIT_DELIVERY — 用户确认Stage A v2（含64KiB补丁）独立审查通过、无新增P1/P2阻止Preview，并仅授权当前分支本地提交。提交前重新验证受审源码哈希及npm test/check/build；本地提交后停止等待Preview授权。此前浏览器14/20项为历史证据，未执行Preview验收。
+- Approved Scope / Source: 本聊天Stage A实施及入站补丁授权；最新用户明确“Stage A v2独立代码审查通过”并批准本地Git交付。允许当前分支提交已审代码、测试和必要说明，不允许推送、PR或部署。
+- Scope: 浏览器取消/旧响应保护、三个 Route 的完整生命周期、统一高德传输、独立单次/整体超时、实际字节限读、终止异常/安全消息、全失败分类、最小预算接入口契约及隔离回归；用户追加批准三个高德Route的64KiB入站正文限制与独立413，未扩展其他接口。
+- Non-goals: 数据库/schema/迁移/预算扣减、并发调度、WAF、真实高德smoke、平台配置、Issue/PR/推送/部署或新分支/Worktree。UI、历史回放、搜索策略、排序、串行及500ms间隔保留。
+- Evidence / Detail: `harness/build/2026-10-25-request-safety-stage-a.md`、`harness/build/2026-10-25-stage-a-inbound-body-limit.md`、`harness/build/request-safety-stage-a-inbound-evidence.json`；本次重验命令记录 `harness/build/request-safety-stage-a-local-delivery.json`。两个完整审查包仅为本地附件，不纳入Git交付；生成目录、环境文件和原始日志不暂存。
+- Parameters: `src/amap/policy.ts`集中定义8s/60s/1MiB/入站64KiB候选默认值，部署即生效但尚未批准为正式生产参数；60秒为应用时限，不是宿主300秒上限。64KiB限制应用接受/累计的字节，不等于网络/运行时内存峰值。不修改真实环境配置。
+- Coordination: 性能分支 `周边搜索性能优化` / `0ec6ebe` 未改动。复用其 `src/diagnostics.ts` 注入契约并保持主要诊断参数位置，未合并诊断日志/Route包装或性能调度。
+- Next Action: 本地提交交付后等待下一步Preview授权，不推送、不创建PR、不部署、不启动B/C/D。Preview重点验证真实Vercel断连及候选参数；beforeAttempt预算/数据库终止协议留待Stage B，AST范围暂不调整。本地提交标识以当前分支git log为准。
+
+## UI 任务历史记录（下列状态不作为当前授权）
+
 ## 当前任务：UI 工作台改版（2026-10-24）
 
 - Branch / Baseline: `界面开发` / `3bc08d4`（最初由Agent以`codex/ui-neubrutalism`从当时的`origin/master`建立，后续核对发现分支已改名；沿用现名，未再次切换/重命名；当前目录，无新增 worktree）。

@@ -57,6 +57,7 @@ export default function SearchApp() {
   const [conditionsOpen, setConditionsOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const requestId = useRef(0);
+  const activeRequest = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const availableFilters = useMemo(() => getAvailableFilters(response), [response]);
   const activeResult = useMemo(() => getCategoryResult(response, activeFilter), [response, activeFilter]);
@@ -73,6 +74,21 @@ export default function SearchApp() {
   const canRequestProviderPage = !canLoadMore && loadingProviderCategory === null && canRequestSecondProviderPage(providerPageResult);
   const canAnyCategoryRequestProviderPage = useMemo(() => response?.categories.some(canRequestSecondProviderPage) ?? false, [response]);
 
+  function invalidateRequests(): void {
+    requestId.current += 1;
+    activeRequest.current?.abort();
+    activeRequest.current = null;
+  }
+
+  function beginRequest(): AbortController {
+    invalidateRequests();
+    const controller = new AbortController();
+    activeRequest.current = controller;
+    return controller;
+  }
+
+  useEffect(() => () => invalidateRequests(), []);
+
   function resetView(): void {
     const next = resetSearchView();
     setResponse(null); setActiveFilter(next.activeFilter); setSortMode(next.sortMode); setVisibleCount(next.visibleCount); setPublicError(null); setLoadingProviderCategory(null); setProviderPageErrors({});
@@ -80,7 +96,7 @@ export default function SearchApp() {
 
   function invalidateLocation(nextQuery: string): void {
     setQuery(nextQuery);
-    requestId.current += 1;
+    invalidateRequests();
     setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false); setPublicError(null); setPhase("initial"); resetView();
   }
 
@@ -119,7 +135,7 @@ export default function SearchApp() {
     };
     const location = copyConfirmedLocation(item.confirmedLocation);
 
-    requestId.current += 1;
+    invalidateRequests();
     setQuery(item.query);
     setSelectedCategoryIds(replaySnapshot.categoryIds);
     setRadiusMeters(replaySnapshot.radiusMeters);
@@ -132,12 +148,12 @@ export default function SearchApp() {
     void searchNearbyForSnapshot(location, replaySnapshot);
   }
 
-  function changeCategories(next: CategoryKey[]): void { requestId.current += 1; setSelectedCategoryIds(next); resetView(); if (resolvedLocation) setPhase("resolved"); }
+  function changeCategories(next: CategoryKey[]): void { invalidateRequests(); setSelectedCategoryIds(next); resetView(); setPhase(resolvedLocation ? "resolved" : "initial"); }
 
   function changeRadius(next: string): void {
     const value = Number(next) as SearchRadius;
     if (!ALLOWED_RADIUS_METERS.includes(value as (typeof ALLOWED_RADIUS_METERS)[number])) return;
-    requestId.current += 1; setRadiusMeters(value); resetView(); if (resolvedLocation) setPhase("resolved");
+    invalidateRequests(); setRadiusMeters(value); resetView(); setPhase(resolvedLocation ? "resolved" : "initial");
   }
 
   function resolveLocation(): void {
@@ -148,12 +164,13 @@ export default function SearchApp() {
   async function resolveLocationForQuery(queryToResolve: string): Promise<void> {
     const trimmed = queryToResolve.trim();
     if (!trimmed) { setPublicError("请先输入地点名称"); setPhase("resolve-error"); return; }
-    const currentId = requestId.current + 1; requestId.current = currentId;
+    const controller = beginRequest();
+    const currentId = requestId.current;
     setPhase("resolving"); setPublicError(null); resetView(); setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false);
     try {
-      const result = await fetch("/api/resolve-location", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: trimmed }) });
+      const result = await fetch("/api/resolve-location", { signal: controller.signal, method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: trimmed }) });
       const payload = await readJson(result) as ResolutionApiResponse | null;
-      if (currentId !== requestId.current) return;
+      if (controller.signal.aborted || currentId !== requestId.current) return;
       if (!result.ok) throw new Error(payload?.error?.message ?? "地点解析失败");
       if (payload?.status === "needs_confirmation") { setCandidates(payload.candidates ?? []); setPhase("needs-confirmation"); return; }
       if (payload?.status === "not_found") { setPhase("not-found"); return; }
@@ -162,18 +179,20 @@ export default function SearchApp() {
       }
       setResolvedLocation(payload.location); setResolvedQuery(trimmed); setPhase("resolved");
     } catch (error) {
-      if (currentId !== requestId.current) return;
+      if (controller.signal.aborted || currentId !== requestId.current) return;
       setPublicError(error instanceof Error ? error.message : "地点解析失败"); setPhase("resolve-error");
+    } finally {
+      if (activeRequest.current === controller) activeRequest.current = null;
     }
   }
 
   function confirmCandidate(candidate: LocationCandidate): void {
-    requestId.current += 1;
+    invalidateRequests();
     setResolvedLocation(candidate); setResolvedQuery(query.trim()); setCandidates([]); setShowAllCandidates(false); setPublicError(null); resetView(); setPhase("resolved");
     requestAnimationFrame(() => document.getElementById("search-panel-title")?.focus());
   }
 
-  function clearResolved(): void { requestId.current += 1; setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false); resetView(); setPublicError(null); setPhase("initial"); }
+  function clearResolved(): void { invalidateRequests(); setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false); resetView(); setPublicError(null); setPhase("initial"); }
 
   async function searchNearby(): Promise<void> {
     if (!resolvedLocation || selectedCategoryIds.length === 0) return;
@@ -189,7 +208,8 @@ export default function SearchApp() {
     snapshot: HistoryReplaySnapshot,
   ): Promise<void> {
     if (snapshot.categoryIds.length === 0) return;
-    const currentId = requestId.current + 1; requestId.current = currentId;
+    const controller = beginRequest();
+    const currentId = requestId.current;
     setPhase("searching"); setPublicError(null);
     try {
       const searchLocation: GeocodedPlace = { query: snapshot.query.trim(), formattedAddress: location.address ?? location.name, province: null, city: location.city, district: location.district, level: location.placeType, longitude: location.location.longitude, latitude: location.location.latitude };
@@ -199,9 +219,9 @@ export default function SearchApp() {
         radiusMeters: snapshot.radiusMeters,
         confirmedLocation: copyConfirmedLocation(location),
       };
-      const result = await fetch("/api/search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ center: { longitude: location.location.longitude, latitude: location.location.latitude }, resolvedLocation: searchLocation, categoryIds: snapshot.categoryIds, radiusMeters: snapshot.radiusMeters }) });
+      const result = await fetch("/api/search", { signal: controller.signal, method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ center: { longitude: location.location.longitude, latitude: location.location.latitude }, resolvedLocation: searchLocation, categoryIds: snapshot.categoryIds, radiusMeters: snapshot.radiusMeters }) });
       const payload = await readJson(result) as (SearchResponse & { error?: PublicApiError }) | null;
-      if (currentId !== requestId.current) return;
+      if (controller.signal.aborted || currentId !== requestId.current) return;
 
 if (!result.ok || !payload?.categories) {
   throw new Error(
@@ -224,8 +244,10 @@ if (hasSuccessfulCategory) {
   void history.save(historyInput);
 }
     } catch (error) {
-      if (currentId !== requestId.current) return;
+      if (controller.signal.aborted || currentId !== requestId.current) return;
       setPublicError(error instanceof Error ? error.message : "周边搜索失败"); setPhase("search-error");
+    } finally {
+      if (activeRequest.current === controller) activeRequest.current = null;
     }
   }
 
@@ -240,6 +262,7 @@ if (hasSuccessfulCategory) {
   async function loadProviderPage(): Promise<void> {
     const categoryId = providerPageCategory;
     if (!response || !categoryId || !canRequestSecondProviderPage(providerPageResult) || loadingProviderCategory !== null) return;
+    const controller = beginRequest();
     const currentId = requestId.current;
     setLoadingProviderCategory(categoryId);
     setProviderPageErrors((current) => {
@@ -247,18 +270,19 @@ if (hasSuccessfulCategory) {
       return remaining;
     });
     try {
-      const result = await fetch("/api/search/page", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ center: { longitude: response.resolvedLocation.longitude, latitude: response.resolvedLocation.latitude }, categoryId, radiusMeters }) });
+      const result = await fetch("/api/search/page", { signal: controller.signal, method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ center: { longitude: response.resolvedLocation.longitude, latitude: response.resolvedLocation.latitude }, categoryId, radiusMeters }) });
       const payload = await readJson(result) as (SearchSecondPageResponse & { error?: PublicApiError }) | null;
-      if (currentId !== requestId.current) return;
+      if (controller.signal.aborted || currentId !== requestId.current) return;
       if (!result.ok || !payload?.page || payload.categoryId !== categoryId) throw new Error(payload?.error?.message ?? "获取更多地点失败");
       const nextResponse = mergeProviderPageResult(response, categoryId, payload.page);
       const nextTotal = sortPlacesForFilter(getPlacesForFilter(nextResponse, activeFilter), effectiveSortMode, activeFilter, selectedCategoryIds).length;
       setResponse(nextResponse);
       setVisibleCount((current) => getNextVisibleCount(activeFilter, current, nextTotal));
     } catch (error) {
-      if (currentId !== requestId.current) return;
+      if (controller.signal.aborted || currentId !== requestId.current) return;
       setProviderPageErrors((current) => ({ ...current, [categoryId]: error instanceof Error ? error.message : "获取更多地点失败" }));
     } finally {
+      if (activeRequest.current === controller) activeRequest.current = null;
       if (currentId === requestId.current) setLoadingProviderCategory(null);
     }
   }

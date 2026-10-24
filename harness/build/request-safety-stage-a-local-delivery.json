@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-25",
+  "branch": "高德请求安全基线",
+  "baseline": "df84cf2f6f788596a6e5e2de418b6ad38d515313",
+  "authorization": "Local commit only; no push, PR or deployment. Await Preview authorization.",
+  "reviewedSourceFilesMatched": 29,
+  "totalTests": 170,
+  "commands": [
+    {
+      "command": "npm run test",
+      "exitCode": 0,
+      "durationMs": 8171
+    },
+    {
+      "command": "npm run check",
+      "exitCode": 0,
+      "durationMs": 5319
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "durationMs": 16276
+    }
+  ],
+  "deliveryFiles": [
+    "PLANS.md",
+    "app/api/resolve-location/route.ts",
+    "app/api/search/page/route.ts",
+    "app/api/search/route.ts",
+    "harness/build/2026-10-25-request-safety-stage-a.md",
+    "harness/build/2026-10-25-stage-a-inbound-body-limit.md",
+    "harness/build/request-safety-stage-a-browser.json",
+    "harness/build/request-safety-stage-a-commands.json",
+    "harness/build/request-safety-stage-a-evidence.json",
+    "harness/build/request-safety-stage-a-inbound-commands.json",
+    "harness/build/request-safety-stage-a-inbound-evidence.json",
+    "harness/build/request-safety-stage-a-local-delivery.json",
+    "harness/build/request-safety-stage-a-unmount.json",
+    "package.json",
+    "scripts/check-amap-boundary.mjs",
+    "src/amap/client.ts",
+    "src/amap/errors.ts",
+    "src/amap/policy.ts",
+    "src/amap/request-context.ts",
+    "src/amap/transport.ts",
+    "src/diagnostics.ts",
+    "src/location/http.ts",
+    "src/location/provider.ts",
+    "src/location/resolver.ts",
+    "src/location/types.ts",
+    "src/search/service.ts",
+    "src/server/amap.ts",
+    "src/server/http.ts",
+    "src/server/request-lifecycle.ts",
+    "src/server/request-policy.ts",
+    "src/web/SearchApp.tsx",
+    "test/amap-boundary.test.mjs",
+    "test/request-lifecycle.test.ts",
+    "test/request-safety-browser.mjs",
+    "test/request-safety-route.test.ts",
+    "test/request-safety-unmount-server.mjs",
+    "test/search-service.test.ts",
+    "test/smoke.test.ts",
+    "test/transport.test.ts"
+  ],
+  "excludedLocalAttachments": [
+    "harness/build/2026-10-25-stage-a-independent-review.md",
+    "harness/build/2026-10-25-stage-a-independent-review-v2.md"
+  ],
+  "excludedGenerated": "Ignored dist/.next/generated, environment files and raw logs are not staged.",
+  "commitIdentity": "Read the local branch HEAD; the commit cannot contain its own hash."
+}

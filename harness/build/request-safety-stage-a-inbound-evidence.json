@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-25",
+  "baseline": "df84cf2f6f788596a6e5e2de418b6ad38d515313",
+  "branch": "高德请求安全基线",
+  "status": "Stage A v2 independent review passed per owner; authorized local commit only; Preview authorization pending.",
+  "initialReview": "Owner reports architecture passed, no confirmed P1. This patch only self-reviewed.",
+  "candidateRequestBytes": 65536,
+  "memoryLimitMeaning": "Limits application accepted/accumulated body bytes, not network/runtime peak allocations.",
+  "nodeTests": 153,
+  "architectureTests": 17,
+  "totalTests": 170,
+  "addedTests": 14,
+  "failures": 0,
+  "commands": [
+    {
+      "command": "npm run test",
+      "exitCode": 0,
+      "durationMs": 6689
+    },
+    {
+      "command": "npm run check",
+      "exitCode": 0,
+      "durationMs": 6087
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "durationMs": 16496
+    }
+  ],
+  "loopbackHTTP": {
+    "mockTimeoutMs": 100,
+    "timeoutDurationMs": 107,
+    "connectionClosedAfterMs": 108,
+    "requests": 2,
+    "redirectFollowed": false
+  },
+  "coverage": [
+    "exact 64 KiB accepted",
+    "64 KiB + 1 rejected",
+    "chunked and split UTF-8 multibyte",
+    "missing/false Content-Length",
+    "reader cancelled/unlocked; no subsequent pull",
+    "request aborted; no business continuation",
+    "three Routes 413 safe response/logs and zero provider calls",
+    "three Routes preserve 400/499/504"
+  ],
+  "notRun": [
+    "real AMap smoke",
+    "database operations",
+    "k6/WAF",
+    "Preview/Production deployment",
+    "browser automation rerun: frontend unchanged; prior browser artifacts historical only"
+  ],
+  "priorReviewFile": "harness/build/2026-10-25-stage-a-independent-review.md",
+  "priorReviewSha256": "2287b209263b867be583418535ac85554f7244fd25986a61e94a449437f0f47b",
+  "sourceSha256": {
+    "app/api/resolve-location/route.ts": "b43e23eb62cf55f74c9f9bdb50c4e3e764ad96a58a2de38d1663ec265ebc6e8a",
+    "app/api/search/page/route.ts": "83c9034f6ad74ecbf4d658ddc67b4490e6f7cee5d1277df5739643953ad0e1c4",
+    "app/api/search/route.ts": "d4ff09d8370edfc8926d05e6cc628690cde286718c8c4492caa05d70dc3d4d80",
+    "package.json": "c14903a98da6fd699d361236e671d73df838cb3b58f7f953fa7ee7cb66377457",
+    "scripts/check-amap-boundary.mjs": "ca5544ba7ea850193f9a53edfdaf802842dbf68bf7ee614c6f041e70adfda0ba",
+    "src/amap/client.ts": "7309d248bf6b7a986176f040f417cd769d77e799cd2ff5c4691a2388e1d43a57",
+    "src/amap/errors.ts": "d5ea711e7a5f133d1856049f46daa1f8d8b6d0cc04fe56037036432ad94b82f7",
+    "src/amap/policy.ts": "2d55071d46fb47e6087c6e7c5d4c60a658e6a0c13d0a3704b7ddb4bb3e84be55",
+    "src/amap/request-context.ts": "98d9e6d6a391a0764d93ce57cbda44fcde6d344ad867b68d60a637696444a07a",
+    "src/amap/transport.ts": "4162a4ff86d4a14d0774f092324c14d72f2987b31d012acf9a7dcb6e4e7b6512",
+    "src/diagnostics.ts": "e743b469cf77fc2414310e4bde2ad9a5b09dfc86d095ad614f0ca96e3c500336",
+    "src/location/http.ts": "9885477b01f6a2eb01903943783cb423b51ec574000749c4eda6c591a9ced669",
+    "src/location/provider.ts": "ff00e19521526fba1020b76b5fd5398723ec906ae72055c3cf3a1622ac22c99b",
+    "src/location/resolver.ts": "520305a1276b3b1c2c63c1f6a543aa6092f61a6279d61364ac80838bb149ef4e",
+    "src/location/types.ts": "f1efbbbe1fdfc857ca6abeaaa4e9e0a59f23b0517ff11f22c4a187021f92c5e3",
+    "src/search/service.ts": "574524747d07489f91ef1306abb83278981b86043c00f368887fd16c0cd6c7f1",
+    "src/server/amap.ts": "321e96efde59dbbcce18c57301e506afbfcc442926d87797791700195fb21f83",
+    "src/server/http.ts": "65e29553fd2fc34e69c0b24772027299fb7a285ee01d42223e2258eabc96ddde",
+    "src/server/request-lifecycle.ts": "bec14781e55fc041c9df403f901119e050e71b7ea9df4c939b9b936d7932d91c",
+    "src/server/request-policy.ts": "d406a258f1befa3a8befa636ddddcb7511d51e04786d1e2c0a0e604a2a025c2b",
+    "src/web/SearchApp.tsx": "7c252ddb587ce9418685268473d5c99ce65c871a04ce0968968208a4148b8a0a",
+    "test/amap-boundary.test.mjs": "054f09fac8b170245b332f976ca41bd036bc9700ac2484c144e0d917e1d25dbd",
+    "test/request-lifecycle.test.ts": "618d795dbf5ab00ee8993a77818009372eab537881daa3b34786d58045cd8c51",
+    "test/request-safety-browser.mjs": "8e1a41acc8a4045eeb823d95c02665293af042517222ff5f93b608673223beaf",
+    "test/request-safety-route.test.ts": "5bad3718cbfdd3850215b00ff0545cd250b5979c3e0588e580578488de4e68f0",
+    "test/request-safety-unmount-server.mjs": "977bb153c8a9c9bae4f453fb89ee830aded17e228da10413f9434e4abe4dfb25",
+    "test/search-service.test.ts": "cd29043ebe33fe8c16de762949a169fed363c71321fb0db25cb529e78a6c241e",
+    "test/smoke.test.ts": "c72923751b010d2cf6fb1a098be001998a01f55ee689f89dca1d256709009edd",
+    "test/transport.test.ts": "ccdb924cc92a0e136e0d51614cb7e75ade7440afab387f0b0ca40dcb8dad4b44"
+  },
+  "finalReview": "Owner explicitly approved v2 including 64 KiB patch; no new P1/P2 blocking Preview."
+}
