@@ -1,0 +1,1127 @@
+{
+  "requests": [
+    {
+      "path": "/api/history",
+      "method": "GET",
+      "body": null,
+      "at": "2026-10-24T13:24:31.827Z",
+      "status": 200
+    },
+    {
+      "path": "/api/resolve-location",
+      "method": "POST",
+      "body": {
+        "query": "深圳北站"
+      },
+      "at": "2026-10-24T13:24:53.777Z"
+    },
+    {
+      "path": "/api/resolve-location",
+      "method": "POST",
+      "body": {
+        "query": "深圳北站"
+      },
+      "at": "2026-10-24T13:25:38.594Z"
+    },
+    {
+      "path": "/api/search",
+      "method": "POST",
+      "body": {
+        "center": {
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "resolvedLocation": {
+          "query": "深圳北站",
+          "formattedAddress": "验收西广场地址",
+          "province": null,
+          "city": "深圳市",
+          "district": "龙华区",
+          "level": "火车站",
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "categoryIds": [
+          "hotel",
+          "mall",
+          "hotpot",
+          "bakery",
+          "dessert",
+          "ktv",
+          "billiards",
+          "gym",
+          "bus",
+          "subway"
+        ],
+        "radiusMeters": 3000
+      },
+      "at": "2026-10-24T13:26:14.964Z",
+      "resultVersion": 1
+    },
+    {
+      "path": "/api/history",
+      "method": "POST",
+      "body": {
+        "query": "深圳北站",
+        "categoryIds": [
+          "hotel",
+          "mall",
+          "hotpot",
+          "bakery",
+          "dessert",
+          "ktv",
+          "billiards",
+          "gym",
+          "bus",
+          "subway"
+        ],
+        "radiusMeters": 3000,
+        "confirmedLocation": {
+          "id": "B-test-west",
+          "name": "深圳北站西广场",
+          "placeType": "火车站",
+          "city": "深圳市",
+          "district": "龙华区",
+          "address": "验收西广场地址",
+          "location": {
+            "longitude": 114.025,
+            "latitude": 22.609
+          }
+        }
+      },
+      "at": "2026-10-24T13:26:15.027Z",
+      "status": 200
+    },
+    {
+      "path": "/api/history",
+      "method": "GET",
+      "body": null,
+      "at": "2026-10-24T13:26:15.068Z",
+      "status": 200
+    },
+    {
+      "path": "/api/search/page",
+      "method": "POST",
+      "body": {
+        "center": {
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "categoryId": "hotpot",
+        "radiusMeters": 3000
+      },
+      "at": "2026-10-24T13:27:04.169Z"
+    },
+    {
+      "path": "/api/search/page",
+      "method": "POST",
+      "body": {
+        "center": {
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "categoryId": "hotpot",
+        "radiusMeters": 3000
+      },
+      "at": "2026-10-24T13:27:05.684Z"
+    },
+    {
+      "path": "/api/history",
+      "method": "GET",
+      "body": null,
+      "at": "2026-10-24T13:27:06.681Z",
+      "status": 200
+    },
+    {
+      "path": "/api/search",
+      "method": "POST",
+      "body": {
+        "center": {
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "resolvedLocation": {
+          "query": "深圳北站",
+          "formattedAddress": "验收西广场地址",
+          "province": null,
+          "city": "深圳市",
+          "district": "龙华区",
+          "level": "火车站",
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "categoryIds": [
+          "bakery",
+          "billiards",
+          "bus",
+          "dessert",
+          "gym",
+          "hotel",
+          "hotpot",
+          "ktv",
+          "mall",
+          "subway"
+        ],
+        "radiusMeters": 3000
+      },
+      "at": "2026-10-24T13:27:58.896Z",
+      "resultVersion": 2
+    },
+    {
+      "path": "/api/history",
+      "method": "POST",
+      "body": {
+        "query": "深圳北站",
+        "categoryIds": [
+          "bakery",
+          "billiards",
+          "bus",
+          "dessert",
+          "gym",
+          "hotel",
+          "hotpot",
+          "ktv",
+          "mall",
+          "subway"
+        ],
+        "radiusMeters": 3000,
+        "confirmedLocation": {
+          "id": "B-test-west",
+          "name": "深圳北站西广场",
+          "placeType": "火车站",
+          "city": "深圳市",
+          "district": "龙华区",
+          "address": "验收西广场地址",
+          "location": {
+            "longitude": 114.025,
+            "latitude": 22.609
+          }
+        }
+      },
+      "at": "2026-10-24T13:27:58.958Z",
+      "status": 200
+    },
+    {
+      "path": "/api/history",
+      "method": "GET",
+      "body": null,
+      "at": "2026-10-24T13:27:58.964Z",
+      "status": 200
+    },
+    {
+      "path": "/api/search",
+      "method": "POST",
+      "body": {
+        "center": {
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "resolvedLocation": {
+          "query": "深圳北站",
+          "formattedAddress": "验收西广场地址",
+          "province": null,
+          "city": "深圳市",
+          "district": "龙华区",
+          "level": "火车站",
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "categoryIds": [
+          "bakery",
+          "billiards",
+          "bus",
+          "dessert",
+          "gym",
+          "hotel",
+          "hotpot",
+          "ktv",
+          "mall",
+          "subway"
+        ],
+        "radiusMeters": 3000
+      },
+      "at": "2026-10-24T13:28:46.577Z"
+    },
+    {
+      "path": "/api/search",
+      "method": "POST",
+      "body": {
+        "center": {
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "resolvedLocation": {
+          "query": "深圳北站",
+          "formattedAddress": "验收西广场地址",
+          "province": null,
+          "city": "深圳市",
+          "district": "龙华区",
+          "level": "火车站",
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "categoryIds": [
+          "bakery",
+          "billiards",
+          "bus",
+          "dessert",
+          "gym",
+          "hotel",
+          "hotpot",
+          "ktv",
+          "mall",
+          "subway"
+        ],
+        "radiusMeters": 3000
+      },
+      "at": "2026-10-24T13:28:47.887Z",
+      "resultVersion": 2
+    },
+    {
+      "path": "/api/history",
+      "method": "POST",
+      "body": {
+        "query": "深圳北站",
+        "categoryIds": [
+          "bakery",
+          "billiards",
+          "bus",
+          "dessert",
+          "gym",
+          "hotel",
+          "hotpot",
+          "ktv",
+          "mall",
+          "subway"
+        ],
+        "radiusMeters": 3000,
+        "confirmedLocation": {
+          "id": "B-test-west",
+          "name": "深圳北站西广场",
+          "placeType": "火车站",
+          "city": "深圳市",
+          "district": "龙华区",
+          "address": "验收西广场地址",
+          "location": {
+            "longitude": 114.025,
+            "latitude": 22.609
+          }
+        }
+      },
+      "at": "2026-10-24T13:28:47.952Z",
+      "status": 200
+    },
+    {
+      "path": "/api/history",
+      "method": "GET",
+      "body": null,
+      "at": "2026-10-24T13:28:47.957Z",
+      "status": 200
+    },
+    {
+      "path": "/api/search",
+      "method": "POST",
+      "body": {
+        "center": {
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "resolvedLocation": {
+          "query": "深圳北站",
+          "formattedAddress": "验收西广场地址",
+          "province": null,
+          "city": "深圳市",
+          "district": "龙华区",
+          "level": "火车站",
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "categoryIds": [
+          "bakery",
+          "billiards",
+          "bus",
+          "dessert",
+          "gym",
+          "hotel",
+          "hotpot",
+          "ktv",
+          "mall",
+          "subway"
+        ],
+        "radiusMeters": 3000
+      },
+      "at": "2026-10-24T13:29:11.011Z",
+      "resultVersion": 2
+    },
+    {
+      "path": "/api/history",
+      "method": "POST",
+      "body": {
+        "query": "深圳北站",
+        "categoryIds": [
+          "bakery",
+          "billiards",
+          "bus",
+          "dessert",
+          "gym",
+          "hotel",
+          "hotpot",
+          "ktv",
+          "mall",
+          "subway"
+        ],
+        "radiusMeters": 3000,
+        "confirmedLocation": {
+          "id": "B-test-west",
+          "name": "深圳北站西广场",
+          "placeType": "火车站",
+          "city": "深圳市",
+          "district": "龙华区",
+          "address": "验收西广场地址",
+          "location": {
+            "longitude": 114.025,
+            "latitude": 22.609
+          }
+        }
+      },
+      "at": "2026-10-24T13:29:11.019Z",
+      "status": 200
+    },
+    {
+      "path": "/api/history",
+      "method": "GET",
+      "body": null,
+      "at": "2026-10-24T13:29:11.028Z",
+      "status": 200
+    },
+    {
+      "path": "/api/search",
+      "method": "POST",
+      "body": {
+        "center": {
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "resolvedLocation": {
+          "query": "深圳北站",
+          "formattedAddress": "验收西广场地址",
+          "province": null,
+          "city": "深圳市",
+          "district": "龙华区",
+          "level": "火车站",
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "categoryIds": [
+          "bakery",
+          "billiards",
+          "bus",
+          "dessert",
+          "gym",
+          "hotel",
+          "hotpot",
+          "ktv",
+          "mall",
+          "subway"
+        ],
+        "radiusMeters": 3000
+      },
+      "at": "2026-10-24T13:29:43.89Z",
+      "resultVersion": 2
+    },
+    {
+      "path": "/api/search",
+      "method": "POST",
+      "body": {
+        "center": {
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "resolvedLocation": {
+          "query": "深圳北站",
+          "formattedAddress": "验收西广场地址",
+          "province": null,
+          "city": "深圳市",
+          "district": "龙华区",
+          "level": "火车站",
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "categoryIds": [
+          "bakery",
+          "billiards",
+          "bus",
+          "dessert",
+          "gym",
+          "hotel",
+          "hotpot",
+          "ktv",
+          "mall",
+          "subway"
+        ],
+        "radiusMeters": 3000
+      },
+      "at": "2026-10-24T13:30:08.362Z",
+      "resultVersion": 2
+    },
+    {
+      "path": "/api/history",
+      "method": "POST",
+      "body": {
+        "query": "深圳北站",
+        "categoryIds": [
+          "bakery",
+          "billiards",
+          "bus",
+          "dessert",
+          "gym",
+          "hotel",
+          "hotpot",
+          "ktv",
+          "mall",
+          "subway"
+        ],
+        "radiusMeters": 3000,
+        "confirmedLocation": {
+          "id": "B-test-west",
+          "name": "深圳北站西广场",
+          "placeType": "火车站",
+          "city": "深圳市",
+          "district": "龙华区",
+          "address": "验收西广场地址",
+          "location": {
+            "longitude": 114.025,
+            "latitude": 22.609
+          }
+        }
+      },
+      "at": "2026-10-24T13:30:08.423Z",
+      "status": 200
+    },
+    {
+      "path": "/api/history",
+      "method": "GET",
+      "body": null,
+      "at": "2026-10-24T13:30:08.428Z",
+      "status": 200
+    },
+    {
+      "path": "/api/history",
+      "method": "DELETE",
+      "body": {
+        "id": "saved-1"
+      },
+      "at": "2026-10-24T13:30:31.136Z"
+    },
+    {
+      "path": "/api/history",
+      "method": "GET",
+      "body": null,
+      "at": "2026-10-24T13:30:31.195Z",
+      "status": 200
+    },
+    {
+      "path": "/api/history",
+      "method": "GET",
+      "body": null,
+      "at": "2026-10-24T13:30:50.683Z"
+    },
+    {
+      "path": "/api/history",
+      "method": "GET",
+      "body": null,
+      "at": "2026-10-24T13:31:51.47Z",
+      "status": 200
+    },
+    {
+      "path": "/api/resolve-location",
+      "method": "POST",
+      "body": {
+        "query": "深圳北站"
+      },
+      "at": "2026-10-24T13:31:53.558Z"
+    },
+    {
+      "path": "/api/resolve-location",
+      "method": "POST",
+      "body": {
+        "query": "深圳北站"
+      },
+      "at": "2026-10-24T13:32:14.631Z"
+    },
+    {
+      "path": "/api/resolve-location",
+      "method": "POST",
+      "body": {
+        "query": "深圳北站"
+      },
+      "at": "2026-10-24T13:35:17.166Z"
+    },
+    {
+      "path": "/api/history",
+      "method": "GET",
+      "body": null,
+      "at": "2026-10-24T13:35:17.342Z",
+      "status": 200
+    },
+    {
+      "path": "/api/search",
+      "method": "POST",
+      "body": {
+        "center": {
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "resolvedLocation": {
+          "query": "深圳北站",
+          "formattedAddress": "验收西广场地址",
+          "province": null,
+          "city": "深圳市",
+          "district": "龙华区",
+          "level": "火车站",
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "categoryIds": [
+          "hotel",
+          "mall",
+          "hotpot",
+          "bakery",
+          "dessert",
+          "ktv",
+          "billiards",
+          "gym",
+          "bus",
+          "subway"
+        ],
+        "radiusMeters": 3000
+      },
+      "at": "2026-10-24T13:35:20.244Z",
+      "resultVersion": 2
+    },
+    {
+      "path": "/api/history",
+      "method": "POST",
+      "body": {
+        "query": "深圳北站",
+        "categoryIds": [
+          "hotel",
+          "mall",
+          "hotpot",
+          "bakery",
+          "dessert",
+          "ktv",
+          "billiards",
+          "gym",
+          "bus",
+          "subway"
+        ],
+        "radiusMeters": 3000,
+        "confirmedLocation": {
+          "id": "B-test-west",
+          "name": "深圳北站西广场",
+          "placeType": "火车站",
+          "city": "深圳市",
+          "district": "龙华区",
+          "address": "验收西广场地址",
+          "location": {
+            "longitude": 114.025,
+            "latitude": 22.609
+          }
+        }
+      },
+      "at": "2026-10-24T13:35:20.306Z",
+      "status": 200
+    },
+    {
+      "path": "/api/history",
+      "method": "GET",
+      "body": null,
+      "at": "2026-10-24T13:35:20.316Z",
+      "status": 200
+    },
+    {
+      "path": "/api/search",
+      "method": "POST",
+      "body": {
+        "center": {
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "resolvedLocation": {
+          "query": "深圳北站",
+          "formattedAddress": "验收西广场地址",
+          "province": null,
+          "city": "深圳市",
+          "district": "龙华区",
+          "level": "火车站",
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "categoryIds": [
+          "hotel",
+          "mall",
+          "hotpot",
+          "bakery",
+          "dessert",
+          "ktv",
+          "billiards",
+          "gym",
+          "bus",
+          "subway"
+        ],
+        "radiusMeters": 3000
+      },
+      "at": "2026-10-24T13:38:40.57Z",
+      "resultVersion": 2
+    },
+    {
+      "path": "/api/search",
+      "method": "POST",
+      "body": {
+        "center": {
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "resolvedLocation": {
+          "query": "深圳北站",
+          "formattedAddress": "验收西广场地址",
+          "province": null,
+          "city": "深圳市",
+          "district": "龙华区",
+          "level": "火车站",
+          "longitude": 114.025,
+          "latitude": 22.609
+        },
+        "categoryIds": [
+          "hotel",
+          "mall",
+          "hotpot",
+          "bakery",
+          "dessert",
+          "ktv",
+          "billiards",
+          "gym",
+          "bus",
+          "subway"
+        ],
+        "radiusMeters": 3000
+      },
+      "at": "2026-10-24T13:39:15.529Z",
+      "resultVersion": 2
+    },
+    {
+      "path": "/api/history",
+      "method": "POST",
+      "body": {
+        "query": "深圳北站",
+        "categoryIds": [
+          "hotel",
+          "mall",
+          "hotpot",
+          "bakery",
+          "dessert",
+          "ktv",
+          "billiards",
+          "gym",
+          "bus",
+          "subway"
+        ],
+        "radiusMeters": 3000,
+        "confirmedLocation": {
+          "id": "B-test-west",
+          "name": "深圳北站西广场",
+          "placeType": "火车站",
+          "city": "深圳市",
+          "district": "龙华区",
+          "address": "验收西广场地址",
+          "location": {
+            "longitude": 114.025,
+            "latitude": 22.609
+          }
+        }
+      },
+      "at": "2026-10-24T13:39:15.585Z",
+      "status": 200
+    },
+    {
+      "path": "/api/history",
+      "method": "GET",
+      "body": null,
+      "at": "2026-10-24T13:39:15.604Z",
+      "status": 200
+    }
+  ],
+  "records": [
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-0",
+      "dedupeKey": "legacy-0"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-1",
+      "dedupeKey": "legacy-1"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-2",
+      "dedupeKey": "legacy-2"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-3",
+      "dedupeKey": "legacy-3"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-4",
+      "dedupeKey": "legacy-4"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-5",
+      "dedupeKey": "legacy-5"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-6",
+      "dedupeKey": "legacy-6"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-7",
+      "dedupeKey": "legacy-7"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-8",
+      "dedupeKey": "legacy-8"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-9",
+      "dedupeKey": "legacy-9"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-10",
+      "dedupeKey": "legacy-10"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-11",
+      "dedupeKey": "legacy-11"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-12",
+      "dedupeKey": "legacy-12"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-13",
+      "dedupeKey": "legacy-13"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-14",
+      "dedupeKey": "legacy-14"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-15",
+      "dedupeKey": "legacy-15"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-16",
+      "dedupeKey": "legacy-16"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-17",
+      "dedupeKey": "legacy-17"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-18",
+      "dedupeKey": "legacy-18"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-19",
+      "dedupeKey": "legacy-19"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-20",
+      "dedupeKey": "legacy-20"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-21",
+      "dedupeKey": "legacy-21"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-22",
+      "dedupeKey": "legacy-22"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-23",
+      "dedupeKey": "legacy-23"
+    },
+    {
+      "visitorId": "history-browser-test",
+      "query": "旧记录",
+      "categoryIds": [
+        "hotel"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": null,
+      "searchedAt": "2026-10-24T13:24:12.614Z",
+      "id": "legacy-24",
+      "dedupeKey": "legacy-24"
+    },
+    {
+      "id": "saved-1",
+      "searchedAt": "2026-10-24T13:39:15.585Z",
+      "visitorId": "history-browser-test",
+      "dedupeKey": "[\"深圳北站\",[\"bakery\",\"billiards\",\"bus\",\"dessert\",\"gym\",\"hotel\",\"hotpot\",\"ktv\",\"mall\",\"subway\"],3000,114.025,22.609]",
+      "query": "深圳北站",
+      "categoryIds": [
+        "bakery",
+        "billiards",
+        "bus",
+        "dessert",
+        "gym",
+        "hotel",
+        "hotpot",
+        "ktv",
+        "mall",
+        "subway"
+      ],
+      "radiusMeters": 3000,
+      "confirmedLocation": {
+        "id": "B-test-west",
+        "name": "深圳北站西广场",
+        "placeType": "火车站",
+        "city": "深圳市",
+        "district": "龙华区",
+        "address": "验收西广场地址",
+        "location": {
+          "longitude": 114.025,
+          "latitude": 22.609
+        }
+      }
+    }
+  ],
+  "state": {
+    "version": 2,
+    "failNextSearch": false,
+    "failCategory": null,
+    "slowLongitude": null,
+    "resolveMode": "candidates",
+    "candidateCount": 12,
+    "resultCount": 25,
+    "historyReadError": false,
+    "historyDeleteError": false,
+    "failNextPage": false
+  },
+  "candidates": [
+    {
+      "id": "B-test-east",
+      "name": "深圳北站东广场",
+      "placeType": "火车站",
+      "city": "深圳市",
+      "district": "龙华区",
+      "address": "验收东广场地址",
+      "location": {
+        "longitude": 114.032,
+        "latitude": 22.609
+      }
+    },
+    {
+      "id": "B-test-west",
+      "name": "深圳北站西广场",
+      "placeType": "火车站",
+      "city": "深圳市",
+      "district": "龙华区",
+      "address": "验收西广场地址",
+      "location": {
+        "longitude": 114.025,
+        "latitude": 22.609
+      }
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "url": "http://localhost:3108/ui-preview",
+  "expanded": {
+    "contentWidth": 1440,
+    "navNames": [
+      "探索附近",
+      "最近搜索",
+      "个人中心"
+    ],
+    "pageWidth": 1440,
+    "railWidth": 240,
+    "title": "探索附近",
+    "viewport": 1440
+  },
+  "collapsed": {
+    "contentWidth": 1440,
+    "expanded": "false",
+    "pageWidth": 1440,
+    "railWidth": 72,
+    "viewport": 1440
+  },
+  "mobile": {
+    "contentWidth": 390,
+    "pageWidth": 390,
+    "railWidth": 72,
+    "viewport": 390
+  },
+  "interactions": [
+    "three navigation buttons update heading, selection and breadcrumb",
+    "topbar profile button opens personal view",
+    "Enter expands navigation and keeps toggle focus",
+    "Tab reaches named icon controls and displays focus tooltip"
+  ],
+  "consoleWarningsAndErrors": [],
+  "note": "Measurements and screenshots captured after layout transitions settled. Earlier transitional captures replaced. Business isolation checked by source inspection and unchanged existing app files, not by Resource Timing (unavailable in browser read scope)."
+}
