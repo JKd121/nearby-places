@@ -21,8 +21,9 @@ test("product search uses page 1/25, preserves order and isolates structured AMa
   }, async () => {});
   assert.deepEqual(response.categories.map((item) => item.category.key), selected.map((item) => item.key));
   assert.equal(response.categories[0]?.status, "error");
-  assert.equal(response.categories[0]?.error?.info, "CUQPS_HAS_EXCEEDED_THE_LIMIT");
-  assert.equal(response.categories[0]?.error?.infocode, "10021");
+  assert.equal(response.categories[0]?.error?.info, null);
+  assert.equal(response.categories[0]?.error?.infocode, null);
+  assert.equal(response.categories[0]?.error?.message.includes("limited"), false);
   assert.equal(response.categories[1]?.status, "empty");
   assert.equal(response.status, "partial success");
   assert.deepEqual(optionsSeen, [{ radiusMeters: 3000, pageNumber: 1, pageSize: 25 }, { radiusMeters: 3000, pageNumber: 1, pageSize: 25 }]);

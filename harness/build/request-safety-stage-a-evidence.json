@@ -1,0 +1,94 @@
+{
+  "baseline": "df84cf2f6f788596a6e5e2de418b6ad38d515313",
+  "branch": "高德请求安全基线",
+  "date": "2026-10-25",
+  "verification": "Historical pre-inbound-patch evidence. Initial architecture independently reviewed per owner; see superseding patch evidence for current version.",
+  "commands": [
+    {
+      "command": "npm run test",
+      "exitCode": 0,
+      "durationMs": 6127
+    },
+    {
+      "command": "npm run check",
+      "exitCode": 0,
+      "durationMs": 4254
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "durationMs": 14987
+    }
+  ],
+  "nodeTests": 139,
+  "architectureTests": 17,
+  "failures": 0,
+  "loopbackHTTP": {
+    "mockTimeoutMs": 100,
+    "timeoutDurationMs": 105,
+    "connectionClosedAfterMs": 106,
+    "requests": 2,
+    "redirectFollowed": false
+  },
+  "browser": {
+    "artifact": "request-safety-stage-a-browser.json",
+    "assertions": 14,
+    "durationMs": 476,
+    "consoleWarnings": 0,
+    "consoleErrors": 0
+  },
+  "realComponentFixture": {
+    "artifact": "request-safety-stage-a-unmount.json",
+    "assertions": 20,
+    "durationMs": 1035,
+    "consoleWarnings": 0,
+    "consoleErrors": 0
+  },
+  "candidatePolicy": {
+    "upstreamTimeoutMs": 8000,
+    "requestTimeoutMs": 60000,
+    "maxResponseBytes": 1048576,
+    "ownerConfirmedHostMaxMs": 300000,
+    "productionParametersFrozen": false
+  },
+  "notRun": [
+    "real AMap smoke",
+    "database integration or budget/concurrency/k6",
+    "Vercel client disconnect",
+    "Preview deployment/acceptance",
+    "independent code review",
+    "Production deployment"
+  ],
+  "sourceSha256": {
+    "app/api/resolve-location/route.ts": "8974f8b37da05b473416d61389c6bfa171d6c12e5d9c988e88f7c49bed5d9bd3",
+    "app/api/search/page/route.ts": "e68148ed2fd143b933483f6edab51e070f6bbe4a970ad23dfe45976f088f5195",
+    "app/api/search/route.ts": "86519018c3430a2745422a3bfa1a3322cb4a48f40071ecc5d5f1ff58c2a0d1b3",
+    "package.json": "c14903a98da6fd699d361236e671d73df838cb3b58f7f953fa7ee7cb66377457",
+    "scripts/check-amap-boundary.mjs": "ca5544ba7ea850193f9a53edfdaf802842dbf68bf7ee614c6f041e70adfda0ba",
+    "src/amap/client.ts": "7309d248bf6b7a986176f040f417cd769d77e799cd2ff5c4691a2388e1d43a57",
+    "src/amap/errors.ts": "b838eec2942ef9d6ac9662aea1db1245a17d87c8244c278489bd8a0712fd9e6d",
+    "src/amap/policy.ts": "6c847d9bc1b7171d39e2b1c32501a4dbeceb06c401209a38dd9973520e43be5d",
+    "src/amap/request-context.ts": "98d9e6d6a391a0764d93ce57cbda44fcde6d344ad867b68d60a637696444a07a",
+    "src/amap/transport.ts": "4162a4ff86d4a14d0774f092324c14d72f2987b31d012acf9a7dcb6e4e7b6512",
+    "src/diagnostics.ts": "e743b469cf77fc2414310e4bde2ad9a5b09dfc86d095ad614f0ca96e3c500336",
+    "src/location/http.ts": "9885477b01f6a2eb01903943783cb423b51ec574000749c4eda6c591a9ced669",
+    "src/location/provider.ts": "ff00e19521526fba1020b76b5fd5398723ec906ae72055c3cf3a1622ac22c99b",
+    "src/location/resolver.ts": "520305a1276b3b1c2c63c1f6a543aa6092f61a6279d61364ac80838bb149ef4e",
+    "src/location/types.ts": "f1efbbbe1fdfc857ca6abeaaa4e9e0a59f23b0517ff11f22c4a187021f92c5e3",
+    "src/search/service.ts": "574524747d07489f91ef1306abb83278981b86043c00f368887fd16c0cd6c7f1",
+    "src/server/amap.ts": "321e96efde59dbbcce18c57301e506afbfcc442926d87797791700195fb21f83",
+    "src/server/http.ts": "d0b9d0cf010137595337f8490947ed9b802a8274f11db1b2feae83b4fcef38b1",
+    "src/server/request-lifecycle.ts": "3aa7844a0007cfca3cccc71cf9c3cd55a59d7b06764c522a13895f92ba421e55",
+    "src/server/request-policy.ts": "c2f39c539db46163d2aa93e2ba9c4f11f48c7f2e17cd42779ae21bcd29f13b41",
+    "src/web/SearchApp.tsx": "7c252ddb587ce9418685268473d5c99ce65c871a04ce0968968208a4148b8a0a",
+    "test/amap-boundary.test.mjs": "054f09fac8b170245b332f976ca41bd036bc9700ac2484c144e0d917e1d25dbd",
+    "test/request-lifecycle.test.ts": "d87c49d0b375fe96e751491eeb235702ab6ef7013b7b08b5393030562e3dc665",
+    "test/request-safety-browser.mjs": "8e1a41acc8a4045eeb823d95c02665293af042517222ff5f93b608673223beaf",
+    "test/request-safety-route.test.ts": "cd40e3d6d3db1532d953b5492a6d8b3a7ae439fc0042cce51abca7d981a6abd8",
+    "test/request-safety-unmount-server.mjs": "977bb153c8a9c9bae4f453fb89ee830aded17e228da10413f9434e4abe4dfb25",
+    "test/search-service.test.ts": "cd29043ebe33fe8c16de762949a169fed363c71321fb0db25cb529e78a6c241e",
+    "test/smoke.test.ts": "c72923751b010d2cf6fb1a098be001998a01f55ee689f89dca1d256709009edd",
+    "test/transport.test.ts": "ccdb924cc92a0e136e0d51614cb7e75ade7440afab387f0b0ca40dcb8dad4b44"
+  },
+  "supersededBy": "request-safety-stage-a-inbound-evidence.json"
+}

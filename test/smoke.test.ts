@@ -19,7 +19,7 @@ test("category searches are sequential, delayed after success and failure, and c
   }, 3_000, async (milliseconds) => { assert.equal(active, 0); events.push(`delay:${milliseconds}`); });
   assert.equal(maximumActive, 1);
   assert.deepEqual(events, ["start:hotel", "end:hotel", "delay:500", "start:mall", "end:mall", "delay:500", "start:hotpot", "end:hotpot"]);
-  assert.equal(outcome.results[1]?.error?.message, "QPS test error (10021)");
+  assert.equal(outcome.results[1]?.error?.message, "该类别暂时无法搜索，请稍后再试");
   assert.equal(outcome.results[2]?.category.key, "hotpot");
 });
 

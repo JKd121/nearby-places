@@ -1,4 +1,5 @@
 import type { Coordinates, GeocodedPlace } from "../amap/types.js";
+import type { RequestContext } from "../amap/request-context.js";
 
 export type QueryIntent = "PLACE_QUERY" | "ADDRESS_QUERY";
 
@@ -18,8 +19,8 @@ export interface LocationCandidate {
 }
 
 export interface LocationResolverProvider {
-  geocode(query: string): Promise<GeocodedPlace | null>;
-  searchPlaceCandidates(query: string): Promise<readonly ProviderPlace[]>;
+  geocode(query: string, context?: RequestContext): Promise<GeocodedPlace | null>;
+  searchPlaceCandidates(query: string, context?: RequestContext): Promise<readonly ProviderPlace[]>;
 }
 
 export interface ProviderPlace {

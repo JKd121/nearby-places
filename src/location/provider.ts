@@ -1,4 +1,7 @@
-import { AmapApiError, createAmapClient } from "../amap/client.js";
+import { AmapApiError, createAmapClientWithTransport } from "../amap/client.js";
+import { createAmapTransport, type AmapTransport, type AmapTransportOptions } from "../amap/transport.js";
+import type { RequestContext } from "../amap/request-context.js";
+import { measureSync, type Diagnostics } from "../diagnostics.js";
 import type { Coordinates } from "../amap/types.js";
 import type { LocationResolverProvider, ProviderPlace } from "./types.js";
 
@@ -23,20 +26,9 @@ function parseLocation(value: unknown): Coordinates | null {
   return Number.isFinite(longitude) && Number.isFinite(latitude) ? { longitude, latitude } : null;
 }
 
-async function requestPoiText(key: string, query: string, fetchImpl: typeof fetch): Promise<UnknownRecord> {
+async function requestPoiText(key: string, query: string, transport: AmapTransport, context?: RequestContext): Promise<UnknownRecord> {
   const params = new URLSearchParams({ key, keywords: query, page_size: String(PAGE_SIZE), page_num: "1", show_fields: "business" });
-  const response = await fetchImpl(new URL(`${POI_TEXT_URL}?${params.toString()}`));
-  const body = await response.text();
-  if (!response.ok) throw new AmapApiError(`POI text search failed with HTTP ${response.status}`, null, String(response.status));
-  let payload: unknown;
-  try { payload = JSON.parse(body); } catch { throw new AmapApiError("POI text search returned invalid JSON"); }
-  if (!isRecord(payload)) throw new AmapApiError("POI text search returned a non-object response");
-  if (optionalString(payload.status) !== "1") {
-    const info = optionalString(payload.info);
-    const infocode = optionalString(payload.infocode);
-    throw new AmapApiError(`POI text search failed: ${info ?? "unknown provider error"}${infocode ? ` (${infocode})` : ""}`, info, infocode);
-  }
-  return payload;
+  return transport.requestJson(new URL(`${POI_TEXT_URL}?${params.toString()}`), "poi-text", context);
 }
 
 function parsePoiCandidates(payload: UnknownRecord): ProviderPlace[] {
@@ -58,20 +50,24 @@ function parsePoiCandidates(payload: UnknownRecord): ProviderPlace[] {
   });
 }
 
-export function createLocationResolverProvider(key: string, fetchImpl: typeof fetch = fetch): LocationResolverProvider {
-  const amap = createAmapClient(key, fetchImpl);
+export function createLocationResolverProvider(key: string, fetchImpl?: typeof fetch, diagnostics?: Diagnostics, options: AmapTransportOptions = {}): LocationResolverProvider {
+  return createLocationResolverProviderWithTransport(key, createAmapTransport(fetchImpl, { ...options, ...(diagnostics ? { diagnostics } : {}) }), diagnostics);
+}
+
+export function createLocationResolverProviderWithTransport(key: string, transport: AmapTransport, diagnostics?: Diagnostics): LocationResolverProvider {
+  const amap = createAmapClientWithTransport(key, transport, diagnostics);
   return {
-    async geocode(query) {
+    async geocode(query, context) {
       try {
-        return await amap.geocode(query);
+        return await amap.geocode(query, context);
       } catch (error) {
-        if (error instanceof AmapApiError && error.message.startsWith("No geocoding result found")) return null;
+        if (error instanceof AmapApiError && error.code === "GEOCODE_NOT_FOUND") return null;
         throw error;
       }
     },
-    async searchPlaceCandidates(query) {
-      const payload = await requestPoiText(key, query, fetchImpl);
-      return parsePoiCandidates(payload);
+    async searchPlaceCandidates(query, context) {
+      const payload = await requestPoiText(key, query, transport, context);
+      return measureSync(diagnostics, "amap.transform", () => parsePoiCandidates(payload));
     },
   };
 }
