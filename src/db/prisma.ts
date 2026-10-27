@@ -33,7 +33,7 @@ export { prisma };
 let admissionPrisma: PrismaClient | undefined;
 export function getAdmissionPrisma() {
   return admissionPrisma ??= new PrismaClient({ adapter: new PrismaPg({
-    connectionString: databaseUrl, max: 4, connectionTimeoutMillis: 200,
+    connectionString: databaseUrl, max: 4, connectionTimeoutMillis: 600,
     statement_timeout: 800, lock_timeout: 150, idle_in_transaction_session_timeout: 800,
     query_timeout: 1_200,
   }) });

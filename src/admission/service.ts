@@ -55,7 +55,7 @@ export class PostgresAdmissionStore {
         throwIfAborted(signal);
         if (remaining() <= 0) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
         return result;
-      }, { maxWait: Math.min(200, budget), timeout: budget });
+      }, { maxWait: Math.min(600, budget), timeout: budget });
     } catch (error) {
       throwIfAborted(signal);
       if (error instanceof AmapApiError) throw error;
