@@ -10,8 +10,20 @@ const db = new PrismaClient({ adapter: new PrismaPg({ connectionString, max: 2, 
 const results = [];
 const transport = createAmapTransport(async () => { results.push({ sentAt: Date.now() }); return Response.json({ status: "1" }); }, { beforeAttempt: createAdmission(new PostgresAdmissionStore(db), "test") });
 try {
+  // Establish distinct connections before the parent releases all workers.
+  if (process.argv[4] === "barrier") {
+    await db.$queryRawUnsafe("SELECT 1");
+    process.stdout.write("READY\n");
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(Error("Barrier timed out")), 10000);
+      process.stdin.once("data", () => { clearTimeout(timer); resolve(); });
+      process.stdin.once("end", () => { clearTimeout(timer); reject(Error("Barrier closed")); });
+    });
+  }
+  const operation = process.argv[5] ?? "geocode";
+  const endpoint = operation === "nearby" ? "/v5/place/around" : operation === "poi-text" ? "/v5/place/text" : "/v3/geocode/geo";
   for (let i = 0; i < Number(process.argv[3] ?? 1); i++) {
-    try { await transport.requestJson(new URL("https://restapi.amap.com/v3/geocode/geo?key=fake"), "geocode"); }
+    try { await transport.requestJson(new URL(`https://restapi.amap.com${endpoint}?key=fake`), operation); }
     catch (e) { results.push({ code: e.code }); }
   }
   process.stdout.write(JSON.stringify(results));

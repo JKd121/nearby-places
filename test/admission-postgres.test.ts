@@ -38,6 +38,13 @@ async function seed(daily = 100, monthly = 100, interval = 500) {
   for (const op of ["geocode", "poi-text", "nearby"]) await pool.query('INSERT INTO "AmapOperationBinding" VALUES ($1,$2,$3)', ["test", op, "shared"]);
 }
 async function state() { return (await pool.query('SELECT * FROM "AmapResource" WHERE id=$1', ["shared"])).rows[0]; }
+async function seedHalf() {
+  await pool.query('TRUNCATE "AmapOperationBinding", "AmapResource", "AdmissionAudit"');
+  await pool.query(await readFile("scripts/initialize-amap-admission.sql", "utf8"));
+  // A second logical credential is confined to the disposable database.
+  await pool.query(`INSERT INTO "AmapOperationBinding" VALUES ('test','poi-text','amap-search'),('test','nearby','amap-search'),('test','geocode','amap-lbs')`);
+}
+async function stateFor(id: string) { return (await pool.query('SELECT * FROM "AmapResource" WHERE id=$1', [id])).rows[0]; }
 function simulated() {
   let sends = 0;
   const transport = createAmapTransport(async () => { sends++; return Response.json({ status: "1" }); }, { beforeAttempt: createAdmission(store, "test") });
@@ -121,6 +128,99 @@ test("actual PostgreSQL: independent processes share rate state", async () => {
   assert.equal(results.flatMap(r => JSON.parse(r)).filter(r => r.sentAt).length, 2);
   const times = (await pool.query('SELECT at FROM "AdmissionAudit" ORDER BY at')).rows.map(r => +r.at);
   assert.equal(times.length, 2); assert.ok(times[1]! - times[0]! >= 500);
+});
+
+test("actual PostgreSQL: half-used search and LBS pools keep operation counts separate", async () => {
+  await seedHalf();
+  const admission = createAdmission(store, "test");
+  const transport = createAmapTransport(async () => Response.json({ status: "1" }), { beforeAttempt: admission });
+  await transport.requestJson(new URL("https://restapi.amap.com/v5/place/text?key=fake"), "poi-text");
+  await transport.requestJson(new URL("https://restapi.amap.com/v5/place/around?key=fake"), "nearby");
+  await transport.requestJson(new URL("https://restapi.amap.com/v3/geocode/geo?key=fake"), "geocode");
+  const search = await stateFor("amap-search"), lbs = await stateFor("amap-lbs");
+  assert.equal(search.dayUsed, 202); assert.equal(search.monthUsed, 2502);
+  assert.equal(lbs.dayUsed, 501); assert.equal(lbs.monthUsed, 75001);
+});
+
+for (const zone of ["UTC", "Asia/Shanghai"] as const) test(`actual PostgreSQL: ${zone} session preserves the Shanghai day and absolute rate timestamps`, async () => {
+  await seedHalf();
+  const client = new PrismaClient({ adapter: new PrismaPg({ connectionString, options: `-c TimeZone=${zone}`, max: 2, connectionTimeoutMillis: 200 }) });
+  try {
+    const repository = new PostgresAdmissionStore(client);
+    const ticket = await repository.reserve("test", "nearby", signal, remaining);
+    assert.ok(Math.abs(ticket.scheduledAt.getTime() - Date.now()) < 2000);
+    const grant = await repository.grant("test", "nearby", ticket, signal, remaining);
+    assert.ok(grant.validForMs !== undefined);
+    const search = await stateFor("amap-search");
+    assert.equal(search.dayUsed, 201); assert.equal(search.monthUsed, 2501);
+    // A timezone shift must not schedule the next permit eight hours away.
+    const delta = search.nextGrantAt.getTime() - Date.now();
+    assert.ok(delta > 0 && delta <= 800, `next permit delta ${delta}ms`);
+  } finally { await client.$disconnect(); }
+});
+
+test("actual PostgreSQL: three preconnected processes start together on half-used search pool", async () => {
+  await seedHalf();
+  const workers = Array.from({ length: 3 }, () => {
+    const child = spawn(process.execPath, ["--conditions=react-server", "test/admission-worker.mjs", connectionString!, "1", "barrier", "nearby"], { windowsHide: true });
+    let stdout = "", stderr = "";
+    const ready = new Promise<void>((resolve, reject) => {
+      child.stdout.on("data", b => { stdout += b.toString(); if (stdout.includes("READY\n")) resolve(); });
+      child.stderr.on("data", b => { stderr += b.toString(); });
+      child.on("error", reject);
+      child.on("exit", status => { if (!stdout.includes("READY\n")) reject(Error(`worker exited before barrier: ${status} ${stderr}`)); });
+    });
+    const done = new Promise<{ sentAt?: number; code?: string }[]>((resolve, reject) => {
+      child.on("error", reject);
+      child.on("exit", status => { if (status !== 0) reject(Error(`worker failed: ${stderr}`)); else {
+        try { resolve(JSON.parse(stdout.replace("READY\n", ""))); } catch (error) { reject(error); }
+      } });
+    });
+    return { child, ready, done };
+  });
+  try {
+    await Promise.all(workers.map(w => w.ready));
+    workers.forEach(w => w.child.stdin.end("GO\n"));
+    const results = (await Promise.all(workers.map(w => w.done))).flat();
+    assert.equal(results.filter(r => r.sentAt).length, 3, JSON.stringify(results));
+    const times = (await pool.query('SELECT at FROM "AdmissionAudit" ORDER BY at')).rows.map(r => +r.at);
+    assert.equal(times.length, 3);
+    for (let i = 1; i < times.length; i++) assert.ok(times[i]! - times[i - 1]! >= 800);
+    const search = await stateFor("amap-search"), lbs = await stateFor("amap-lbs");
+    assert.equal(search.dayUsed, 203); assert.equal(search.monthUsed, 2503);
+    assert.equal(lbs.dayUsed, 500); assert.equal(lbs.monthUsed, 75000);
+  } finally { workers.forEach(w => { if (w.child.exitCode === null) w.child.kill(); }); }
+});
+
+test("actual PostgreSQL: agreed initialization cannot overwrite existing counters or bindings", async () => {
+  await seedHalf();
+  await pool.query(`UPDATE "AmapResource" SET "dayUsed"=201, "monthUsed"=2501 WHERE id='amap-search'`);
+  const client = await pool.connect();
+  try {
+    await assert.rejects(client.query(await readFile("scripts/initialize-amap-admission.sql", "utf8")));
+    await client.query("ROLLBACK");
+    const search = await stateFor("amap-search");
+    assert.equal(search.dayUsed, 201); assert.equal(search.monthUsed, 2501);
+    assert.equal((await pool.query(`SELECT count(*)::int AS n FROM "AmapOperationBinding" WHERE "credentialId"='primary'`)).rows[0].n, 3);
+  } finally { client.release(); }
+});
+
+test("actual PostgreSQL: injected grant latency below/above 400ms is handled conservatively", async () => {
+  for (const delayMs of [230, 450]) {
+    await seedHalf(); let transactionCount = 0, sends = 0;
+    const delayed: AdmissionDatabase = { async $transaction(run, options) {
+      const result = await db.$transaction(run, options);
+      if (++transactionCount === 2) await cancellableDelay(delayMs);
+      return result;
+    } };
+    const transport = createAmapTransport(async () => { sends++; return Response.json({ status: "1" }); }, { beforeAttempt: createAdmission(new PostgresAdmissionStore(delayed), "test") });
+    const request = transport.requestJson(new URL("https://restapi.amap.com/v5/place/around?key=fake"), "nearby");
+    if (delayMs < 400) await request;
+    else await assert.rejects(request, code("ADMISSION_WAIT_EXCEEDED"));
+    assert.equal(sends, delayMs < 400 ? 1 : 0);
+    const search = await stateFor("amap-search");
+    assert.equal(search.dayUsed, 201); assert.equal(search.monthUsed, 2501);
+  }
 });
 
 test("actual PostgreSQL: lost COMMIT acknowledgement burns one unit but sends nothing", async () => {

@@ -15,6 +15,7 @@ interface Resource {
   day: string; month: string; dayUsed: number; monthUsed: number;
   nextReservationAt: Date; consumedReservationAt: Date; nextGrantAt: Date;
 }
+type ResourceRow = Resource & { reservationMs: string; consumedMs: string; grantMs: string };
 export interface Reservation {
   resourceId: string; version: number; scheduledAt: Date; expiresAt: Date;
   delayMs: number; validForMs: number;
@@ -65,11 +66,21 @@ export class PostgresAdmissionStore {
 
   private async resource(tx: AdmissionSql, credentialId: string, operation: AmapOperation, expectedId?: string) {
     // Both paths lock resource then binding. Binding lock fences remapping/deletion.
-    const rows = await tx.$queryRawUnsafe<Resource[]>(`SELECT r.* FROM "AmapResource" r
+    // Read timestamptz as epoch text. PrismaPg raw Date decoding depends on
+    // the PostgreSQL session timezone and can otherwise shift wall-clock time.
+    const rows = await tx.$queryRawUnsafe<ResourceRow[]>(`SELECT r.*,
+      (extract(epoch FROM r."nextReservationAt") * 1000)::bigint::text AS "reservationMs",
+      (extract(epoch FROM r."consumedReservationAt") * 1000)::bigint::text AS "consumedMs",
+      (extract(epoch FROM r."nextGrantAt") * 1000)::bigint::text AS "grantMs"
+      FROM "AmapResource" r
       WHERE r.id = (SELECT "resourceId" FROM "AmapOperationBinding" WHERE "credentialId"=$1 AND operation=$2)
       FOR UPDATE OF r`, credentialId, operation);
     const row = rows[0];
     if (!row || !policyValid(row) || (expectedId !== undefined && expectedId !== row.id)) throw new AdmissionError("ADMISSION_UNAVAILABLE");
+    row.nextReservationAt = new Date(Number(row.reservationMs));
+    row.consumedReservationAt = new Date(Number(row.consumedMs));
+    row.nextGrantAt = new Date(Number(row.grantMs));
+    if ([row.nextReservationAt, row.consumedReservationAt, row.nextGrantAt].some(d => !Number.isFinite(d.getTime()))) throw new AdmissionError("ADMISSION_UNAVAILABLE");
     const bindings = await tx.$queryRawUnsafe<{ resourceId: string }[]>(`SELECT "resourceId" FROM "AmapOperationBinding"
       WHERE "credentialId"=$1 AND operation=$2 FOR SHARE`, credentialId, operation);
     if (bindings[0]?.resourceId !== row.id) throw new AdmissionError("ADMISSION_UNAVAILABLE");
@@ -77,8 +88,10 @@ export class PostgresAdmissionStore {
   }
 
   private async now(tx: AdmissionSql): Promise<Date> {
-    const rows = await tx.$queryRawUnsafe<{ now: Date }[]>("SELECT date_trunc('milliseconds', clock_timestamp()) AS now");
-    return rows[0]!.now;
+    const rows = await tx.$queryRawUnsafe<{ nowMs: string }[]>("SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint::text AS \"nowMs\"");
+    const now = new Date(Number(rows[0]?.nowMs));
+    if (!Number.isFinite(now.getTime())) throw new AdmissionError("ADMISSION_UNAVAILABLE");
+    return now;
   }
 
   async reserve(credentialId: string, operation: AmapOperation, signal: AbortSignal, remaining: () => number): Promise<Reservation> {
@@ -88,7 +101,7 @@ export class PostgresAdmissionStore {
       const scheduledAt = new Date(Math.max(now.getTime(), row.nextReservationAt.getTime()));
       const expiresAt = new Date(Math.min(now.getTime() + Math.min(row.waitMs, remaining()), scheduledAt.getTime() + row.graceMs));
       if (scheduledAt >= expiresAt) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
-      await tx.$queryRawUnsafe(`UPDATE "AmapResource" SET "nextReservationAt"=$2 WHERE id=$1`, row.id, new Date(scheduledAt.getTime() + row.intervalMs));
+      await tx.$queryRawUnsafe(`UPDATE "AmapResource" SET "nextReservationAt"=$2::timestamptz WHERE id=$1`, row.id, new Date(scheduledAt.getTime() + row.intervalMs).toISOString());
       return { resourceId: row.id, version: row.policyVersion, scheduledAt, expiresAt,
         delayMs: scheduledAt.getTime() - now.getTime(), validForMs: expiresAt.getTime() - now.getTime() };
     });
@@ -113,8 +126,8 @@ export class PostgresAdmissionStore {
       if (dayUsed >= row.dailyLimit) throw new AdmissionError("DAILY_BUDGET_EXHAUSTED", period.nextDay);
       throwIfAborted(signal);
       await tx.$queryRawUnsafe(`UPDATE "AmapResource" SET day=$2, month=$3, "dayUsed"=$4, "monthUsed"=$5,
-        "consumedReservationAt"=$6, "nextGrantAt"=$7 WHERE id=$1`, row.id, period.day, period.month,
-        dayUsed + 1, monthUsed + 1, ticket.scheduledAt, new Date(now.getTime() + row.intervalMs));
+        "consumedReservationAt"=$6::timestamptz, "nextGrantAt"=$7::timestamptz WHERE id=$1`, row.id, period.day, period.month,
+        dayUsed + 1, monthUsed + 1, ticket.scheduledAt.toISOString(), new Date(now.getTime() + row.intervalMs).toISOString());
       return { validForMs: Math.min(row.permitTtlMs, ticket.expiresAt.getTime() - now.getTime(), remaining()) };
     });
   }
