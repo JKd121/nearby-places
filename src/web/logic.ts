@@ -1,6 +1,7 @@
 import { CATEGORIES, getCategory } from "../amap/categories.js";
 import type { CategoryGroup, CategoryKey, CategorySearchResult, Place, PlacePage } from "../amap/types.js";
 import type { SearchResponse } from "../search/contracts.js";
+import { isCategoryCompleted } from "../search/status.js";
 import { isSortModeAllowed, sortPlaces } from "../search/sort.js";
 import type { SortMode } from "../search/sort.js";
 import { deriveCategoryStatus } from "../search/status.js";
@@ -59,6 +60,12 @@ export function toggleGroup(selected: readonly CategoryKey[], categoryIds: reado
 
 export function getAvailableFilters(response: SearchResponse | null): ActiveFilter[] {
   return response ? ["all", ...response.categories.map((item) => item.category.key)] : [];
+}
+
+export function getCategoryCounts(categories: readonly CategorySearchResult[]) {
+  return { completed: categories.filter(item => isCategoryCompleted(item.status)).length,
+    failed: categories.filter(item => item.status === "error").length,
+    skipped: categories.filter(item => item.status === "skipped").length };
 }
 
 /** Merge place lists by exact non-empty IDs while preserving every empty-ID place. */

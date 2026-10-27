@@ -1,4 +1,4 @@
-import type { Place, PlacePage } from "../amap/types.js";
+import type { CategoryStatus, Place, PlacePage } from "../amap/types.js";
 
 /**
  * A filtered page can contain no accepted places while the provider still has
@@ -9,3 +9,4 @@ export function deriveCategoryStatus(places: readonly Place[], page: Pick<PlaceP
   if (places.length > 0) return "success";
   return page.returnedCount > 0 && page.mayHaveNextApiPage ? "success" : "empty";
 }
+export function isCategoryCompleted(status: CategoryStatus): boolean { return status === "success" || status === "empty"; }

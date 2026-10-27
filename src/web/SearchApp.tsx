@@ -13,11 +13,14 @@ import { copyConfirmedLocation } from "../history/validation";
 import type { CategoryKey, CategorySearchResult, GeocodedPlace, Place } from "../amap/types";
 import type { LocationCandidate } from "../location/types";
 import type { SearchRadius, SearchResponse, SearchSecondPageResponse } from "../search/contracts";
+import { isCategoryCompleted } from "../search/status";
+import { publicSearchErrorMessage } from "../errors/classify";
 import type { SortMode } from "../search/sort";
 import {
   ALLOWED_RADIUS_METERS, ALL_CATEGORY_IDS,
   ensureValidSortMode, getAllowedSortModes,
   canRequestSecondProviderPage, getAvailableFilters, getCategoryResult,
+  getCategoryCounts,
   getInitialVisibleCount, getNextVisibleCount, getPlacesForFilter, mergeProviderPageResult,
   resetSearchView, resolveProviderPageCategory, selectAllCategories, sortPlacesForFilter,
   getEmptyStateMessage, type ActiveFilter,
@@ -66,8 +69,9 @@ export default function SearchApp() {
   const effectiveSortMode = useMemo(() => ensureValidSortMode(sortMode, activeFilter, selectedCategoryIds), [sortMode, activeFilter, selectedCategoryIds]);
   const sortedPlaces = useMemo(() => sortPlacesForFilter(activePlaces, effectiveSortMode, activeFilter, selectedCategoryIds), [activePlaces, effectiveSortMode, activeFilter, selectedCategoryIds]);
   const visiblePlaces = useMemo(() => sortedPlaces.slice(0, visibleCount), [sortedPlaces, visibleCount]);
-  const successfulCount = useMemo(() => response?.categories.filter((item) => item.status !== "error").length ?? 0, [response]);
-  const failedCount = useMemo(() => response?.categories.filter((item) => item.status === "error").length ?? 0, [response]);
+  const counts = useMemo(() => getCategoryCounts(response?.categories ?? []), [response]);
+  const successfulCount = counts.completed;
+  const failedCount = counts.failed;
   const canLoadMore = visiblePlaces.length < sortedPlaces.length;
   const providerPageCategory = useMemo(() => resolveProviderPageCategory(activeFilter, selectedCategoryIds), [activeFilter, selectedCategoryIds]);
   const providerPageResult = useMemo(() => providerPageCategory ? getCategoryResult(response, providerPageCategory) : null, [response, providerPageCategory]);
@@ -237,7 +241,7 @@ setPhase("results");
 
 const hasSuccessfulCategory =
   payload.categories.some(
-    (category) => category.status !== "error",
+    (category) => isCategoryCompleted(category.status),
   );
 
 if (hasSuccessfulCategory) {
@@ -348,6 +352,7 @@ if (hasSuccessfulCategory) {
 }
 
 function ResultsView({ response, activeFilter, availableFilters, activeResult, providerPageResult, allowedSortModes, sortMode, onFilterChange, onSortChange, places, totalPlaces, canLoadMore, canRequestProviderPage, canAnyCategoryRequestProviderPage, providerPageLoading, providerPageError, onLoadMore, onLoadProviderPage, successfulCount, failedCount }: { response: SearchResponse; activeFilter: ActiveFilter; availableFilters: ActiveFilter[]; activeResult: CategorySearchResult | null; providerPageResult: CategorySearchResult | null; allowedSortModes: SortMode[]; sortMode: SortMode; onFilterChange: (filter: ActiveFilter) => void; onSortChange: (mode: SortMode) => void; places: Place[]; totalPlaces: number; canLoadMore: boolean; canRequestProviderPage: boolean; canAnyCategoryRequestProviderPage: boolean; providerPageLoading: boolean; providerPageError: string | null; onLoadMore: () => void; onLoadProviderPage: () => void; successfulCount: number; failedCount: number }) {
+  const skippedCount = getCategoryCounts(response.categories).skipped;
   const resultCount = activeFilter === "all" ? totalPlaces : activeResult?.places.length ?? 0;
   const providerPageIsFull = providerPageResult?.page?.pageNumber === 2 && providerPageResult.page.returnedCount === providerPageResult.page.pageSize;
   const exhaustedMessage = activeFilter === "all" && providerPageResult === null && canAnyCategoryRequestProviderPage
@@ -358,14 +363,15 @@ function ResultsView({ response, activeFilter, availableFilters, activeResult, p
   return <div className={s.resultsBody}>
     <div className={s.resultToolbar}><div className={s.filters} aria-label="结果类别">{availableFilters.map((filter) => {
       const item = filter === "all" ? null : response.categories.find((entry) => entry.category.key === filter);
-      return <button type="button" aria-pressed={activeFilter === filter} key={filter} onClick={() => onFilterChange(filter)}>{filter === "all" ? "全部" : categoryLabel(filter)}{item?.status === "error" ? " · 失败" : item?.status === "empty" ? " · 空" : ""}</button>;
+      return <button type="button" aria-pressed={activeFilter === filter} key={filter} onClick={() => onFilterChange(filter)}>{filter === "all" ? "全部" : categoryLabel(filter)}{item?.status === "error" ? " · 失败" : item?.status === "skipped" ? " · 未搜索" : item?.status === "empty" ? " · 空" : ""}</button>;
     })}</div><label className={s.sort}><span>排序</span><select value={sortMode} onChange={(event) => onSortChange(event.target.value as SortMode)}>{allowedSortModes.map((mode) => <option key={mode} value={mode}>{sortLabel(mode)}</option>)}</select></label></div>
-    <div className={s.resultMeta}><span>{activeFilter === "all" ? "本次已获取 " + resultCount + " 个地点" : categoryLabel(activeFilter) + " · " + resultCount + " 个地点"}</span><Badge tone={failedCount ? "warning" : "success"}>{successfulCount} 类完成{failedCount > 0 ? " · " + failedCount + " 类失败" : ""}</Badge></div>
-    {failedCount > 0 && <Feedback tone={successfulCount ? "warning" : "error"} title={successfulCount ? "部分服务类别暂不可用" : "本次搜索的类别均未成功"}>{successfulCount ? "可以继续查看成功结果，或调整条件后重新搜索。" : "请调整搜索条件，或稍后重新搜索。"}</Feedback>}
+    <div className={s.resultMeta}><span>{activeFilter === "all" ? "本次已获取 " + resultCount + " 个地点" : categoryLabel(activeFilter) + " · " + resultCount + " 个地点"}</span><Badge tone={failedCount || skippedCount ? "warning" : "success"}>{successfulCount} 类完成{failedCount > 0 ? " · " + failedCount + " 类失败" : ""}{skippedCount > 0 ? " · " + skippedCount + " 类未搜索" : ""}</Badge></div>
+    {response.termination ? <Feedback tone="warning" title="搜索提前结束">{publicSearchErrorMessage(response.termination.code)}；已完成的类别仍可查看。</Feedback> : failedCount > 0 && <Feedback tone="warning" title="部分服务类别暂不可用">可以继续查看成功结果，或调整条件后重新搜索。</Feedback>}
     {activeFilter !== "all" && activeResult?.status === "error" && <Feedback tone="error" title="该类别暂时无法搜索">{activeResult.error?.message ?? "请稍后重试，或查看其他类别。"}</Feedback>}
+    {activeFilter !== "all" && activeResult?.status === "skipped" && <Feedback tone="warning" title="该类别尚未搜索">搜索提前结束，该类别未执行。</Feedback>}
     {activeFilter !== "all" && activeResult?.status === "empty" && <EmptyState title="当前类别没有结果">{getEmptyStateMessage(activeFilter)}</EmptyState>}
     {(activeFilter === "all" || activeResult?.status === "success") && <>
-      {places.length > 0 ? <PlaceList places={places} /> : failedCount !== response.categories.length ? <EmptyState title="当前范围内暂无结果">试试调整服务类别或搜索半径。</EmptyState> : null}
+      {places.length > 0 ? <PlaceList places={places} /> : successfulCount > 0 ? <EmptyState title={response.termination ? "已完成的类别暂无结果" : "当前范围内暂无结果"}>试试调整服务类别或搜索半径。</EmptyState> : null}
       <div className={s.listFooter}>
         {canLoadMore && <button type="button" onClick={onLoadMore}>加载更多（已显示 {places.length}/{totalPlaces}）</button>}
         {!canLoadMore && (canRequestProviderPage || providerPageLoading) && <button type="button" onClick={onLoadProviderPage} disabled={providerPageLoading}>{providerPageLoading ? "正在获取更多地点…" : "获取更多附近结果"}</button>}

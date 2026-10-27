@@ -1,4 +1,5 @@
 import type { CategoryKey, CategorySearchResult, Coordinates, GeocodedPlace, PlacePage } from "../amap/types.js";
+import type { PublicSearchErrorCode } from "../errors/classify.js";
 
 export type SearchRadius = 1_000 | 2_000 | 3_000 | 5_000;
 
@@ -19,6 +20,7 @@ export interface SearchResponse {
   resolvedLocation: GeocodedPlace;
   categories: CategorySearchResult[];
   status: "success" | "partial success";
+  termination?: { code: PublicSearchErrorCode; categoryId: CategoryKey };
 }
 
 export interface SearchSecondPageRequest {

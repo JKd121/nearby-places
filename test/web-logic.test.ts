@@ -3,6 +3,8 @@ import test from "node:test";
 import { CATEGORIES } from "../src/amap/categories.js";
 import type { CategorySearchResult, Place, PlacePage } from "../src/amap/types.js";
 import type { SearchResponse } from "../src/search/contracts.js";
+import { getCategoryCounts } from "../src/web/logic.js";
+import { isCategoryCompleted } from "../src/search/status.js";
 import { buildAmapMarkerUrl } from "../src/web/location-links.js";
 import {
   ALLOWED_RADIUS_METERS,
@@ -39,6 +41,16 @@ const place = (id: string, category: Place["category"], distanceMeters = 100): P
 });
 const result = (category: Place["category"], status: CategorySearchResult["status"], places: Place[] = []): CategorySearchResult => ({ category: CATEGORIES.find((item) => item.key === category)!, status, places, page: null, error: status === "error" ? { message: "failed", info: "x", infocode: "1" } : null });
 const response: SearchResponse = { resolvedLocation: { query: "x", formattedAddress: "x", province: null, city: null, district: null, level: null, longitude: 114, latitude: 22 }, categories: [result("hotpot", "success", [place("same", "hotpot"), place("hotpot-2", "hotpot")]), result("bakery", "success", [place("same", "bakery"), place("bakery-2", "bakery")]), result("gym", "error")], status: "partial success" };
+
+test("skipped categories are neither completed nor eligible for page two", () => {
+  const skipped = result("hotel", "skipped");
+  const partial = [result("hotel", "empty"), result("mall", "error"), skipped];
+  assert.deepEqual(getCategoryCounts(partial), { completed: 1, failed: 1, skipped: 1 });
+  assert.equal(isCategoryCompleted(skipped.status), false);
+  assert.equal(partial.some(item => isCategoryCompleted(item.status)), true);
+  assert.equal([result("mall", "error"), skipped].some(item => isCategoryCompleted(item.status)), false);
+  assert.equal(canRequestSecondProviderPage(skipped), false);
+});
 
 test("category and group selection preserves canonical order", () => {
   assert.deepEqual(toggleCategory(["hotel", "hotpot"], "hotel"), ["hotpot"]);

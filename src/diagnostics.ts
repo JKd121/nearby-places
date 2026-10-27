@@ -1,6 +1,7 @@
 /** Injection contract only: safe for core/CLI modules; no server runtime imports. */
+import type { PublicSearchErrorCode } from "./errors/classify.js";
 export type DiagnosticStage = "request" | "request.json" | "request.validation" | "location.resolve" | "location.geocode" | "location.poi" | "location.normalize" | "search.category" | "search.inter_category_wait" | "amap.fetch" | "amap.read" | "amap.json" | "amap.validate" | "amap.transform";
-export type DiagnosticEvent = "http.request.started" | "http.request.completed" | "phase.completed" | "phase.failed" | "diagnostics.error" | "search.completed" | "location.resolve.completed" | "search.category.completed";
+export type DiagnosticEvent = "http.request.started" | "http.request.completed" | "phase.completed" | "phase.failed" | "diagnostics.error" | "search.completed" | "search.stopped" | "location.resolve.completed" | "search.category.completed";
 export type DiagnosticErrorType = "network" | "timeout" | "cancelled" | "response_too_large" | "upstream_http" | "upstream_business" | "invalid_json" | "invalid_payload" | "internal";
 export interface DiagnosticFields {
   category?: string;
@@ -8,6 +9,9 @@ export interface DiagnosticFields {
   outcome?: string;
   durationMs?: number;
   scheduledMs?: number;
+  code?: PublicSearchErrorCode;
+  completedCount?: number;
+  skippedCount?: number;
 }
 export interface Diagnostics {
   measure<T>(stage: DiagnosticStage, operation: () => Promise<T>, fields?: DiagnosticFields): Promise<T>;
