@@ -1,0 +1,9 @@
+# AMap admission Preview validation (2026-10-27)
+
+- The existing `nearby-preview` Prisma Postgres database was migrated with Prisma; existing history tables were retained. Two resources and three operation bindings were initialized using the approved half-used policy.
+- A separate temporary Vercel project in `iad1` ran the committed admission implementation with an injected in-memory fake AMap response and the Preview database. It used a database URL copied from the Preview Prisma console; this does not establish that production uses the same connection configuration.
+- With a 200 ms transaction-acquisition limit, a cold-start three-request run yielded two `P2028` acquisition failures and one success. A second cold-start run with 600 ms transaction-acquisition and pool connection limits yielded three fake-send successes; these are small samples, not a capacity guarantee.
+- A five-request run with the earlier settings yielded three fake sends and two waiting-limit rejections. Requests were concurrent but their arrivals were not simultaneous. The fake path consumes only the Preview ledger, not AMap quota.
+- The Prisma-console pooled connection reported an upstream connection failure from the temporary Vercel function; the console's direct connection worked. The failure cause and the production connection settings remain unverified. Direct connections are not a general high-concurrency solution.
+- A mistakenly executed real Preview location-resolution request did reach AMap: disabling only the geocode resource did not disable its preceding POI search. It returned actual results and incremented the Preview search ledger once, in addition to simulated requests. It may have consumed one real search call. The LBS resource was restored to enabled; no further real-provider tests were made.
+- These checks do not establish real browser disconnect propagation, strict provider-side QPS, production readiness, or sustained multi-instance capacity.

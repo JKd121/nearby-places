@@ -1,6 +1,7 @@
 import { AmapApiError, safeErrorDiagnostic } from "../amap/errors.js";
 import { MissingServerKeyError } from "./amap.js";
 import { RequestPolicyError } from "./request-policy.js";
+import { AdmissionError } from "../admission/errors.js";
 
 export function jsonError(message: string, status: number, code?: string): Response {
   return Response.json({ error: { message, ...(code ? { code } : {}) } }, { status });
@@ -9,6 +10,13 @@ export function jsonError(message: string, status: number, code?: string): Respo
 export function mapServerError(error: unknown, _operation?: string): Response {
   // Only a fixed field allowlist is logged. Never log the original Error/cause.
   console.error("request.failed", safeErrorDiagnostic(error));
+  if (error instanceof AdmissionError) {
+    const message = error.code === "DAILY_BUDGET_EXHAUSTED" ? "今日服务额度已用完，请明日再试"
+      : error.code === "MONTHLY_BUDGET_EXHAUSTED" ? "本月服务额度已用完，请下月再试"
+      : error.code === "ADMISSION_WAIT_EXCEEDED" ? "服务繁忙，等待已结束，请稍后再试" : "服务暂不可用，请稍后再试";
+    return Response.json({ error: { message, code: error.code, ...(error.retryAt ? { retryAt: error.retryAt } : {}) } },
+      { status: error.code === "ADMISSION_UNAVAILABLE" ? 503 : 429 });
+  }
   if (error instanceof RequestPolicyError) return jsonError("服务暂不可用，请稍后再试", 503, "SERVICE_UNAVAILABLE");
   if (error instanceof MissingServerKeyError) return jsonError("服务暂不可用，请稍后再试", 500);
   if (error instanceof AmapApiError) {

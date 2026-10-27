@@ -2,6 +2,7 @@ import { AmapApiError, RequestTerminatedError } from "./errors.js";
 
 export interface RequestContext {
   readonly signal: AbortSignal;
+  remainingMs?(): number;
   abort(error: AmapApiError): void;
 }
 
@@ -12,12 +13,14 @@ export function throwIfAborted(signal?: AbortSignal): void {
 export function createRequestContext(parent?: AbortSignal, timeoutMs?: number,
   timeoutCode: "REQUEST_DEADLINE_EXCEEDED" | "UPSTREAM_TIMEOUT" = "REQUEST_DEADLINE_EXCEEDED") {
   const controller = new AbortController();
+  const deadline = timeoutMs === undefined ? Infinity : performance.now() + timeoutMs;
   const onAbort = () => controller.abort(parent?.reason instanceof AmapApiError ? parent.reason : new RequestTerminatedError("REQUEST_CANCELLED"));
   if (parent?.aborted) onAbort();
   else parent?.addEventListener("abort", onAbort, { once: true });
   const timer = timeoutMs === undefined ? undefined : setTimeout(() => controller.abort(new RequestTerminatedError(timeoutCode)), timeoutMs);
   return {
     signal: controller.signal,
+    remainingMs() { return Math.max(0, deadline - performance.now()); },
     abort(error: AmapApiError) { controller.abort(error); },
     dispose() { clearTimeout(timer); parent?.removeEventListener("abort", onAbort); },
   };

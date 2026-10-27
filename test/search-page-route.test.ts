@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { CATEGORIES } from "../src/amap/categories.js";
-import { POST } from "../app/api/search/page/route.js";
+import "./admission-fixture.js";
+const { POST } = await import("../app/api/search/page/route.js");
 
 const routeUrl = "http://localhost/api/search/page";
 const validBody = {

@@ -6,6 +6,7 @@
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
+  importFileExtension = "js"
 }
 
 datasource db {
@@ -24,4 +25,35 @@ model SearchHistory {
 
   @@unique([visitorId, dedupeKey])
   @@index([visitorId, searchedAt])
+}
+
+// One row per confirmed shared budget/rate scope. No real keys or automatic seed.
+model AmapResource {
+  id                      String   @id
+  policyVersion           Int      @default(1)
+  enabled                 Boolean  @default(false)
+  dailyLimit              Int
+  monthlyLimit            Int
+  intervalMs              Int      @default(500)
+  waitMs                  Int      @default(2000)
+  graceMs                 Int      @default(300)
+  permitTtlMs             Int      @default(200)
+  day                     String   @default("")
+  month                   String   @default("")
+  dayUsed                 Int      @default(0)
+  monthUsed               Int      @default(0)
+  nextReservationAt       DateTime @default(dbgenerated("'1970-01-01 UTC'::timestamptz")) @db.Timestamptz(3)
+  consumedReservationAt   DateTime @default(dbgenerated("'1970-01-01 UTC'::timestamptz")) @db.Timestamptz(3)
+  nextGrantAt             DateTime @default(dbgenerated("'1970-01-01 UTC'::timestamptz")) @db.Timestamptz(3)
+  bindings                AmapOperationBinding[]
+}
+
+model AmapOperationBinding {
+  credentialId String
+  operation    String
+  resourceId   String
+  resource     AmapResource @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+
+  @@id([credentialId, operation])
+  @@index([resourceId])
 }
