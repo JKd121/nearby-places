@@ -26,3 +26,7 @@ test("fetchImpl cannot run directly inside either business client", () => {
 });
 test("only transport can execute fetch with a signal", () => assert.deepEqual(inspectSource("src/amap/transport.ts", 'fetchImpl(url, { signal });'), []));
 test("browser modules cannot contain a direct AMap endpoint", () => assert.ok(inspectSource("src/web/new.ts", 'fetch("https://restapi.amap.com/v3/geocode/geo")').length));
+test("server factories cannot omit PostgreSQL admission", () => {
+  assert.ok(inspectSource("src/server/amap.ts", 'createAmapTransport(undefined, { policy });').length);
+  assert.deepEqual(inspectSource("src/server/amap.ts", 'createAmapTransport(undefined, { policy, beforeAttempt: getServerAdmission("primary") });'), []);
+});

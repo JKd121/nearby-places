@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { POST as search } from "../app/api/search/route.js";
-import { POST as resolve } from "../app/api/resolve-location/route.js";
-import { POST as page } from "../app/api/search/page/route.js";
-import { withRequestLifecycle } from "../src/server/request-lifecycle.js";
-import { createServerLocationResolverProvider, createServerAmapClient } from "../src/server/amap.js";
+import "./admission-fixture.js";
+const { POST: search } = await import("../app/api/search/route.js");
+const { POST: resolve } = await import("../app/api/resolve-location/route.js");
+const { POST: page } = await import("../app/api/search/page/route.js");
+const { withRequestLifecycle } = await import("../src/server/request-lifecycle.js");
+const { createServerLocationResolverProvider, createServerAmapClient } = await import("../src/server/amap.js");
 import { STAGE_A_POLICY } from "../src/amap/policy.js";
 
 const centre = { query: "fixture", formattedAddress: "fixture", province: null, city: null, district: null, level: null, longitude: 114, latitude: 22 };

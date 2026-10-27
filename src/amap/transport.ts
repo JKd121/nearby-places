@@ -6,7 +6,8 @@ import { STAGE_A_POLICY } from "./policy.js";
 export type AmapOperation = "geocode" | "poi-text" | "nearby";
 export interface TransportPolicy { upstreamTimeoutMs: number; maxResponseBytes: number; }
 /** Stage B implements this at the transport boundary, never in a Route/business method. */
-export type BeforeAmapAttempt = (operation: AmapOperation, signal: AbortSignal) => Promise<void>;
+export interface AttemptPermit { assertValid(): void; }
+export type BeforeAmapAttempt = (operation: AmapOperation, signal: AbortSignal, context?: RequestContext) => Promise<void | AttemptPermit>;
 export interface AmapTransportOptions {
   policy?: TransportPolicy;
   context?: RequestContext;
@@ -57,14 +58,18 @@ export function createAmapTransport(fetchImpl: typeof fetch = fetch, options: Am
       if (url.origin !== "https://restapi.amap.com" || url.pathname !== PATHS[operation] || url.username || url.password) throw new AmapApiError("Unsupported upstream endpoint", null, null, "UPSTREAM_INVALID_PAYLOAD");
       throwIfAborted(context?.signal);
       // Budget checks will run here before each real HTTP attempt. No retries/refunds.
-      if (options.beforeAttempt) await abortable(options.beforeAttempt(operation, context?.signal ?? new AbortController().signal), context?.signal);
+      const permit = options.beforeAttempt ? await abortable(options.beforeAttempt(operation, context?.signal ?? new AbortController().signal, context), context?.signal) : undefined;
       throwIfAborted(context?.signal);
       const call = createRequestContext(context?.signal, policy.upstreamTimeoutMs, "UPSTREAM_TIMEOUT");
       try {
-        const response = await measureAsync(diagnostics, "amap.fetch", () => abortable(fetchImpl(url, { signal: call.signal, redirect: "error", cache: "no-store" }).then(response => {
+        const response = await measureAsync(diagnostics, "amap.fetch", () => {
+          throwIfAborted(call.signal);
+          permit?.assertValid();
+          return abortable(fetchImpl(url, { signal: call.signal, redirect: "error", cache: "no-store" }).then(response => {
           if (call.signal.aborted) void response.body?.cancel().catch(() => {});
           return response;
-        }), call.signal));
+          }), call.signal);
+        });
         const body = await measureAsync(diagnostics, "amap.read", () => readBounded(response, policy.maxResponseBytes, call.signal));
         throwIfAborted(call.signal);
         if (!response.ok) throw new AmapApiError("Upstream HTTP failure", null, null, response.status === 401 || response.status === 403 ? "UPSTREAM_AUTH_FAILED" : "UPSTREAM_HTTP", response.status);

@@ -44,6 +44,13 @@ export function inspectSource(path, source) {
     }
     if (!browser && ts.isCallExpression(node)) {
       const name = node.expression.getText(file);
+      if (path === "src/server/amap.ts" && name === "createAmapTransport") {
+        const options = node.arguments[1];
+        const guarded = options && ts.isObjectLiteralExpression(options) && options.properties.some(p =>
+          ts.isPropertyAssignment(p) && p.name.getText(file) === "beforeAttempt"
+          && ts.isCallExpression(p.initializer) && p.initializer.expression.getText(file) === "getServerAdmission");
+        if (!guarded) report(node, "server AMap transport requires the shared admission hook");
+      }
       if (["createAmapTransport", "createAmapClient", "createAmapClientWithTransport", "createLocationResolverProvider", "createLocationResolverProviderWithTransport"].includes(name) && !factories.has(path)) report(node, "use the server AMap factory");
       if ((node.expression.kind === ts.SyntaxKind.ImportKeyword || name === "require") && (!node.arguments[0] || !ts.isStringLiteral(node.arguments[0]))) report(node, "dynamic production imports require review");
     }
