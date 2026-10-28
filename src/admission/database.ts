@@ -22,8 +22,14 @@ export interface AdmissionExecution { value: unknown; diagnostic: AdmissionDiagn
 export interface AdmissionDatabase {
   execute(phase: AdmissionPhase, values: readonly unknown[], signal: AbortSignal, remaining: () => number): Promise<AdmissionExecution>;
 }
+const DATABASE_ERROR = Symbol.for("nearby.admission.database.error.v1");
 export class AdmissionDatabaseError extends Error {
+  readonly [DATABASE_ERROR] = true;
   constructor(readonly diagnostic: AdmissionDiagnostic, readonly original: unknown) { super("Admission database failure"); }
+}
+/** Startup instrumentation and API routes can load separate copies of this module. */
+export function isAdmissionDatabaseError(value: unknown): value is AdmissionDatabaseError {
+  return typeof value === "object" && value !== null && DATABASE_ERROR in value && value[DATABASE_ERROR] === true;
 }
 
 const SQL = {

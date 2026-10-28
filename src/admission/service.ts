@@ -2,7 +2,7 @@ import { AdmissionError } from "./errors.js";
 import { AmapApiError, RequestTerminatedError } from "../amap/errors.js";
 import { abortable, createRequestContext, cancellableDelay, throwIfAborted, type RequestContext } from "../amap/request-context.js";
 import type { AmapOperation, AttemptPermit, BeforeAmapAttempt } from "../amap/transport.js";
-import { AdmissionDatabaseError, type AdmissionDatabase, type AdmissionExecution, type AdmissionPhase } from "./database.js";
+import { isAdmissionDatabaseError, type AdmissionDatabase, type AdmissionExecution, type AdmissionPhase } from "./database.js";
 export type { AdmissionDatabase } from "./database.js";
 
 export interface Reservation {
@@ -49,8 +49,14 @@ export class PostgresAdmissionStore {
       }
       return decode(row);
     } catch (caught) {
-      const error = caught instanceof AdmissionDatabaseError ? caught.original : caught;
-      const diagnostic = caught instanceof AdmissionDatabaseError ? caught.diagnostic : execution?.diagnostic;
+      const databaseError = isAdmissionDatabaseError(caught) ? caught : undefined;
+      let error = databaseError ? databaseError.original : caught;
+      const diagnostic = databaseError?.diagnostic ?? execution?.diagnostic;
+      // The shared startup executor can also construct its own copy of AdmissionError.
+      const original = record(error);
+      if (databaseError && original.name === "AdmissionError" && (original.code === "ADMISSION_UNAVAILABLE" || original.code === "ADMISSION_WAIT_EXCEEDED")) {
+        error = new AdmissionError(original.code);
+      }
       try {
         console.error("admission.failed", { phase, step: diagnostic?.step ?? "response", acquireMs: diagnostic?.acquireMs ?? 0,
           batchMs: diagnostic?.batchMs ?? 0, elapsedMs: diagnostic?.elapsedMs ?? 0,

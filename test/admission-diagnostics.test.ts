@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { runInNewContext } from "node:vm";
 import { PostgresAdmissionStore, createAdmission, type Reservation } from "../src/admission/service.js";
 import { PipelinedAdmissionDatabase, type AdmissionConnection, type AdmissionQueryResult } from "../src/admission/database.js";
 import { AdmissionError } from "../src/admission/errors.js";
@@ -138,4 +139,25 @@ test("a synchronous enqueue failure drains prior promises and destroys the parti
   const store = new PostgresAdmissionStore(new PipelinedAdmissionDatabase({ async connect() { return connection; } }));
   await assert.rejects(store.reserve(secret, "nearby", signal, remaining), unavailable);
   assert.equal(calls, 2); assert.deepEqual(releases, [true]);
+});
+
+test("startup/API module copies preserve database diagnostics and controlled admission codes", async t => {
+  const logs: unknown[][] = []; t.mock.method(console, "error", (...args: unknown[]) => { logs.push(args); });
+  const diagnostic = { phase: "reserve", step: "function", acquireMs: 1, batchMs: 12, elapsedMs: 13,
+    remainingMs: 1987, budgetMs: 800, maxWaitMs: 600, committed: false, sqlState: "42883" };
+  for (const controlled of [false, true]) {
+    const foreign = runInNewContext(`new (class extends Error {
+      constructor() {
+        super("PRIVATE_STARTUP_ERROR");
+        this[Symbol.for("nearby.admission.database.error.v1")] = true;
+        this.diagnostic = diagnostic;
+        this.original = controlled ? Object.assign(new Error("PRIVATE_INNER_ERROR"), { name: "AdmissionError", code: "ADMISSION_WAIT_EXCEEDED" }) : { code: "42883" };
+      }
+    })()`, { diagnostic, controlled });
+    const store = new PostgresAdmissionStore({ async execute() { throw foreign; } });
+    await assert.rejects(store.reserve(secret, "nearby", signal, remaining), (e: unknown) => e instanceof AdmissionError && e.code === (controlled ? "ADMISSION_WAIT_EXCEEDED" : "ADMISSION_UNAVAILABLE"));
+    const data = logs.at(-1)![1] as Record<string, unknown>;
+    assert.equal(data.sqlState, "42883"); assert.equal(data.step, "function"); assert.equal(data.batchMs, 12); assert.equal(data.budgetMs, 800);
+  }
+  assert.ok(!JSON.stringify(logs).includes("PRIVATE_"));
 });

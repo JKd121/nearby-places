@@ -35,3 +35,9 @@
 2026-10-28：基于 master 5e94d44 的 17 文件提交源码在独立导出目录完成验证。npm test 为 211 项核心/Route + 19 项 AST，共 230 项通过；独立 PostgreSQL 18.4 测试 30 项通过；npm run check、npm run build 和暂存差异检查通过，生成 8/8 静态页面。新一次 TCP 代理测试总耗时约 661ms，两批分别 330.65/318.76ms，模拟发送及扣额各一次。
 
 本次验证使用专用 loopback 数据库 nearby_admission_test_functions_pr。源码验证后仅补充本文结果，程序/测试与受验快照一致；GitHub CI 的 PostgreSQL 17 新安装结果另行报告。原工作区全部 238 个入场文件的字节哈希保持一致，原暂存区为空。
+
+## Preview 诊断补充（2026-10-28）
+
+PR Preview 在23:33的地点解析请求返回503，运行日志显示reserve阶段为ADMISSION_UNAVAILABLE，阶段诊断退回默认零值。复现确认：启动instrumentation和API打包出不同模块实例后，跨模块错误对象的instanceof判断失败，会丢失原SQLSTATE与阶段耗时。改用Symbol.for固定品牌识别错误信封，并规范化受控准入错误；仍按固定字段输出日志。
+
+新增独立VM模块回归，验证42883等原SQLSTATE和耗时跨模块保留、等待超时仍映射ADMISSION_WAIT_EXCEEDED。更新后的独立提交源码为212项核心/Route+19项AST，共231项通过，check/build通过；本补丁未改函数SQL或目标数据库。目标环境函数迁移及实际503的底层SQL原因仍待后续验收，现有零值日志未提供可确认的SQLSTATE。
