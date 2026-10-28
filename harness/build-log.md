@@ -1,5 +1,13 @@
 # Harness Build Log
 
+## 2026-10-28 — POI 2.0 多类别联合查询隔离实验 V1
+
+沿用当前 checkout/分支完成独立 CLI、配置校验、3/5/10 类九项计划、既有 PostgreSQL `beforeAttempt`/统一传输层复用、固定一次性预算锁、精确 typecode 聚合和 JSON/Markdown 报告。生产源码/搜索策略/准入政策未改；没有提交、推送、PR、合并、部署或真实高德请求。
+
+最终本地验证：204/204 核心/Route 测试及 18/18 AST 测试通过（含 21 项新增实验测试），check/build 通过；Dry 为 9 项计划、真实 HTTP 0，Mock 为 9 次模拟传输、真实 HTTP 0。样例及文件清单、限制和 Live 前人工确认条件见 [交付证据](build/2026-10-28-poi-union-v1.md) 与 [操作说明](../scripts/experiments/poi-union/README.md)。完成模拟验证后停止，未授权真实数据采集或后续生产策略开发。
+
+同日 PR 整理补充：用户授权独立提交与 Draft PR，并选择等待 Stage C #25 合并后继续。已核实 #25 合并为 master `31adccd`，与此前开发 HEAD `da80be6` 功能树一致；在原 checkout 创建 `Nearby-高德POI联合查询实验-V1`。共享文档只暂存实验段落，其他任务修改保留。拟提交快照重新执行 test/check/build 和安全检查；结果及隔离方式补充于交付证据，不执行真实高德。
+
 ## 2026-10-05 — 已授权历史直接搜索本地实施与验收
 
 - 用户明确“我确认授权”，覆盖完整本地方案的实施、自审和验证。
