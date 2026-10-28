@@ -30,3 +30,10 @@ test("server factories cannot omit PostgreSQL admission", () => {
   assert.ok(inspectSource("src/server/amap.ts", 'createAmapTransport(undefined, { policy });').length);
   assert.deepEqual(inspectSource("src/server/amap.ts", 'createAmapTransport(undefined, { policy, beforeAttempt: getServerAdmission("primary") });'), []);
 });
+
+test("database lifecycle dependencies are scoped to the reviewed pool module", () => {
+  for (const module of ["pg", "@vercel/functions/db-connections"]) {
+    assert.deepEqual(inspectSource("src/db/prisma.ts", `import value from '${module}';`), []);
+    assert.ok(inspectSource("src/server/new-feature.ts", `import value from '${module}';`).length);
+  }
+});

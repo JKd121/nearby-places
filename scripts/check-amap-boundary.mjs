@@ -1,5 +1,5 @@
 import ts from "typescript";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -29,7 +29,8 @@ export function inspectSource(path, source) {
         || (ts.isCallExpression(node.parent) && (node.parent.expression.kind === ts.SyntaxKind.ImportKeyword || node.parent.expression.getText(file) === "require"));
       if (module) {
         if (networkModules.test(node.text)) report(node, "network modules must not bypass AMap transport");
-        if (!node.text.startsWith(".") && !reviewedExternalModules.test(node.text)) report(node, "new production external imports need boundary review");
+        const databaseImport = path === "src/db/prisma.ts" && ["pg", "@vercel/functions/db-connections"].includes(node.text);
+        if (!node.text.startsWith(".") && !reviewedExternalModules.test(node.text) && !databaseImport) report(node, "new production external imports need boundary review");
         if (!browser && /(?:^|\/)scripts\/|(?:^|\/)test\//.test(node.text)) report(node, "production must not import CLI/test helpers");
         if (!browser && /amap\/client(?:\.js)?$|location\/provider(?:\.js)?$/.test(node.text) && !factories.has(path)) report(node, "production AMap clients must come from server/amap");
       }
@@ -70,6 +71,8 @@ export function checkProject(root = process.cwd()) {
     }
   }
   walk(resolve(root, "src")); walk(resolve(root, "app"));
+  const startup = resolve(root, "instrumentation.ts");
+  if (existsSync(startup)) errors.push(...inspectSource("instrumentation.ts", readFileSync(startup, "utf8")));
   return errors;
 }
 
