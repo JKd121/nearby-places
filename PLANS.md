@@ -53,3 +53,7 @@
 - Implementation Plan: `harness/build/2026-09-12-v0.2B-1-result-card-enrichment-implementation-plan.md`
 - Next Action: 提交/推送本轮已验收版本，沿现有master→Vercel上线并验证真实持久化回放；生产新增字段迁移已完成。偶发历史更新失败的根因与出现频率留待后续实际浏览器评估，本轮不追加机制修复。Any open-now inference requires a separate task and approval. Photo work remains blocked: do not implement photos, add photo caching/proxy/storage, or alter Production configuration without separate authorization. Transit enrichment remains out of scope: do not add `/v3/bus/*`, routes, timetables, or fuzzy station deduplication.
 - Deferred: 历史记录跨刷新持久化缓存、数据库/区域/连接配置调整、偶发更新失败的后续评估；v0.2B-2 POI photos remain blocked pending Phase B visual-relevance and authorization evidence; provider pagination beyond page 2; favorites, custom categories/templates, hotel offers, maps, multi-provider, AI, and recommendation work. 较早记录中的“persistence 未实现”与当前 PostgreSQL 历史代码不符，不再用作当前项目事实。
+
+## 2026-10-28：准入数据库连接预热独立交付
+
+仅整理准入池预热、实例生命周期与失败诊断，独立于POI实验，直接基于master；联合查询探索停止，证据保存在Issue #27。预热只读验证成功，完整准入仍有reserve/clock.select的P2028待查。事务预算和额度/QPS保持原值，Preview生命周期验收待后续安排。详见 [交付记录](harness/build/2026-10-28-admission-warmup-pr.md)。
