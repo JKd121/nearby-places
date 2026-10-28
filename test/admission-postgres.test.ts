@@ -56,18 +56,21 @@ function simulated() {
   return { transport, sends: () => sends, run: () => transport.requestJson(new URL("https://restapi.amap.com/v3/geocode/geo?key=fake"), "geocode") };
 }
 
-test("actual PostgreSQL: ten sequential categories tolerate database round trip latency", { timeout: 30000 }, async () => {
+test("actual PostgreSQL: ten sequential categories tolerate 300ms TCP round trips", { timeout: 30000 }, async () => {
   await seedHalf();
-  let sends = 0;
-  const delayed: AdmissionDatabase = { async execute(...args) {
-    const result = await db.execute(...args); await cancellableDelay(300); return result;
-  }};
-  const transport = createAmapTransport(async () => { sends++; return Response.json({ status: "1", count: "0", pois: [] }); }, { beforeAttempt: createAdmission(new PostgresAdmissionStore(delayed), "test") });
-  const client = createAmapClientWithTransport("fake", transport);
-  const center = { query: "test", formattedAddress: "test", province: "", city: "", district: "", longitude: 114, latitude: 22, level: "" };
-  const result = await executeResolvedSearch({ center, resolvedLocation: center, categoryIds: CATEGORIES.map(c => c.key), radiusMeters: 3000 }, client);
-  assert.equal(result.categories.length, 10);
-  assert.equal(sends, 10);
+  await withTcpLatency(async delayedDb => {
+    let sends = 0; const phases: unknown[] = [];
+    const delayed: AdmissionDatabase = { async execute(...args) {
+      const result = await delayedDb.execute(...args); const row = result.value as { code?: string; validForMs?: number; delayMs?: number };
+      phases.push({ code: row.code, validForMs: row.validForMs, delayMs: row.delayMs, ...result.diagnostic }); return result;
+    } };
+    const transport = createAmapTransport(async () => { sends++; return Response.json({ status: "1", count: "0", pois: [] }); }, { beforeAttempt: createAdmission(new PostgresAdmissionStore(delayed), "test") });
+    const client = createAmapClientWithTransport("fake", transport);
+    const center = { query: "test", formattedAddress: "test", province: "", city: "", district: "", longitude: 114, latitude: 22, level: "" };
+    const result = await executeResolvedSearch({ center, resolvedLocation: center, categoryIds: CATEGORIES.map(c => c.key), radiusMeters: 3000 }, client);
+    assert.equal(result.categories.length, 10); assert.equal(sends, 10, JSON.stringify(phases));
+    assert.equal((await stateFor("amap-search")).dayUsed, 210);
+  });
 });
 
 test("actual PostgreSQL: concurrent tickets are unique and reservation spends no budget", async () => {
@@ -387,8 +390,7 @@ test("actual PostgreSQL: a multi-category quota stop preserves completed results
   assert.equal(sends, 2); assert.equal((await state()).dayUsed, 2);
 });
 
-test("actual PostgreSQL: 300ms TCP round trips complete reserve and grant in two batches", { timeout: 15000 }, async () => {
-  await seedHalf();
+async function withTcpLatency(run: (database: PipelinedAdmissionDatabase) => Promise<void>) {
   const sockets = new Set<Socket>(), timers = new Set<ReturnType<typeof setTimeout>>();
   const proxy = createServer(downstream => {
     const upstream = connectSocket({ host: "127.0.0.1", port: Number(target.port || 5432) });
@@ -405,10 +407,20 @@ test("actual PostgreSQL: 300ms TCP round trips complete reserve and grant in two
   const address = proxy.address(); assert.ok(address && typeof address === "object");
   const delayedUrl = new URL(connectionString!); delayedUrl.port = String(address.port);
   const delayedPool = new Pool({ connectionString: delayedUrl.href, pipeline: true, max: 1, connectionTimeoutMillis: 3000 });
-  const delayedDb = new PipelinedAdmissionDatabase(delayedPool), batches: AdmissionExecution[] = [];
-  const observed: AdmissionDatabase = { async execute(...args) { const result = await delayedDb.execute(...args); batches.push(result); return result; } };
   try {
-    await delayedPool.query("SELECT 1"); // Cold connection belongs to preparation, before admission.
+    await delayedPool.query("SELECT 1");
+    await run(new PipelinedAdmissionDatabase(delayedPool));
+  } finally {
+    await delayedPool.end(); for (const timer of timers) clearTimeout(timer); for (const socket of sockets) socket.destroy();
+    await new Promise<void>((resolve, reject) => { proxy.close(error => error ? reject(error) : resolve()); });
+  }
+}
+
+test("actual PostgreSQL: 300ms TCP round trips complete reserve and grant in two batches", { timeout: 15000 }, async () => {
+  await seedHalf();
+  await withTcpLatency(async delayedDb => {
+    const batches: AdmissionExecution[] = [];
+    const observed: AdmissionDatabase = { async execute(...args) { const result = await delayedDb.execute(...args); batches.push(result); return result; } };
     let sends = 0;
     const transport = createAmapTransport(async () => { sends++; return Response.json({ status: "1" }); }, { beforeAttempt: createAdmission(new PostgresAdmissionStore(observed), "test") });
     const start = performance.now(); await transport.requestJson(new URL("https://restapi.amap.com/v5/place/around?key=fake"), "nearby");
@@ -417,10 +429,7 @@ test("actual PostgreSQL: 300ms TCP round trips complete reserve and grant in two
     for (const batch of batches) { assert.ok(batch.diagnostic.batchMs >= 280 && batch.diagnostic.batchMs < 600); assert.equal(batch.diagnostic.committed, true); }
     assert.equal((await stateFor("amap-search")).dayUsed, 201);
     console.log("admission.tcp-latency", { totalMs: Math.round(total), batchMs: batches.map(b => b.diagnostic.batchMs) });
-  } finally {
-    await delayedPool.end(); for (const timer of timers) clearTimeout(timer); for (const socket of sockets) socket.destroy();
-    await new Promise<void>((resolve, reject) => { proxy.close(error => error ? reject(error) : resolve()); });
-  }
+  });
 });
 
 test("actual PostgreSQL: cancellation before dispatch or after commit never sends", async () => {
