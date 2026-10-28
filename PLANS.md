@@ -1,5 +1,12 @@
 # Project Harness
 
+## POI 2.0 多类别联合查询隔离实验 V1（2026-10-28）
+
+- 本轮授权已扩展为整理实验专用分支、提交并创建面向 master 的独立 Draft PR。Stage C PR #25 已合并，基线为 `31adccd`；沿用当前 checkout，保留其他任务的未提交修改，不新增 Worktree，不合并或部署。
+- 实验入口 `scripts/experiments/poi-union/`；默认 Dry，Mock 采用假响应，Live 需要单独授权参数、私有三地点配置、既有 PostgreSQL 准入及固定的一次性 9 次预算锁。生产搜索调度、解析、API、UI、额度与 QPS 均未改。
+- 当前实现与验证记录见 [交付证据](harness/build/2026-10-28-poi-union-v1.md)，操作说明见 [实验 README](scripts/experiments/poi-union/README.md)。报告只保留明确 typecode 归属和安全聚合，父子编码映射不足处保持未确认。
+- 下一步为独立源码与安全审查；真实采集、后续分析与生产策略设计均未授权，PR 创建后停止。下方 Stage C 等记录保留其历史语境，不扩大本轮范围。
+
 ## Stage C 搜索异常传播（2026-10-28）
 
 - 本地实现集中错误分类、部分结果保留、未执行类别和停止事件；不改变数据库准入算法、QPS、额度或串行策略。

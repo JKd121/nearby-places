@@ -19,3 +19,6 @@ harness/build/*-real-api-verification.txt
 
 # Generated Prisma Client
 /generated/prisma/
+
+# Private experiment coordinates, one-shot live budget and generated reports
+/.local/poi-union-v1/

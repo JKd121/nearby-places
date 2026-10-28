@@ -1,0 +1,868 @@
+{
+  "version": "poi-union-v1",
+  "mode": "mock",
+  "generatedAt": "2026-10-28T04:56:28.084Z",
+  "radiusMeters": 1000,
+  "parameters": {
+    "endpoint": "/v5/place/around",
+    "pageSize": 25,
+    "pageNumber": 1,
+    "sortRule": "distance",
+    "showFields": "business"
+  },
+  "state": "completed",
+  "plannedCalls": 9,
+  "hardLimit": 9,
+  "httpCalls": 0,
+  "simulatedCalls": 9,
+  "skippedTrials": 0,
+  "classification": "Exact configured codes only. Parent/child or unknown codes remain unconfirmed; no prefix inference.",
+  "results": [
+    {
+      "outcome": "success",
+      "admission": "granted",
+      "httpCalls": 0,
+      "simulatedCalls": 1,
+      "httpStatus": 200,
+      "businessStatus": "1",
+      "infocode": "10000",
+      "errorCode": null,
+      "errorAction": null,
+      "elapsedMs": 27.26,
+      "admissionMs": 0.14,
+      "responseMs": 25.41,
+      "stats": {
+        "returnedPois": 5,
+        "perCategory": {
+          "hotel": 1,
+          "mall": 1,
+          "hotpot": 1,
+          "bakery": 0,
+          "dessert": 0,
+          "ktv": 0,
+          "billiards": 0,
+          "gym": 0,
+          "bus": 0,
+          "subway": 0
+        },
+        "rawTypecodes": {
+          "100100": 1,
+          "150701": 1,
+          "999999": 1,
+          "060100": 1,
+          "050117": 1
+        },
+        "unconfirmedTypecodes": {
+          "150701": 1,
+          "999999": 1
+        },
+        "unconfirmedCount": 2,
+        "invalidItems": 0,
+        "reachedPageCap": false
+      },
+      "experimentId": "poi-union-v1-site-1-A",
+      "siteId": "site-1",
+      "densityHypothesis": "low",
+      "group": "A",
+      "requested": [
+        {
+          "key": "hotel",
+          "label": "酒店",
+          "typecodes": [
+            "100100"
+          ]
+        },
+        {
+          "key": "mall",
+          "label": "商场",
+          "typecodes": [
+            "060100"
+          ]
+        },
+        {
+          "key": "hotpot",
+          "label": "火锅",
+          "typecodes": [
+            "050117"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "success",
+      "admission": "granted",
+      "httpCalls": 0,
+      "simulatedCalls": 1,
+      "httpStatus": 200,
+      "businessStatus": "1",
+      "infocode": "10000",
+      "errorCode": null,
+      "errorAction": null,
+      "elapsedMs": 1.12,
+      "admissionMs": 0.04,
+      "responseMs": 0.52,
+      "stats": {
+        "returnedPois": 7,
+        "perCategory": {
+          "hotel": 1,
+          "mall": 1,
+          "hotpot": 1,
+          "bakery": 0,
+          "dessert": 0,
+          "ktv": 0,
+          "billiards": 0,
+          "gym": 1,
+          "bus": 1,
+          "subway": 0
+        },
+        "rawTypecodes": {
+          "100100": 1,
+          "150700": 1,
+          "150701": 1,
+          "999999": 1,
+          "060100": 1,
+          "050117": 1,
+          "080111": 1
+        },
+        "unconfirmedTypecodes": {
+          "150701": 1,
+          "999999": 1
+        },
+        "unconfirmedCount": 2,
+        "invalidItems": 0,
+        "reachedPageCap": false
+      },
+      "experimentId": "poi-union-v1-site-1-B",
+      "siteId": "site-1",
+      "densityHypothesis": "low",
+      "group": "B",
+      "requested": [
+        {
+          "key": "hotel",
+          "label": "酒店",
+          "typecodes": [
+            "100100"
+          ]
+        },
+        {
+          "key": "mall",
+          "label": "商场",
+          "typecodes": [
+            "060100"
+          ]
+        },
+        {
+          "key": "hotpot",
+          "label": "火锅",
+          "typecodes": [
+            "050117"
+          ]
+        },
+        {
+          "key": "gym",
+          "label": "健身房",
+          "typecodes": [
+            "080111"
+          ]
+        },
+        {
+          "key": "bus",
+          "label": "公交站",
+          "typecodes": [
+            "150700"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "success",
+      "admission": "granted",
+      "httpCalls": 0,
+      "simulatedCalls": 1,
+      "httpStatus": 200,
+      "businessStatus": "1",
+      "infocode": "10000",
+      "errorCode": null,
+      "errorAction": null,
+      "elapsedMs": 0.96,
+      "admissionMs": 0.03,
+      "responseMs": 0.42,
+      "stats": {
+        "returnedPois": 12,
+        "perCategory": {
+          "hotel": 1,
+          "mall": 1,
+          "hotpot": 1,
+          "bakery": 1,
+          "dessert": 1,
+          "ktv": 1,
+          "billiards": 1,
+          "gym": 1,
+          "bus": 1,
+          "subway": 1
+        },
+        "rawTypecodes": {
+          "100100": 1,
+          "150500": 1,
+          "150700": 1,
+          "150701": 1,
+          "999999": 1,
+          "060100": 1,
+          "050117": 1,
+          "050800": 1,
+          "050900": 1,
+          "080302": 1,
+          "080113": 1,
+          "080111": 1
+        },
+        "unconfirmedTypecodes": {
+          "150701": 1,
+          "999999": 1
+        },
+        "unconfirmedCount": 2,
+        "invalidItems": 0,
+        "reachedPageCap": false
+      },
+      "experimentId": "poi-union-v1-site-1-C",
+      "siteId": "site-1",
+      "densityHypothesis": "low",
+      "group": "C",
+      "requested": [
+        {
+          "key": "hotel",
+          "label": "酒店",
+          "typecodes": [
+            "100100"
+          ]
+        },
+        {
+          "key": "mall",
+          "label": "商场",
+          "typecodes": [
+            "060100"
+          ]
+        },
+        {
+          "key": "hotpot",
+          "label": "火锅",
+          "typecodes": [
+            "050117"
+          ]
+        },
+        {
+          "key": "bakery",
+          "label": "面包",
+          "typecodes": [
+            "050800"
+          ]
+        },
+        {
+          "key": "dessert",
+          "label": "甜品",
+          "typecodes": [
+            "050900"
+          ]
+        },
+        {
+          "key": "ktv",
+          "label": "KTV",
+          "typecodes": [
+            "080302"
+          ]
+        },
+        {
+          "key": "billiards",
+          "label": "台球厅",
+          "typecodes": [
+            "080113"
+          ]
+        },
+        {
+          "key": "gym",
+          "label": "健身房",
+          "typecodes": [
+            "080111"
+          ]
+        },
+        {
+          "key": "bus",
+          "label": "公交站",
+          "typecodes": [
+            "150700"
+          ]
+        },
+        {
+          "key": "subway",
+          "label": "地铁站",
+          "typecodes": [
+            "150500"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "success",
+      "admission": "granted",
+      "httpCalls": 0,
+      "simulatedCalls": 1,
+      "httpStatus": 200,
+      "businessStatus": "1",
+      "infocode": "10000",
+      "errorCode": null,
+      "errorAction": null,
+      "elapsedMs": 0.94,
+      "admissionMs": 0.05,
+      "responseMs": 0.42,
+      "stats": {
+        "returnedPois": 8,
+        "perCategory": {
+          "hotel": 2,
+          "mall": 2,
+          "hotpot": 2,
+          "bakery": 0,
+          "dessert": 0,
+          "ktv": 0,
+          "billiards": 0,
+          "gym": 0,
+          "bus": 0,
+          "subway": 0
+        },
+        "rawTypecodes": {
+          "100100": 2,
+          "150701": 1,
+          "999999": 1,
+          "060100": 2,
+          "050117": 2
+        },
+        "unconfirmedTypecodes": {
+          "150701": 1,
+          "999999": 1
+        },
+        "unconfirmedCount": 2,
+        "invalidItems": 0,
+        "reachedPageCap": false
+      },
+      "experimentId": "poi-union-v1-site-2-A",
+      "siteId": "site-2",
+      "densityHypothesis": "medium",
+      "group": "A",
+      "requested": [
+        {
+          "key": "hotel",
+          "label": "酒店",
+          "typecodes": [
+            "100100"
+          ]
+        },
+        {
+          "key": "mall",
+          "label": "商场",
+          "typecodes": [
+            "060100"
+          ]
+        },
+        {
+          "key": "hotpot",
+          "label": "火锅",
+          "typecodes": [
+            "050117"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "success",
+      "admission": "granted",
+      "httpCalls": 0,
+      "simulatedCalls": 1,
+      "httpStatus": 200,
+      "businessStatus": "1",
+      "infocode": "10000",
+      "errorCode": null,
+      "errorAction": null,
+      "elapsedMs": 1.05,
+      "admissionMs": 0.02,
+      "responseMs": 0.53,
+      "stats": {
+        "returnedPois": 12,
+        "perCategory": {
+          "hotel": 2,
+          "mall": 2,
+          "hotpot": 2,
+          "bakery": 0,
+          "dessert": 0,
+          "ktv": 0,
+          "billiards": 0,
+          "gym": 2,
+          "bus": 2,
+          "subway": 0
+        },
+        "rawTypecodes": {
+          "100100": 2,
+          "150700": 2,
+          "150701": 1,
+          "999999": 1,
+          "060100": 2,
+          "050117": 2,
+          "080111": 2
+        },
+        "unconfirmedTypecodes": {
+          "150701": 1,
+          "999999": 1
+        },
+        "unconfirmedCount": 2,
+        "invalidItems": 0,
+        "reachedPageCap": false
+      },
+      "experimentId": "poi-union-v1-site-2-B",
+      "siteId": "site-2",
+      "densityHypothesis": "medium",
+      "group": "B",
+      "requested": [
+        {
+          "key": "hotel",
+          "label": "酒店",
+          "typecodes": [
+            "100100"
+          ]
+        },
+        {
+          "key": "mall",
+          "label": "商场",
+          "typecodes": [
+            "060100"
+          ]
+        },
+        {
+          "key": "hotpot",
+          "label": "火锅",
+          "typecodes": [
+            "050117"
+          ]
+        },
+        {
+          "key": "gym",
+          "label": "健身房",
+          "typecodes": [
+            "080111"
+          ]
+        },
+        {
+          "key": "bus",
+          "label": "公交站",
+          "typecodes": [
+            "150700"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "success",
+      "admission": "granted",
+      "httpCalls": 0,
+      "simulatedCalls": 1,
+      "httpStatus": 200,
+      "businessStatus": "1",
+      "infocode": "10000",
+      "errorCode": null,
+      "errorAction": null,
+      "elapsedMs": 0.92,
+      "admissionMs": 0.03,
+      "responseMs": 0.45,
+      "stats": {
+        "returnedPois": 22,
+        "perCategory": {
+          "hotel": 2,
+          "mall": 2,
+          "hotpot": 2,
+          "bakery": 2,
+          "dessert": 2,
+          "ktv": 2,
+          "billiards": 2,
+          "gym": 2,
+          "bus": 2,
+          "subway": 2
+        },
+        "rawTypecodes": {
+          "100100": 2,
+          "150500": 2,
+          "150700": 2,
+          "150701": 1,
+          "999999": 1,
+          "060100": 2,
+          "050117": 2,
+          "050800": 2,
+          "050900": 2,
+          "080302": 2,
+          "080113": 2,
+          "080111": 2
+        },
+        "unconfirmedTypecodes": {
+          "150701": 1,
+          "999999": 1
+        },
+        "unconfirmedCount": 2,
+        "invalidItems": 0,
+        "reachedPageCap": false
+      },
+      "experimentId": "poi-union-v1-site-2-C",
+      "siteId": "site-2",
+      "densityHypothesis": "medium",
+      "group": "C",
+      "requested": [
+        {
+          "key": "hotel",
+          "label": "酒店",
+          "typecodes": [
+            "100100"
+          ]
+        },
+        {
+          "key": "mall",
+          "label": "商场",
+          "typecodes": [
+            "060100"
+          ]
+        },
+        {
+          "key": "hotpot",
+          "label": "火锅",
+          "typecodes": [
+            "050117"
+          ]
+        },
+        {
+          "key": "bakery",
+          "label": "面包",
+          "typecodes": [
+            "050800"
+          ]
+        },
+        {
+          "key": "dessert",
+          "label": "甜品",
+          "typecodes": [
+            "050900"
+          ]
+        },
+        {
+          "key": "ktv",
+          "label": "KTV",
+          "typecodes": [
+            "080302"
+          ]
+        },
+        {
+          "key": "billiards",
+          "label": "台球厅",
+          "typecodes": [
+            "080113"
+          ]
+        },
+        {
+          "key": "gym",
+          "label": "健身房",
+          "typecodes": [
+            "080111"
+          ]
+        },
+        {
+          "key": "bus",
+          "label": "公交站",
+          "typecodes": [
+            "150700"
+          ]
+        },
+        {
+          "key": "subway",
+          "label": "地铁站",
+          "typecodes": [
+            "150500"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "success",
+      "admission": "granted",
+      "httpCalls": 0,
+      "simulatedCalls": 1,
+      "httpStatus": 200,
+      "businessStatus": "1",
+      "infocode": "10000",
+      "errorCode": null,
+      "errorAction": null,
+      "elapsedMs": 0.93,
+      "admissionMs": 0.04,
+      "responseMs": 0.52,
+      "stats": {
+        "returnedPois": 11,
+        "perCategory": {
+          "hotel": 3,
+          "mall": 3,
+          "hotpot": 3,
+          "bakery": 0,
+          "dessert": 0,
+          "ktv": 0,
+          "billiards": 0,
+          "gym": 0,
+          "bus": 0,
+          "subway": 0
+        },
+        "rawTypecodes": {
+          "100100": 3,
+          "150701": 1,
+          "999999": 1,
+          "060100": 3,
+          "050117": 3
+        },
+        "unconfirmedTypecodes": {
+          "150701": 1,
+          "999999": 1
+        },
+        "unconfirmedCount": 2,
+        "invalidItems": 0,
+        "reachedPageCap": false
+      },
+      "experimentId": "poi-union-v1-site-3-A",
+      "siteId": "site-3",
+      "densityHypothesis": "high",
+      "group": "A",
+      "requested": [
+        {
+          "key": "hotel",
+          "label": "酒店",
+          "typecodes": [
+            "100100"
+          ]
+        },
+        {
+          "key": "mall",
+          "label": "商场",
+          "typecodes": [
+            "060100"
+          ]
+        },
+        {
+          "key": "hotpot",
+          "label": "火锅",
+          "typecodes": [
+            "050117"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "success",
+      "admission": "granted",
+      "httpCalls": 0,
+      "simulatedCalls": 1,
+      "httpStatus": 200,
+      "businessStatus": "1",
+      "infocode": "10000",
+      "errorCode": null,
+      "errorAction": null,
+      "elapsedMs": 0.92,
+      "admissionMs": 0.04,
+      "responseMs": 0.5,
+      "stats": {
+        "returnedPois": 17,
+        "perCategory": {
+          "hotel": 3,
+          "mall": 3,
+          "hotpot": 3,
+          "bakery": 0,
+          "dessert": 0,
+          "ktv": 0,
+          "billiards": 0,
+          "gym": 3,
+          "bus": 3,
+          "subway": 0
+        },
+        "rawTypecodes": {
+          "100100": 3,
+          "150700": 3,
+          "150701": 1,
+          "999999": 1,
+          "060100": 3,
+          "050117": 3,
+          "080111": 3
+        },
+        "unconfirmedTypecodes": {
+          "150701": 1,
+          "999999": 1
+        },
+        "unconfirmedCount": 2,
+        "invalidItems": 0,
+        "reachedPageCap": false
+      },
+      "experimentId": "poi-union-v1-site-3-B",
+      "siteId": "site-3",
+      "densityHypothesis": "high",
+      "group": "B",
+      "requested": [
+        {
+          "key": "hotel",
+          "label": "酒店",
+          "typecodes": [
+            "100100"
+          ]
+        },
+        {
+          "key": "mall",
+          "label": "商场",
+          "typecodes": [
+            "060100"
+          ]
+        },
+        {
+          "key": "hotpot",
+          "label": "火锅",
+          "typecodes": [
+            "050117"
+          ]
+        },
+        {
+          "key": "gym",
+          "label": "健身房",
+          "typecodes": [
+            "080111"
+          ]
+        },
+        {
+          "key": "bus",
+          "label": "公交站",
+          "typecodes": [
+            "150700"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "success",
+      "admission": "granted",
+      "httpCalls": 0,
+      "simulatedCalls": 1,
+      "httpStatus": 200,
+      "businessStatus": "1",
+      "infocode": "10000",
+      "errorCode": null,
+      "errorAction": null,
+      "elapsedMs": 1.6,
+      "admissionMs": 0.03,
+      "responseMs": 1.14,
+      "stats": {
+        "returnedPois": 25,
+        "perCategory": {
+          "hotel": 3,
+          "mall": 3,
+          "hotpot": 3,
+          "bakery": 2,
+          "dessert": 2,
+          "ktv": 2,
+          "billiards": 2,
+          "gym": 2,
+          "bus": 2,
+          "subway": 2
+        },
+        "rawTypecodes": {
+          "100100": 3,
+          "150500": 2,
+          "150700": 2,
+          "150701": 1,
+          "999999": 1,
+          "060100": 3,
+          "050117": 3,
+          "050800": 2,
+          "050900": 2,
+          "080302": 2,
+          "080113": 2,
+          "080111": 2
+        },
+        "unconfirmedTypecodes": {
+          "150701": 1,
+          "999999": 1
+        },
+        "unconfirmedCount": 2,
+        "invalidItems": 0,
+        "reachedPageCap": true
+      },
+      "experimentId": "poi-union-v1-site-3-C",
+      "siteId": "site-3",
+      "densityHypothesis": "high",
+      "group": "C",
+      "requested": [
+        {
+          "key": "hotel",
+          "label": "酒店",
+          "typecodes": [
+            "100100"
+          ]
+        },
+        {
+          "key": "mall",
+          "label": "商场",
+          "typecodes": [
+            "060100"
+          ]
+        },
+        {
+          "key": "hotpot",
+          "label": "火锅",
+          "typecodes": [
+            "050117"
+          ]
+        },
+        {
+          "key": "bakery",
+          "label": "面包",
+          "typecodes": [
+            "050800"
+          ]
+        },
+        {
+          "key": "dessert",
+          "label": "甜品",
+          "typecodes": [
+            "050900"
+          ]
+        },
+        {
+          "key": "ktv",
+          "label": "KTV",
+          "typecodes": [
+            "080302"
+          ]
+        },
+        {
+          "key": "billiards",
+          "label": "台球厅",
+          "typecodes": [
+            "080113"
+          ]
+        },
+        {
+          "key": "gym",
+          "label": "健身房",
+          "typecodes": [
+            "080111"
+          ]
+        },
+        {
+          "key": "bus",
+          "label": "公交站",
+          "typecodes": [
+            "150700"
+          ]
+        },
+        {
+          "key": "subway",
+          "label": "地铁站",
+          "typecodes": [
+            "150500"
+          ]
+        }
+      ]
+    }
+  ]
+}
