@@ -1,6 +1,6 @@
 import { AdmissionError } from "./errors.js";
-import { AmapApiError, RequestTerminatedError } from "../amap/errors.js";
-import { abortable, createRequestContext, cancellableDelay, throwIfAborted, type RequestContext } from "../amap/request-context.js";
+import { AmapApiError } from "../amap/errors.js";
+import { abortable, createRequestContext, throwIfAborted, type RequestContext } from "../amap/request-context.js";
 import type { AmapOperation, AttemptPermit, BeforeAmapAttempt } from "../amap/transport.js";
 import { isAdmissionDatabaseError, type AdmissionDatabase, type AdmissionExecution, type AdmissionPhase } from "./database.js";
 export type { AdmissionDatabase } from "./database.js";
@@ -97,14 +97,12 @@ export function createAdmission(store: PostgresAdmissionStore | (() => Promise<P
     throwIfAborted(parentSignal);
     if (active >= 12) throw new AdmissionError("ADMISSION_UNAVAILABLE");
     active++;
-    const end = performance.now() + Math.min(WAIT_LIMIT_MS, context?.remainingMs?.() ?? WAIT_LIMIT_MS);
-    const lifetime = createRequestContext(parentSignal, Math.max(1, end - performance.now()));
+    const lifetime = createRequestContext(context ?? parentSignal, WAIT_LIMIT_MS, new AdmissionError("ADMISSION_WAIT_EXCEEDED"));
     const signal = lifetime.signal;
-    const remaining = () => end - performance.now();
+    const remaining = () => lifetime.remainingMs();
     const check = () => {
-      if ((context?.remainingMs?.() ?? Infinity) <= 0) context?.abort(new RequestTerminatedError("REQUEST_DEADLINE_EXCEEDED"));
-      throwIfAborted(parentSignal); throwIfAborted(signal);
-      if (remaining() <= 0) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
+      throwIfAborted(parentSignal);
+      lifetime.check();
     };
     const work = (async () => { try {
       check();
@@ -113,23 +111,27 @@ export function createAdmission(store: PostgresAdmissionStore | (() => Promise<P
       const reservedStart = performance.now();
       const ticket = await repository.reserve(credentialId, operation, signal, remaining);
       // Conservatively subtract the entire DB round trip, not just its return leg.
-      const ticketEnd = Math.min(end, reservedStart + ticket.validForMs);
+      const ticketEnd = reservedStart + ticket.validForMs;
       check();
       if (performance.now() >= ticketEnd) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
-      await cancellableDelay(ticket.delayMs, signal);
+      // DB v1 rejects arrivals before scheduledAt. A round trip cannot identify
+      // the response leg, so wait from receipt rather than subtracting its RTT.
+      await lifetime.wait(ticket.delayMs);
       check();
       if (performance.now() >= ticketEnd) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
       let grantStart = performance.now();
       let grant = await repository.grant(credentialId, operation, ticket, signal, () => Math.min(remaining(), ticketEnd - performance.now()));
       if (grant.delayMs !== undefined) {
-        await cancellableDelay(grant.delayMs, signal);
+        // WAIT was sampled inside the DB. Waiting from receipt is conservative and
+        // bounds this protocol to one final recheck without a polling loop.
+        await lifetime.wait(grant.delayMs);
         check();
         if (performance.now() >= ticketEnd) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
         grantStart = performance.now();
         grant = await repository.grant(credentialId, operation, ticket, signal, () => Math.min(remaining(), ticketEnd - performance.now()));
       }
       if (grant.validForMs === undefined) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
-      const permitEnd = Math.min(ticketEnd, end, grantStart + grant.validForMs);
+      const permitEnd = Math.min(ticketEnd, grantStart + grant.validForMs);
       let used = false;
       return { assertValid() {
         check();
@@ -143,8 +145,6 @@ export function createAdmission(store: PostgresAdmissionStore | (() => Promise<P
     try { return await abortable(work, signal); }
     catch (error) {
       throwIfAborted(parentSignal);
-      if (error instanceof AmapApiError && error.code === "REQUEST_DEADLINE_EXCEEDED" && (context?.remainingMs?.() ?? Infinity) > 0)
-        throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
       throw error;
     }
   };

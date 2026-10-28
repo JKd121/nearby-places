@@ -1,21 +1,27 @@
 import { abortable, createRequestContext, throwIfAborted, type RequestContext } from "../amap/request-context.js";
 import { getRequestPolicy, type RequestPolicy } from "./request-policy.js";
 import { mapServerError } from "./http.js";
-import { isRequestTerminal, RequestBodyTooLargeError } from "../amap/errors.js";
+import { AmapApiError, isRequestTerminal, RequestBodyTooLargeError } from "../amap/errors.js";
 
 /** Starts before body parsing and owns cleanup for every exit, including validation errors. */
 export async function withRequestLifecycle(request: Request,
-  handle: (context: RequestContext, policy: RequestPolicy) => Promise<Response>): Promise<Response> {
+  handle: (context: RequestContext, policy: RequestPolicy) => Promise<Response>,
+  onDeadline?: () => Response | undefined): Promise<Response> {
   try {
     throwIfAborted(request.signal);
     const policy = getRequestPolicy();
     const context = createRequestContext(request.signal, policy.requestTimeoutMs);
     try {
       const result = await abortable(handle(context, policy), context.signal);
-      throwIfAborted(context.signal);
+      context.check();
       return result;
     } catch (error) {
+      throwIfAborted(request.signal);
       if (isRequestTerminal(error)) context.abort(error);
+      if (error instanceof AmapApiError && error.code === "REQUEST_DEADLINE_EXCEEDED") {
+        const partial = onDeadline?.();
+        if (partial) return partial;
+      }
       throw error;
     } finally { context.dispose(); }
   } catch (error) { return mapServerError(error); }

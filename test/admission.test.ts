@@ -33,6 +33,46 @@ test("reservation then grant then exactly one send; no permit replay", async () 
   assert.deepEqual(calls, { reserve: 1, grant: 1 }); context.dispose();
 });
 
+test("reservation wait respects DB sampling despite an asymmetric round trip", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  let monotonic = 0;
+  t.mock.method(performance, "now", () => monotonic);
+  let grantedAt = -1;
+  const { store } = fixture({
+    async reserve() {
+      monotonic = 120;
+      return { resourceId: "test", version: 1, scheduledAt: new Date(100), expiresAt: new Date(500), delayMs: 100, validForMs: 500 };
+    },
+    async grant() { grantedAt = monotonic; return { validForMs: 100 }; },
+  });
+  const pending = createAdmission(store, "test")("nearby", new AbortController().signal);
+  await Promise.resolve();
+  monotonic = 219; t.mock.timers.tick(99);
+  assert.equal(grantedAt, -1);
+  monotonic = 220; t.mock.timers.tick(1);
+  const permit = await pending;
+  assert.equal(grantedAt, 220);
+  assert.ok(permit);
+  permit.assertValid();
+});
+
+test("local admission deadline has its own reason while the parent budget remains", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  let monotonic = 0;
+  t.mock.method(performance, "now", () => monotonic);
+  let release!: (value: Reservation) => void;
+  const { store } = fixture({ reserve: () => new Promise<Reservation>(resolve => { release = resolve; }) });
+  const parent = createRequestContext(undefined, 60000);
+  try {
+    const pending = createAdmission(store, "test")("nearby", parent.signal, parent);
+    const rejected = assert.rejects(pending, (error: unknown) => error instanceof AdmissionError && error.code === "ADMISSION_WAIT_EXCEEDED");
+    monotonic = 2000; t.mock.timers.tick(2000); await rejected;
+    assert.equal(parent.signal.aborted, false);
+    release({ resourceId: "test", version: 1, scheduledAt: new Date(0), expiresAt: new Date(3000), delayMs: 0, validForMs: 3000 });
+    await Promise.resolve();
+  } finally { parent.dispose(); }
+});
+
 test("cancel while waiting makes no grant or HTTP call", async () => {
   const { store, calls } = fixture({ async reserve() { calls.reserve++; return { resourceId: "test", version: 1, scheduledAt: new Date(), expiresAt: new Date(Date.now() + 500), delayMs: 100, validForMs: 500 }; } });
   const parent = new AbortController(); const context = createRequestContext(parent.signal); let sends = 0;
@@ -114,7 +154,7 @@ test("admission errors map to safe 429/503 and are request terminal", async () =
   }
 });
 
-for (const code of ["ADMISSION_WAIT_EXCEEDED", "ADMISSION_UNAVAILABLE", "DAILY_BUDGET_EXHAUSTED", "MONTHLY_BUDGET_EXHAUSTED"] as const) test(`${code} after one success produces partial response without later calls`, async () => {
+for (const code of ["ADMISSION_WAIT_EXCEEDED", "ADMISSION_UNAVAILABLE", "DAILY_BUDGET_EXHAUSTED", "MONTHLY_BUDGET_EXHAUSTED"] as const) test(`${code} after one success follows its failure scope`, async () => {
   const previousKey = process.env.AMAP_WEB_SERVICE_KEY, original = globalThis.fetch;
   process.env.AMAP_WEB_SERVICE_KEY = "test-only-SECRET";
   let checks = 0, sends = 0;
@@ -124,9 +164,10 @@ for (const code of ["ADMISSION_WAIT_EXCEEDED", "ADMISSION_UNAVAILABLE", "DAILY_B
     setAdmissionHook(async () => { if (++checks === 2) throw new AdmissionError(code); });
     const response = await search(new Request("http://localhost/", { method: "POST", body: JSON.stringify({ center: centre, resolvedLocation: centre, categoryIds: ["hotel", "mall", "hotpot"], radiusMeters: 3000 }) }));
     const body = await response.text(); const parsed = JSON.parse(body);
-    assert.equal(response.status, 200); assert.equal(checks, 2); assert.equal(sends, 1);
-    assert.deepEqual(parsed.categories.map((x: {status: string}) => x.status), ["empty", "error", "skipped"]);
-    assert.deepEqual(parsed.termination, { code, categoryId: "mall" });
+    const recover = code === "ADMISSION_WAIT_EXCEEDED";
+    assert.equal(response.status, 200); assert.equal(checks, recover ? 3 : 2); assert.equal(sends, recover ? 2 : 1);
+    assert.deepEqual(parsed.categories.map((x: {status: string}) => x.status), ["empty", "error", recover ? "empty" : "skipped"]);
+    assert.deepEqual(parsed.termination, recover ? undefined : { code, categoryId: "mall" });
     assert.equal(body.includes("SECRET"), false);
   } finally { setAdmissionHook(async () => {}); globalThis.fetch = original; if (previousKey === undefined) delete process.env.AMAP_WEB_SERVICE_KEY; else process.env.AMAP_WEB_SERVICE_KEY = previousKey; }
 });

@@ -1,5 +1,6 @@
 import { searchCategoriesSequentially } from "../search/service.js";
 import type { Delay } from "../search/service.js";
+import { cancellableDelay } from "./request-context.js";
 import type { CategoryConfig, CategorySearchResult, Coordinates, GeocodedPlace, NearbySearchOptions, PlacePage } from "./types.js";
 
 export type NearbySearch = (centre: Coordinates, category: CategoryConfig, options: NearbySearchOptions) => Promise<PlacePage>;
@@ -29,11 +30,17 @@ export async function searchCategoriesForSmoke(
   categories: readonly CategoryConfig[],
   searchNearby: NearbySearch,
   radiusMeters: number,
-  delay?: Delay,
+  delay: Delay = cancellableDelay,
   intervalMilliseconds = 500
 ): Promise<SmokeSearchOutcome> {
   const validationError = validateGeocodeForSmoke(geocode);
   if (validationError) return { validationError, results: [] };
-  const results = await searchCategoriesSequentially(geocode, categories, searchNearby, radiusMeters, delay, intervalMilliseconds);
+  let started = false;
+  // The standalone CLI has its own pacing policy; product scheduling uses DB admission.
+  const results = await searchCategoriesSequentially(geocode, categories, async (...args) => {
+    if (started) await delay(intervalMilliseconds);
+    started = true;
+    return searchNearby(args[0], args[1], args[2]);
+  }, radiusMeters);
   return { validationError: null, results };
 }

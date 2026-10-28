@@ -26,6 +26,41 @@ test("contexts are isolated, retain first reason and dispose parent listeners/ti
   await new Promise(resolve => setTimeout(resolve, 5)); assert.equal(c.signal.aborted, false);
 });
 
+test("child budgets inherit the parent deadline and synchronous checks survive delayed timers", t => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  let monotonic = 0;
+  t.mock.method(performance, "now", () => monotonic);
+  const parent = createRequestContext(undefined, 100);
+  monotonic = 70;
+  const child = createRequestContext(parent, 80, "UPSTREAM_TIMEOUT");
+  assert.equal(child.remainingMs(), 30);
+  monotonic = 101; // Event loop has not dispatched either deadline timer.
+  assert.throws(() => child.check(), code("REQUEST_DEADLINE_EXCEEDED"));
+  assert.equal(parent.signal.reason, child.signal.reason);
+  child.dispose(); parent.dispose();
+});
+
+test("nested timeout contexts preserve the earliest owner's reason", t => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  let monotonic = 0;
+  t.mock.method(performance, "now", () => monotonic);
+  const parent = createRequestContext(undefined, 10, new AmapApiError("", null, null, "ADMISSION_WAIT_EXCEEDED"));
+  const child = createRequestContext(parent, 100, "UPSTREAM_TIMEOUT");
+  monotonic = 10; t.mock.timers.tick(10);
+  assert.throws(() => child.check(), code("ADMISSION_WAIT_EXCEEDED"));
+  child.dispose(); parent.dispose();
+});
+
+test("context wait is cancelled and cleans its wait listener", async () => {
+  const context = createRequestContext();
+  const pending = context.wait(1000);
+  const rejected = assert.rejects(pending, code("REQUEST_CANCELLED"));
+  context.abort(new RequestTerminatedError("REQUEST_CANCELLED"));
+  await rejected;
+  assert.equal(getEventListeners(context.signal, "abort").length, 0);
+  context.dispose();
+});
+
 test("abortable always removes listeners on fulfillment, rejection and cancellation", async () => {
   const context = createRequestContext();
   await abortable(Promise.resolve(1), context.signal);
@@ -35,42 +70,38 @@ test("abortable always removes listeners on fulfillment, rejection and cancellat
   await assert.rejects(pending, code("REQUEST_CANCELLED")); assert.equal(getEventListeners(context.signal, "abort").length, 0); context.dispose();
 });
 
-test("cancelled waiting stops before the next category and releases wait timer", async () => {
+test("cancellation during a category stops the next call", async () => {
   const context = createRequestContext(); let calls = 0;
-  const pending = executeResolvedSearch(request, { geocode: async () => centre, searchNearby: async () => { calls++; return empty; } }, async (ms, signal) => {
-    assert.equal(ms, 500); setTimeout(() => context.abort(new RequestTerminatedError("REQUEST_CANCELLED")), 1); await cancellableDelay(ms, signal);
-  }, undefined, context);
+  const pending = executeResolvedSearch(request, { geocode: async () => centre, searchNearby: async () => { calls++; context.abort(new RequestTerminatedError("REQUEST_CANCELLED")); return empty; } }, { context });
   await assert.rejects(pending, code("REQUEST_CANCELLED")); assert.equal(calls, 1); context.dispose();
 });
 
 for (const terminal of ["UPSTREAM_AUTH_FAILED", "REQUEST_DEADLINE_EXCEEDED", "REQUEST_CANCELLED"] as const) test(`${terminal} ends the whole search without wait/next category`, async () => {
-  const context = createRequestContext(); let calls = 0; let waits = 0;
+  const context = createRequestContext(); let calls = 0;
   const error = terminal === "UPSTREAM_AUTH_FAILED" ? new AmapApiError("safe", null, "10001", terminal) : new RequestTerminatedError(terminal);
-  await assert.rejects(executeResolvedSearch(request, { geocode: async () => centre, searchNearby: async () => { calls++; throw error; } }, async () => { waits++; }, undefined, context), e => e === error);
-  assert.equal(calls, 1); assert.equal(waits, 0); if (terminal !== "UPSTREAM_AUTH_FAILED") assert.equal(context.signal.reason, error); else assert.equal(context.signal.aborted, false); context.dispose();
+  await assert.rejects(executeResolvedSearch(request, { geocode: async () => centre, searchNearby: async () => { calls++; throw error; } }, { context: context }), e => e === error);
+  assert.equal(calls, 1); if (terminal !== "UPSTREAM_AUTH_FAILED") assert.equal(context.signal.reason, error); else assert.equal(context.signal.aborted, false); context.dispose();
 });
 
-test("total deadline bounds non-cooperative category operation and injected wait", async () => {
-  for (const stuck of ["category", "wait"]) {
+test("total deadline bounds a non-cooperative first category", async () => {
     let calls = 0; const context = createRequestContext(undefined, 5);
-    await assert.rejects(executeResolvedSearch(request, { geocode: async () => centre, searchNearby: async () => { calls++; return stuck === "category" ? new Promise<PlacePage>(() => {}) : empty; } }, async () => new Promise<void>(() => {}), undefined, context), code("REQUEST_DEADLINE_EXCEEDED"));
+    await assert.rejects(executeResolvedSearch(request, { geocode: async () => centre, searchNearby: async () => { calls++; return new Promise<PlacePage>(() => {}); } }, { context }), code("REQUEST_DEADLINE_EXCEEDED"));
     assert.equal(calls, 1); context.dispose();
-  }
 });
 
 test("all failed is an error; mixed and empty categories preserve ordering and safe partial results", async () => {
   const client = { geocode: async () => centre, searchNearby: async () => { throw new AmapApiError("SECRET raw upstream", null, null, "UPSTREAM_NETWORK"); } };
-  await assert.rejects(executeResolvedSearch(request, client, async () => {}), code("ALL_CATEGORIES_FAILED"));
-  let calls = 0; const waits: number[] = [];
-  const result = await executeResolvedSearch(request, { ...client, searchNearby: async () => { if (++calls === 1) throw new AmapApiError("SECRET", null, null, "UPSTREAM_NETWORK"); return empty; } }, async ms => { waits.push(ms); });
-  assert.deepEqual(result.categories.map(r => r.category.key), request.categoryIds); assert.deepEqual(waits, [500, 500]);
+  await assert.rejects(executeResolvedSearch(request, client), code("ALL_CATEGORIES_FAILED"));
+  let calls = 0;
+  const result = await executeResolvedSearch(request, { ...client, searchNearby: async () => { if (++calls === 1) throw new AmapApiError("SECRET", null, null, "UPSTREAM_NETWORK"); return empty; } });
+  assert.deepEqual(result.categories.map(r => r.category.key), request.categoryIds);
   assert.equal(result.status, "partial success"); assert.equal(result.categories[1]?.status, "empty"); assert.equal(JSON.stringify(result).includes("SECRET"), false);
 });
 
 test("pre-cancelled search/page make no provider calls", async () => {
   const context = createRequestContext(); context.abort(new RequestTerminatedError("REQUEST_CANCELLED")); let calls = 0;
   const client = { geocode: async () => centre, searchNearby: async () => { calls++; return empty; } };
-  await assert.rejects(executeResolvedSearch(request, client, undefined, undefined, context), code("REQUEST_CANCELLED"));
+  await assert.rejects(executeResolvedSearch(request, client, { context: context }), code("REQUEST_CANCELLED"));
   await assert.rejects(executeSecondPageSearch({ center: centre, categoryId: "hotel", radiusMeters: 3000 }, client, context), code("REQUEST_CANCELLED"));
   assert.equal(calls, 0); context.dispose();
 });
@@ -166,9 +197,11 @@ test("inbound 413 aborts the request context before business continuation", asyn
 
 test("60-second request candidate is independent of per-call 8-second timers", async t => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
+  let monotonic = 0;
+  t.mock.method(performance, "now", () => monotonic);
   const context = createRequestContext(undefined, STAGE_A_POLICY.requestTimeoutMs);
   const pending = abortable(new Promise<void>(() => {}), context.signal);
   const rejected = assert.rejects(pending, code("REQUEST_DEADLINE_EXCEEDED"));
-  t.mock.timers.tick(59999); assert.equal(context.signal.aborted, false);
-  t.mock.timers.tick(1); await rejected; context.dispose();
+  monotonic += 59999; t.mock.timers.tick(59999); assert.equal(context.signal.aborted, false);
+  monotonic++; t.mock.timers.tick(1); await rejected; context.dispose();
 });
