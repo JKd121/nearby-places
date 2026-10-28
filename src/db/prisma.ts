@@ -6,6 +6,7 @@ import { Pool } from "pg";
 import { attachDatabasePool } from "@vercel/functions/db-connections";
 import { createDatabaseReadiness } from "./readiness.js";
 import { admissionPoolPolicy } from "./admission-pool-policy.js";
+import { PipelinedAdmissionDatabase } from "../admission/database.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -35,22 +36,19 @@ export { prisma };
 
 // Retain one runtime per instance, including development module reloads.
 // The ordinary history client above keeps its existing configuration.
-const globalForAdmission = globalThis as unknown as { nearbyAdmissionDb?: ReturnType<typeof createAdmissionRuntime> };
+const globalForAdmission = globalThis as unknown as { nearbyAdmissionDbV2?: ReturnType<typeof createAdmissionRuntime> };
 function createAdmissionRuntime() {
   const pool = new Pool({ connectionString: databaseUrl, ...admissionPoolPolicy(process.env.VERCEL === "1") });
   if (process.env.VERCEL === "1") attachDatabasePool(pool);
-  const client = new PrismaClient({ adapter: new PrismaPg(pool, { disposeExternalPool: true }) });
+  const database = new PipelinedAdmissionDatabase(pool);
   const readiness = createDatabaseReadiness({
-    async probe() { await client.$queryRawUnsafe("SELECT 1 AS ok"); },
+    async probe() { await pool.query("SELECT 1 AS ok"); },
     hasConnection: () => pool.totalCount > 0 && !pool.ending,
   });
   pool.on("error", () => readiness.invalidate());
   pool.on("remove", () => readiness.invalidate());
-  return { client, readiness };
+  return { pool, database, readiness, close: () => pool.end() };
 }
 export function getAdmissionRuntime() {
-  return globalForAdmission.nearbyAdmissionDb ??= createAdmissionRuntime();
-}
-export function getAdmissionPrisma() {
-  return getAdmissionRuntime().client;
+  return globalForAdmission.nearbyAdmissionDbV2 ??= createAdmissionRuntime();
 }

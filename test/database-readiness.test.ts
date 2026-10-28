@@ -5,7 +5,7 @@ import { createDatabaseReadiness } from "../src/db/readiness.js";
 import { admissionPoolPolicy } from "../src/db/admission-pool-policy.js";
 import { withAdmissionPreparation } from "../src/admission/prepare.js";
 import { AdmissionError } from "../src/admission/errors.js";
-import { createAdmission, PostgresAdmissionStore, type AdmissionDatabase } from "../src/admission/service.js";
+import { createAdmission, PostgresAdmissionStore } from "../src/admission/service.js";
 import { createRequestContext } from "../src/amap/request-context.js";
 
 const unavailable = (e: unknown) => e instanceof AdmissionError && e.code === "ADMISSION_UNAVAILABLE";
@@ -85,17 +85,6 @@ test("pool profiles retain local idle capacity and release Vercel idle capacity"
   assert.equal(local.max, 4); assert.equal(vercel.max, 4);
   assert.equal(local.connectionTimeoutMillis, 8000);
   assert.equal("statement_timeout" in local, false); assert.equal("idle_in_transaction_session_timeout" in vercel, false);
-});
-
-test("existing transaction SQL/lock/idle timeouts remain explicit after moving cold preparation", async () => {
-  const calls: { sql: string; values: unknown[] }[] = [];
-  const database = { async $transaction(run: (tx: unknown) => Promise<unknown>) {
-    return run({ async $queryRawUnsafe(sql: string, ...values: unknown[]) { calls.push({ sql, values }); if (calls.length === 1) return []; throw Error("stop before resource query"); } });
-  } } as AdmissionDatabase;
-  const store = new PostgresAdmissionStore(database);
-  await assert.rejects(store.reserve("test", "nearby", new AbortController().signal, () => 2000), unavailable);
-  assert.match(calls[0]!.sql, /statement_timeout/); assert.match(calls[0]!.sql, /lock_timeout/); assert.match(calls[0]!.sql, /idle_in_transaction_session_timeout/);
-  assert.deepEqual(calls[0]!.values, ["800", "150"]);
 });
 
 test("slow preparation completes before the real short admission clock starts", async () => {

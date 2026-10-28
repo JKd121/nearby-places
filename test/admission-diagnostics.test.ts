@@ -1,112 +1,141 @@
 import assert from "node:assert/strict";
-import test from "node:test";
-import { PostgresAdmissionStore, budgetPeriod, type AdmissionDatabase, type AdmissionSql, type Reservation } from "../src/admission/service.js";
+import { test } from "node:test";
+import { PostgresAdmissionStore, createAdmission, type Reservation } from "../src/admission/service.js";
+import { PipelinedAdmissionDatabase, type AdmissionConnection, type AdmissionQueryResult } from "../src/admission/database.js";
 import { AdmissionError } from "../src/admission/errors.js";
-import { RequestTerminatedError } from "../src/amap/errors.js";
+import { cancellableDelay } from "../src/amap/request-context.js";
 
-const secret = "SECRET-KEY postgresql://private:password@private-host/db?token=private 123.456789,34.567891";
-type Phase = "reserve" | "grant";
-function fixture(failStep?: string, error: unknown = Object.assign(Error(secret), { code: "P2028" })) {
-  const now = Date.now(), period = budgetPeriod(new Date(now));
-  const row: Record<string, unknown> = { id: secret, policyVersion: 1, enabled: true, dailyLimit: 100, monthlyLimit: 1000, intervalMs: 500, waitMs: 2000, graceMs: 800, permitTtlMs: 400,
-    day: period.day, month: period.month, dayUsed: 0, monthUsed: 0, reservationMs: "0", consumedMs: "0", grantMs: "0" };
-  const calls: { sql: string; values: unknown[] }[] = [];
-  let transactions = 0;
-  const options: { maxWait: number; timeout: number }[] = [];
-  const names = ["transaction.configure", "resource.select", "binding.select", "clock.select"];
-  const db: AdmissionDatabase = {
-    async $transaction<T>(run: (tx: AdmissionSql) => Promise<T>, policy: { maxWait: number; timeout: number }): Promise<T> {
-      transactions++; options.push(policy);
-      if (failStep === "transaction.acquire") throw error;
-      const result = await run({ async $queryRawUnsafe<T>(sql: string, ...values: unknown[]): Promise<T> {
-        const step = names[calls.length] ?? "write";
-        calls.push({ sql, values });
-        if (step === failStep) throw error;
-        return (step === "resource.select" ? [{ ...row }] : step === "binding.select" ? [{ resourceId: secret }] : step === "clock.select" ? [{ nowMs: String(now) }] : []) as T;
-      } });
-      if (failStep === "transaction.commit") throw error;
+const secret = "PRIVATE_CREDENTIAL_AND_SQL";
+const signal = new AbortController().signal, remaining = () => 2000;
+const ticket: Reservation = { resourceId: secret, version: 1, scheduledAt: new Date(1000), expiresAt: new Date(2000), delayMs: 0, validForMs: 1000 };
+const reservation = { code: "OK", resourceId: secret, version: 1, scheduledAtMs: 1000, expiresAtMs: 2000, delayMs: 0, validForMs: 1000 };
+const unavailable = (e: unknown) => e instanceof AdmissionError && e.code === "ADMISSION_UNAVAILABLE";
+function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>(r => { resolve = r; }); return { promise, resolve }; }
+function fixture(options: { fail?: number; error?: unknown; commit?: string; value?: unknown; hold?: Promise<void>; pipeline?: boolean } = {}) {
+  const queries: { text: string; values?: unknown[]; query_timeout?: number }[] = [], released: boolean[] = [];
+  const pending: { resolve(value: AdmissionQueryResult): void; reject(error: unknown): void }[] = [];
+  const connection: AdmissionConnection = {
+    pipeline: options.pipeline ?? true,
+    query(query) {
+      queries.push(query);
+      const result = new Promise<AdmissionQueryResult>((resolve, reject) => { pending.push({ resolve, reject }); });
+      // All four must be queued before any resolves: per-query awaiting deadlocks this fixture.
+      if (queries.length === 4) void (options.hold ?? Promise.resolve()).then(() => {
+        for (let i = 0; i < 4; i++) {
+          if (i === options.fail) pending[i]!.reject(options.error ?? Object.assign(Error(secret), { code: "57014" }));
+          else pending[i]!.resolve({ command: i === 0 ? "BEGIN" : i === 3 ? options.commit ?? (options.fail === undefined ? "COMMIT" : "ROLLBACK") : "SELECT",
+            rows: i === 2 ? [{ result: options.value ?? reservation }] : [] });
+        }
+      });
       return result;
     },
+    release(destroy = false) { released.push(destroy); },
   };
-  const store = new PostgresAdmissionStore(db);
-  const ticket: Reservation = { resourceId: secret, version: 1, scheduledAt: new Date(now - 1), expiresAt: new Date(now + 1500), delayMs: 0, validForMs: 1500 };
-  return { row, calls, options, transactions: () => transactions,
-    run: (phase: Phase, signal = new AbortController().signal, remaining = () => 2000) => phase === "reserve" ? store.reserve(secret, "nearby", signal, remaining) : store.grant(secret, "nearby", ticket, signal, remaining) };
+  const executor = new PipelinedAdmissionDatabase({ async connect() { return connection; } });
+  return { store: new PostgresAdmissionStore(executor), executor, queries, released, connection };
 }
-const unavailable = (error: unknown) => error instanceof AdmissionError && error.code === "ADMISSION_UNAVAILABLE";
 
-test("transaction failures identify reserve/grant and the exact last stage once", async t => {
-  const logs: unknown[][] = [];
-  t.mock.method(console, "error", (...args: unknown[]) => { logs.push(args); });
+test("successful phases enqueue one ordered batch with existing limits and log nothing", { timeout: 2000 }, async t => {
+  const logs: unknown[] = []; t.mock.method(console, "error", (...args: unknown[]) => { logs.push(args); });
   for (const phase of ["reserve", "grant"] as const) {
-    for (const step of ["transaction.acquire", "transaction.configure", "resource.select", "binding.select", "clock.select", "write", "transaction.commit"]) {
-      logs.length = 0; const f = fixture(step); await assert.rejects(f.run(phase), unavailable);
-      assert.equal(logs.length, 1); assert.equal(logs[0]![0], "admission.failed");
-      const data = logs[0]![1] as Record<string, unknown>;
-      assert.equal(data.phase, phase); assert.equal(data.step, step === "write" ? phase === "reserve" ? "reservation.write" : "grant.write" : step);
-      assert.equal(data.prismaCode, "P2028"); assert.equal(data.sqlState, null);
-      assert.equal(data.budgetMs, 800); assert.equal(data.maxWaitMs, 600);
-      assert.ok(Number(data.elapsedMs) >= 0 && Number(data.stepElapsedMs) >= 0 && Number(data.stepElapsedMs) <= Number(data.elapsedMs));
-      assert.equal(f.transactions(), 1); assert.ok(!JSON.stringify(logs).includes(secret));
-    }
+    const f = fixture({ value: phase === "reserve" ? reservation : { code: "OK", validForMs: 400 } });
+    if (phase === "reserve") assert.equal((await f.store.reserve(secret, "nearby", signal, remaining)).resourceId, secret);
+    else assert.equal((await f.store.grant(secret, "nearby", ticket, signal, remaining)).validForMs, 400);
+    assert.equal(f.queries.length, 4); assert.equal(f.queries[0]!.text, "BEGIN"); assert.equal(f.queries[3]!.text, "COMMIT");
+    assert.ok(f.queries[2]!.text.includes("amap_admission_" + phase + "_v1"));
+    assert.deepEqual(f.queries[1]!.values, ["800", "150"]); assert.equal(f.queries[2]!.values!.at(-1), 2000);
+    assert.ok(f.queries.every(q => q.query_timeout === 1200)); assert.deepEqual(f.released, [false]);
+  }
+  assert.equal(logs.length, 0);
+});
+
+test("SQL and acknowledgement failures emit one safe diagnostic and no permit", async t => {
+  const logs: unknown[][] = []; t.mock.method(console, "error", (...args: unknown[]) => { logs.push(args); });
+  for (const fail of [0, 1, 2, 3]) {
+    const f = fixture({ fail }); await assert.rejects(f.store.reserve(secret, "nearby", signal, remaining), unavailable);
+    const data = logs.at(-1)![1] as Record<string, unknown>;
+    assert.equal(data.step, ["acquire", "configure", "function", "commit"][fail]); assert.equal(data.sqlState, "57014");
+    assert.equal(data.committed, false); assert.deepEqual(f.released, [fail === 3]);
+  }
+  assert.equal(logs.length, 4); assert.ok(!JSON.stringify(logs).includes(secret));
+  assert.deepEqual(Object.keys(logs[0]![1] as object).sort(), ["phase", "step", "acquireMs", "batchMs", "elapsedMs", "remainingMs", "budgetMs", "maxWaitMs", "committed", "sqlState", "admissionCode"].sort());
+});
+
+test("ROLLBACK and malformed function payloads fail closed", async t => {
+  t.mock.method(console, "error", () => {});
+  for (const options of [{ commit: "ROLLBACK" }, { value: {} }, { value: { ...reservation, scheduledAtMs: "1000" } },
+    { value: { ...reservation, expiresAtMs: 999 } }, { value: { ...reservation, validForMs: 2001 } }, { value: { code: secret } }]) {
+    await assert.rejects(fixture(options).store.reserve(secret, "nearby", signal, remaining), unavailable);
   }
 });
 
-test("successful transactions log nothing and retain SQL order, parameters and budgets", async t => {
-  let logs = 0; t.mock.method(console, "error", () => { logs++; });
-  for (const phase of ["reserve", "grant"] as const) {
-    const f = fixture(); await f.run(phase);
-    assert.equal(f.calls.length, 5); assert.equal(f.transactions(), 1);
-    assert.match(f.calls[0]!.sql, /set_config/); assert.deepEqual(f.calls[0]!.values, ["800", "150"]);
-    assert.match(f.calls[1]!.sql, /FOR UPDATE/); assert.match(f.calls[2]!.sql, /FOR SHARE/);
-    assert.match(f.calls[3]!.sql, /clock_timestamp/); assert.match(f.calls[4]!.sql, /^UPDATE/);
-    assert.deepEqual(f.options, [{ maxWait: 600, timeout: 800 }]);
+test("controlled function outcomes retain codes and validate retryAt", async t => {
+  const logs: unknown[][] = []; t.mock.method(console, "error", (...args: unknown[]) => { logs.push(args); });
+  for (const code of ["ADMISSION_WAIT_EXCEEDED", "ADMISSION_UNAVAILABLE", "DAILY_BUDGET_EXHAUSTED", "MONTHLY_BUDGET_EXHAUSTED"]) {
+    const f = fixture({ value: { code, retryAt: "2026-11-01T00:00:00.000Z" } });
+    await assert.rejects(f.store.reserve(secret, "nearby", signal, remaining), (e: unknown) => e instanceof AdmissionError && e.code === code && e.retryAt === "2026-11-01T00:00:00.000Z");
   }
-  assert.equal(logs, 0);
+  await assert.rejects(fixture({ value: { code: "DAILY_BUDGET_EXHAUSTED", retryAt: secret } }).store.reserve(secret, "nearby", signal, remaining), unavailable);
+  assert.ok(!JSON.stringify(logs).includes(secret));
+  assert.deepEqual(await fixture({ value: { code: "WAIT", delayMs: 20 } }).store.grant(secret, "nearby", ticket, signal, remaining), { delayMs: 20 });
 });
 
-test("structured Prisma/SQLSTATE codes are extracted without messages, SQL or identifiers", async t => {
-  const logs: unknown[][] = []; t.mock.method(console, "error", (...args: unknown[]) => { logs.push(args); });
-  for (const meta of [{ code: "55P03", query: secret }, { driverAdapterError: { cause: { originalCode: "57014", message: secret } } }]) {
-    const error = Object.assign(Error(secret), { code: "P2010", meta, stack: secret });
-    await assert.rejects(fixture("resource.select", error).run("reserve"), unavailable);
+test("unknown codes and a throwing log sink retain safe mapping without retry", async t => {
+  const logs: unknown[][] = []; const sink = t.mock.method(console, "error", (...args: unknown[]) => { logs.push(args); });
+  await assert.rejects(fixture({ fail: 2, error: { code: secret, message: secret } }).store.reserve(secret, "nearby", signal, remaining), unavailable);
+  assert.equal((logs[0]![1] as Record<string, unknown>).sqlState, null);
+  sink.mock.mockImplementation(() => { throw Error(secret); }); const f = fixture({ fail: 2 });
+  await assert.rejects(f.store.reserve(secret, "nearby", signal, remaining), unavailable); assert.equal(f.queries.length, 4);
+});
+
+test("pre-cancelled, exhausted and non-pipelined calls start no SQL", async t => {
+  t.mock.method(console, "error", () => {});
+  const parent = new AbortController(); parent.abort(); const f = fixture();
+  await assert.rejects(f.store.reserve(secret, "nearby", parent.signal, remaining), (e: unknown) => (e as { code: string }).code === "REQUEST_CANCELLED");
+  await assert.rejects(f.store.reserve(secret, "nearby", signal, () => 0)); assert.equal(f.queries.length, 0);
+  const ordinary = fixture({ pipeline: false }); await assert.rejects(ordinary.store.reserve(secret, "nearby", signal, remaining), unavailable);
+  assert.equal(ordinary.queries.length, 0); assert.deepEqual(ordinary.released, [false]);
+});
+
+test("cancellation during a batch retains the lease until all results drain", async t => {
+  t.mock.method(console, "error", () => {});
+  const hold = deferred<void>(), parent = new AbortController(), f = fixture({ hold: hold.promise });
+  const pending = createAdmission(f.store, secret)("nearby", parent.signal);
+  await cancellableDelay(0); assert.equal(f.queries.length, 4); parent.abort(); await assert.rejects(pending);
+  assert.deepEqual(f.released, []); hold.resolve(); await cancellableDelay(0); assert.deepEqual(f.released, [false]);
+});
+
+test("cancelled acquisitions stay capped until late connections are released exactly once", async t => {
+  t.mock.method(console, "error", () => {});
+  const lease = deferred<AdmissionConnection>(); let count = 0, releases = 0;
+  const connection: AdmissionConnection = { pipeline: true, async query() { throw Error("Unexpected SQL"); }, release() { releases++; } };
+  const store = new PostgresAdmissionStore(new PipelinedAdmissionDatabase({ connect() { count++; return lease.promise; } }));
+  for (let i = 0; i < 12; i++) {
+    const parent = new AbortController(), pending = store.reserve(secret, "nearby", parent.signal, remaining);
+    await cancellableDelay(0); parent.abort(); await assert.rejects(pending);
   }
-  const first = logs[0]![1] as Record<string, unknown>, second = logs[1]![1] as Record<string, unknown>;
-  assert.equal(first.sqlState, "55P03"); assert.equal(second.sqlState, "57014"); assert.equal(first.prismaCode, "P2010");
-  assert.deepEqual(Object.keys(first).sort(), ["phase", "step", "elapsedMs", "stepElapsedMs", "budgetMs", "maxWaitMs", "prismaCode", "sqlState", "admissionCode"].sort());
-  for (const forbidden of [secret, "postgresql://", "private-host", "123.456789", "password"]) assert.ok(!JSON.stringify(logs).includes(forbidden));
+  await assert.rejects(store.reserve(secret, "nearby", signal, remaining), unavailable); assert.equal(count, 12);
+  lease.resolve(connection); await cancellableDelay(0); assert.equal(releases, 12);
 });
 
-test("invalid free-form codes are omitted; controlled errors preserve their identity", async t => {
-  const logs: unknown[][] = []; t.mock.method(console, "error", (...args: unknown[]) => { logs.push(args); });
-  await assert.rejects(fixture("resource.select", { code: secret, meta: { code: "TOKEN" }, message: secret }).run("reserve"), unavailable);
-  assert.equal((logs[0]![1] as Record<string, unknown>).prismaCode, null); assert.equal((logs[0]![1] as Record<string, unknown>).sqlState, null);
-  const original = new AdmissionError("ADMISSION_WAIT_EXCEEDED");
-  await assert.rejects(fixture("resource.select", original).run("reserve"), error => error === original);
-  assert.equal((logs[1]![1] as Record<string, unknown>).admissionCode, original.code);
+test("acquisition deadlines own late cleanup; dispatch respects remaining time", async t => {
+  t.mock.method(console, "error", () => {});
+  const lease = deferred<AdmissionConnection>(), f = fixture();
+  const store = new PostgresAdmissionStore(new PipelinedAdmissionDatabase({ connect: () => lease.promise }));
+  await assert.rejects(store.reserve(secret, "nearby", signal, () => 15), unavailable);
+  lease.resolve(f.connection); await cancellableDelay(0); assert.deepEqual(f.released, [false]); assert.equal(f.queries.length, 0);
+  const limited = fixture(); await limited.store.reserve(secret, "nearby", signal, () => 100);
+  assert.deepEqual(limited.queries[1]!.values, ["100", "100"]); assert.equal(limited.queries[0]!.query_timeout, 100);
 });
 
-test("local resource validation and budget failures have fixed non-SQL labels", async t => {
-  const logs: unknown[][] = []; t.mock.method(console, "error", (...args: unknown[]) => { logs.push(args); });
-  const invalid = fixture(); invalid.row.enabled = false;
-  await assert.rejects(invalid.run("reserve"), unavailable);
-  assert.equal((logs[0]![1] as Record<string, unknown>).step, "resource.validate");
-  const exhausted = fixture(); exhausted.row.dayUsed = exhausted.row.dailyLimit;
-  await assert.rejects(exhausted.run("grant"), (e: unknown) => e instanceof AdmissionError && e.code === "DAILY_BUDGET_EXHAUSTED");
-  assert.equal((logs[1]![1] as Record<string, unknown>).step, "budget.check"); assert.equal(exhausted.calls.length, 4);
-});
-
-test("cancelled and expired callers preserve existing terminal behavior", async t => {
-  const logs: unknown[][] = []; t.mock.method(console, "error", (...args: unknown[]) => { logs.push(args); });
-  const controller = new AbortController(); const reason = new RequestTerminatedError("REQUEST_CANCELLED"); controller.abort(reason);
-  const cancelled = fixture(); await assert.rejects(cancelled.run("reserve", controller.signal), error => error === reason);
-  assert.equal(cancelled.transactions(), 0); assert.equal(logs.length, 0);
-  const expired = fixture(); await assert.rejects(expired.run("reserve", undefined, () => 0), (e: unknown) => e instanceof AdmissionError && e.code === "ADMISSION_WAIT_EXCEEDED");
-  assert.equal(expired.transactions(), 0); assert.equal(logs.length, 1);
-});
-
-test("a throwing log sink preserves original mapping and does not retry", async t => {
-  t.mock.method(console, "error", () => { throw Error("broken log sink"); });
-  const f = fixture("resource.select"); await assert.rejects(f.run("reserve"), unavailable);
-  assert.equal(f.transactions(), 1); assert.equal(f.calls.length, 2);
+test("a synchronous enqueue failure drains prior promises and destroys the partial transaction", async t => {
+  t.mock.method(console, "error", () => {});
+  let calls = 0; const releases: boolean[] = [];
+  const connection: AdmissionConnection = { pipeline: true, query() {
+    if (++calls === 2) throw Error(secret);
+    return Promise.resolve({ command: "BEGIN", rows: [] });
+  }, release(destroy = false) { releases.push(destroy); } };
+  const store = new PostgresAdmissionStore(new PipelinedAdmissionDatabase({ async connect() { return connection; } }));
+  await assert.rejects(store.reserve(secret, "nearby", signal, remaining), unavailable);
+  assert.equal(calls, 2); assert.deepEqual(releases, [true]);
 });

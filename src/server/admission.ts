@@ -19,8 +19,8 @@ export function getServerAdmission(credentialId: string) {
   let hook = hooks.get(credentialId);
   if (!hook) {
     hook = withAdmissionPreparation(createAdmission(async () => {
-      const { getAdmissionPrisma } = await import("../db/prisma.js");
-      return new PostgresAdmissionStore(getAdmissionPrisma());
+      const { getAdmissionRuntime } = await import("../db/prisma.js");
+      return new PostgresAdmissionStore(getAdmissionRuntime().database);
     }, credentialId), preparation);
     hooks.set(credentialId, hook);
   }

@@ -9,6 +9,8 @@ class Pool extends EventEmitter {
   totalCount = 0;
   ending = false;
   constructor(readonly options: Record<string, unknown>) { super(); }
+  async query() { queries++; this.totalCount = 1; return { rows: [{ ok: 1 }] }; }
+  async end() { this.ending = true; }
 }
 class PrismaPg { constructor(readonly input: unknown, readonly options?: unknown) {} }
 class PrismaClient {
@@ -26,8 +28,9 @@ test("ordinary client retains its configuration; Vercel admission owns one attac
   const ordinary = db.prisma as unknown as PrismaClient;
   assert.deepEqual(ordinary.options.adapter.input, { connectionString: "fixture-only" });
   const a = db.getAdmissionRuntime(), b = db.getAdmissionRuntime();
-  assert.equal(a, b); assert.equal(a.client, db.getAdmissionPrisma()); assert.equal(attached, 1);
-  const pool = (a.client as unknown as PrismaClient).options.adapter.input as Pool;
+  assert.equal(a, b); assert.equal(a.database, b.database); assert.equal(attached, 1);
+  const pool = a.pool as unknown as Pool;
+  assert.equal(pool.options.pipeline, true);
   assert.equal(pool.options.min, 0); assert.equal(pool.options.idleTimeoutMillis, 5000);
   assert.equal(queries, 0); // Import/assembly alone issues no SQL.
   await Promise.all([prepareServerAdmission(), prepareServerAdmission()]);
@@ -37,7 +40,7 @@ test("ordinary client retains its configuration; Vercel admission owns one attac
 test("Vercel idle removal and pool errors invalidate the actual shared readiness", async () => {
   await new Promise(resolve => setTimeout(resolve, 0));
   const state = db.getAdmissionRuntime();
-  const pool = (state.client as unknown as PrismaClient).options.adapter.input as Pool;
+  const pool = state.pool as unknown as Pool;
   pool.totalCount = 0; pool.emit("remove");
   await prepareServerAdmission(); assert.equal(queries, 2);
   await new Promise(resolve => setTimeout(resolve, 0));
