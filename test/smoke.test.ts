@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { CATEGORIES } from "../src/amap/categories.js";
 import { searchCategoriesForSmoke } from "../src/amap/smoke.js";
+import { AmapApiError } from "../src/amap/errors.js";
 import type { GeocodedPlace, PlacePage } from "../src/amap/types.js";
 
 const categories = CATEGORIES.slice(0, 3);
@@ -14,7 +15,7 @@ test("category searches are sequential, delayed after success and failure, and c
   let maximumActive = 0;
   const outcome = await searchCategoriesForSmoke(shenzhen, categories, async (_centre, category) => {
     events.push(`start:${category.key}`); active += 1; maximumActive = Math.max(maximumActive, active); await Promise.resolve(); active -= 1; events.push(`end:${category.key}`);
-    if (category.key === "mall") throw new Error("QPS test error (10021)");
+    if (category.key === "mall") throw new AmapApiError("QPS test error", null, "10021", "UPSTREAM_BUSINESS");
     return emptyPage;
   }, 3_000, async (milliseconds) => { assert.equal(active, 0); events.push(`delay:${milliseconds}`); });
   assert.equal(maximumActive, 1);

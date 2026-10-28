@@ -1,5 +1,11 @@
 # Project Harness
 
+## Stage C 搜索异常传播（2026-10-28）
+
+- 本地实现集中错误分类、部分结果保留、未执行类别和停止事件；不改变数据库准入算法、QPS、额度或串行策略。
+- 当前工作提交供 PR 审查，不代表已合并、生产部署或故障根因已解决。故障及待调查项见 [Issue #24](https://github.com/JKd121/nearby-places/issues/24)，本地验证见 `harness/build/2026-10-28-stage-c-local.md`。
+- 以下内容为历史阶段快照，不代表当前状态或新授权。
+
 ## 当前任务：高德请求安全工程 Stage A（2026-10-25）
 
 - Branch / Baseline: `高德请求安全基线` / `df84cf2f6f788596a6e5e2de418b6ad38d515313`（UI PR #19 合并提交）；当前目录，无新增 Worktree。旧 `界面开发` 分支及性能 Worktree 原样保留。

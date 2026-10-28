@@ -43,11 +43,11 @@ test("cancelled waiting stops before the next category and releases wait timer",
   await assert.rejects(pending, code("REQUEST_CANCELLED")); assert.equal(calls, 1); context.dispose();
 });
 
-for (const terminal of ["UPSTREAM_TIMEOUT", "UPSTREAM_AUTH_FAILED", "REQUEST_DEADLINE_EXCEEDED", "REQUEST_CANCELLED"] as const) test(`${terminal} ends the whole search without wait/next category`, async () => {
+for (const terminal of ["UPSTREAM_AUTH_FAILED", "REQUEST_DEADLINE_EXCEEDED", "REQUEST_CANCELLED"] as const) test(`${terminal} ends the whole search without wait/next category`, async () => {
   const context = createRequestContext(); let calls = 0; let waits = 0;
   const error = terminal === "UPSTREAM_AUTH_FAILED" ? new AmapApiError("safe", null, "10001", terminal) : new RequestTerminatedError(terminal);
   await assert.rejects(executeResolvedSearch(request, { geocode: async () => centre, searchNearby: async () => { calls++; throw error; } }, async () => { waits++; }, undefined, context), e => e === error);
-  assert.equal(calls, 1); assert.equal(waits, 0); assert.equal(context.signal.reason, error); context.dispose();
+  assert.equal(calls, 1); assert.equal(waits, 0); if (terminal !== "UPSTREAM_AUTH_FAILED") assert.equal(context.signal.reason, error); else assert.equal(context.signal.aborted, false); context.dispose();
 });
 
 test("total deadline bounds non-cooperative category operation and injected wait", async () => {
@@ -59,10 +59,10 @@ test("total deadline bounds non-cooperative category operation and injected wait
 });
 
 test("all failed is an error; mixed and empty categories preserve ordering and safe partial results", async () => {
-  const client = { geocode: async () => centre, searchNearby: async () => { throw new Error("SECRET raw upstream"); } };
+  const client = { geocode: async () => centre, searchNearby: async () => { throw new AmapApiError("SECRET raw upstream", null, null, "UPSTREAM_NETWORK"); } };
   await assert.rejects(executeResolvedSearch(request, client, async () => {}), code("ALL_CATEGORIES_FAILED"));
   let calls = 0; const waits: number[] = [];
-  const result = await executeResolvedSearch(request, { ...client, searchNearby: async () => { if (++calls === 1) throw Error("SECRET"); return empty; } }, async ms => { waits.push(ms); });
+  const result = await executeResolvedSearch(request, { ...client, searchNearby: async () => { if (++calls === 1) throw new AmapApiError("SECRET", null, null, "UPSTREAM_NETWORK"); return empty; } }, async ms => { waits.push(ms); });
   assert.deepEqual(result.categories.map(r => r.category.key), request.categoryIds); assert.deepEqual(waits, [500, 500]);
   assert.equal(result.status, "partial success"); assert.equal(result.categories[1]?.status, "empty"); assert.equal(JSON.stringify(result).includes("SECRET"), false);
 });

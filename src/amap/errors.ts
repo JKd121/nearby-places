@@ -23,6 +23,7 @@ export class RequestBodyTooLargeError extends AmapApiError {
   }
 }
 
+/** Lifecycle cleanup after an error escapes a route; category decisions use classifyError. */
 export function isRequestTerminal(error: unknown): error is AmapApiError {
   return error instanceof AmapApiError && ["REQUEST_CANCELLED", "REQUEST_DEADLINE_EXCEEDED", "REQUEST_BODY_TOO_LARGE", "UPSTREAM_TIMEOUT", "UPSTREAM_AUTH_FAILED", "DAILY_BUDGET_EXHAUSTED", "MONTHLY_BUDGET_EXHAUSTED", "ADMISSION_WAIT_EXCEEDED", "ADMISSION_UNAVAILABLE"].includes(error.code);
 }

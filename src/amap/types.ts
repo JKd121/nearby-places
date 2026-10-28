@@ -72,11 +72,12 @@ export interface PlacePage {
   mayHaveNextApiPage: boolean;
 }
 
-export interface SearchFailure { message: string; info: string | null; infocode: string | null; }
+export type CategoryStatus = "success" | "empty" | "error" | "skipped";
+export interface SearchFailure { message: string; info: string | null; infocode: string | null; code?: import("../errors/classify.js").PublicSearchErrorCode; }
 
 export interface CategorySearchResult {
   category: CategoryConfig;
-  status: "success" | "empty" | "error";
+  status: CategoryStatus;
   places: Place[];
   page: Omit<PlacePage, "places"> | null;
   error: SearchFailure | null;

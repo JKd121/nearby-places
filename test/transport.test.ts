@@ -44,6 +44,12 @@ test("already cancelled calls do not invoke hook/fetch", async () => {
   assert.equal(calls, 0); context.dispose();
 });
 
+test("unexpected permit defects remain internal rather than becoming recoverable network errors", async () => {
+  const defect = new Error("internal defect");
+  const transport = createAmapTransport(async () => Response.json({ status: "1" }), { beforeAttempt: async () => ({ assertValid() { throw defect; } }) });
+  await assert.rejects(transport.requestJson(url, "geocode"), error => error === defect);
+});
+
 test("header timeout bounds non-cooperative fetch, records no raw cause and never retries", async () => {
   let calls = 0;
   const client = createAmapTransport(async () => { calls++; return new Promise<Response>(() => {}); }, { policy: { ...policy, upstreamTimeoutMs: 5 } });

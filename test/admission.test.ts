@@ -97,7 +97,10 @@ test("budget rejection remains terminal and safe across all three real routes", 
     let checks = 0;
     setAdmissionHook(async () => { if (++checks === 2) throw new AdmissionError("MONTHLY_BUDGET_EXHAUSTED"); });
     const response = await search(new Request("http://localhost/", { method: "POST", body: JSON.stringify({ center: centre, resolvedLocation: centre, categoryIds: ["hotel", "mall", "hotpot"], radiusMeters: 3000 }) }));
-    assert.equal(response.status, 429); assert.equal(checks, 2); assert.equal(sends, 1);
+    assert.equal(response.status, 200); assert.equal(checks, 2); assert.equal(sends, 1);
+    const payload = await response.json() as { categories: { status: string }[]; termination: { code: string } };
+    assert.deepEqual(payload.categories.map(item => item.status), ["empty", "error", "skipped"]);
+    assert.equal(payload.termination.code, "MONTHLY_BUDGET_EXHAUSTED");
   } finally { setAdmissionHook(async () => {}); globalThis.fetch = original;
     if (previousKey === undefined) delete process.env.AMAP_WEB_SERVICE_KEY; else process.env.AMAP_WEB_SERVICE_KEY = previousKey; }
 });
@@ -105,6 +108,25 @@ test("budget rejection remains terminal and safe across all three real routes", 
 test("admission errors map to safe 429/503 and are request terminal", async () => {
   for (const code of ["DAILY_BUDGET_EXHAUSTED", "MONTHLY_BUDGET_EXHAUSTED", "ADMISSION_WAIT_EXCEEDED", "ADMISSION_UNAVAILABLE"] as const) {
     const e = new AdmissionError(code); assert.equal(isRequestTerminal(e), true);
-    assert.equal(mapServerError(e).status, code === "ADMISSION_UNAVAILABLE" ? 503 : 429);
+    const response = mapServerError(e);
+    assert.equal(response.status, code === "ADMISSION_UNAVAILABLE" ? 503 : 429);
+    assert.equal((await response.json() as {error:{code:string}}).error.code, code);
   }
+});
+
+for (const code of ["ADMISSION_WAIT_EXCEEDED", "ADMISSION_UNAVAILABLE", "DAILY_BUDGET_EXHAUSTED", "MONTHLY_BUDGET_EXHAUSTED"] as const) test(`${code} after one success produces partial response without later calls`, async () => {
+  const previousKey = process.env.AMAP_WEB_SERVICE_KEY, original = globalThis.fetch;
+  process.env.AMAP_WEB_SERVICE_KEY = "test-only-SECRET";
+  let checks = 0, sends = 0;
+  globalThis.fetch = async () => { sends++; return Response.json({ status: "1", pois: [] }); };
+  const centre = { query: "fixture", formattedAddress: "fixture", province: null, city: null, district: null, level: null, longitude: 114, latitude: 22 };
+  try {
+    setAdmissionHook(async () => { if (++checks === 2) throw new AdmissionError(code); });
+    const response = await search(new Request("http://localhost/", { method: "POST", body: JSON.stringify({ center: centre, resolvedLocation: centre, categoryIds: ["hotel", "mall", "hotpot"], radiusMeters: 3000 }) }));
+    const body = await response.text(); const parsed = JSON.parse(body);
+    assert.equal(response.status, 200); assert.equal(checks, 2); assert.equal(sends, 1);
+    assert.deepEqual(parsed.categories.map((x: {status: string}) => x.status), ["empty", "error", "skipped"]);
+    assert.deepEqual(parsed.termination, { code, categoryId: "mall" });
+    assert.equal(body.includes("SECRET"), false);
+  } finally { setAdmissionHook(async () => {}); globalThis.fetch = original; if (previousKey === undefined) delete process.env.AMAP_WEB_SERVICE_KEY; else process.env.AMAP_WEB_SERVICE_KEY = previousKey; }
 });

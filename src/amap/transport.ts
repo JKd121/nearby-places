@@ -32,7 +32,7 @@ async function readBounded(response: Response, maxBytes: number, signal: AbortSi
   try {
     while (true) {
       throwIfAborted(signal);
-      const { done, value } = await abortable(reader.read(), signal);
+      const { done, value } = await abortable(reader.read().catch(() => { throw new AmapApiError("Upstream read failure", null, null, "UPSTREAM_NETWORK"); }), signal);
       if (done) { complete = true; break; }
       size += value.byteLength;
       if (size > maxBytes) throw new AmapApiError("Upstream response exceeded size limit", null, null, "UPSTREAM_BODY_TOO_LARGE");
@@ -65,7 +65,7 @@ export function createAmapTransport(fetchImpl: typeof fetch = fetch, options: Am
         const response = await measureAsync(diagnostics, "amap.fetch", () => {
           throwIfAborted(call.signal);
           permit?.assertValid();
-          return abortable(fetchImpl(url, { signal: call.signal, redirect: "error", cache: "no-store" }).then(response => {
+          return abortable(fetchImpl(url, { signal: call.signal, redirect: "error", cache: "no-store" }).catch(() => { throw new AmapApiError("Upstream network failure", null, null, "UPSTREAM_NETWORK"); }).then(response => {
           if (call.signal.aborted) void response.body?.cancel().catch(() => {});
           return response;
           }), call.signal);
@@ -89,7 +89,8 @@ export function createAmapTransport(fetchImpl: typeof fetch = fetch, options: Am
         });
       } catch (error) {
         if (call.signal.aborted) { try { throwIfAborted(call.signal); } catch (reason) { error = reason; } }
-        const failure = error instanceof AmapApiError ? error : new AmapApiError("Upstream network failure", null, null, "UPSTREAM_NETWORK");
+        if (!(error instanceof AmapApiError)) { console.error("amap.failed", { operation, ...safeErrorDiagnostic(error) }); throw error; }
+        const failure = error;
         const diagnosticType: DiagnosticErrorType = failure.code === "REQUEST_CANCELLED" ? "cancelled"
           : failure.code === "UPSTREAM_TIMEOUT" || failure.code === "REQUEST_DEADLINE_EXCEEDED" ? "timeout"
           : failure.code === "UPSTREAM_HTTP" ? "upstream_http"

@@ -108,8 +108,37 @@ test("all failures are 502; authentication is 503 and stops before category 2", 
     await isolated(async () => { calls++; return Response.json({ status: "0", info: "SECRET raw upstream", infocode }); }, async () => {
       const response = await search(makeRequest(searchBody)); assert.equal(response.status, status);
       const serialized = await response.text(); for (const forbidden of ["SECRET", "10021", "10001", "infocode", "restapi"]) assert.equal(serialized.includes(forbidden), false);
+      assert.equal(JSON.parse(serialized).error.code, infocode === "10021" ? "ALL_CATEGORIES_FAILED" : "SERVICE_UNAVAILABLE");
     }); assert.equal(calls, count);
   }
+});
+
+test("authentication after one completed category safely preserves it and stops", async () => {
+  let calls = 0;
+  await isolated(async () => ++calls === 1 ? Response.json({ status: "1", pois: [] }) : Response.json({ status: "0", info: "SECRET", infocode: "10001" }), async () => {
+    const response = await search(makeRequest({ ...searchBody, categoryIds: ["hotel", "mall", "hotpot"] }));
+    assert.equal(response.status, 200);
+    const body = await response.text(); const json = JSON.parse(body);
+    assert.deepEqual(json.categories.map((x: {status: string}) => x.status), ["empty", "error", "skipped"]);
+    assert.deepEqual(json.termination, { code: "SERVICE_UNAVAILABLE", categoryId: "mall" });
+    assert.equal(body.includes("SECRET"), false); assert.equal(body.includes("10001"), false);
+  });
+  assert.equal(calls, 2);
+});
+
+test("unknown admission error maps to 500 without exposing internal details", async () => {
+  const { setAdmissionHook } = await import("./admission-fixture.js");
+  let calls = 0;
+  try {
+    setAdmissionHook(async () => { throw Error("SECRET SQL INTERNAL"); });
+    await isolated(async () => { calls++; throw Error("must not fetch"); }, async () => {
+      const response = await search(makeRequest(searchBody));
+      assert.equal(response.status, 500);
+      const body = await response.text();
+      assert.equal(body.includes("SECRET"), false); assert.equal(body.includes("SQL"), false);
+    });
+    assert.equal(calls, 0);
+  } finally { setAdmissionHook(async () => {}); }
 });
 
 test("pre-cancelled routes never fetch; cancellation while parsing is not a 400", async () => {
@@ -139,7 +168,7 @@ test("upstream timeout and whole-request timeout return 504 with distinct safe c
     let calls = 0;
     // Direct lifecycle policy still validates upstream <= total, so total deadline is exercised with stalled body parsing.
     await isolated(async () => { calls++; return new Promise<Response>(() => {}); }, async () => {
-      const response = expected === "UPSTREAM_TIMEOUT" ? await search(makeRequest(searchBody)) : await search(new Request("http://localhost/", { method: "POST", body: new ReadableStream(), duplex: "half" } as RequestInit));
+      const response = expected === "UPSTREAM_TIMEOUT" ? await page(makeRequest(pageBody)) : await search(new Request("http://localhost/", { method: "POST", body: new ReadableStream(), duplex: "half" } as RequestInit));
       assert.equal(response.status, 504); assert.equal((await response.json() as { error: { code: string } }).error.code, expected);
     }, { AMAP_UPSTREAM_TIMEOUT_MS: expected === "UPSTREAM_TIMEOUT" ? upstream : "5", AMAP_REQUEST_TIMEOUT_MS: total });
     assert.equal(calls, expected === "UPSTREAM_TIMEOUT" ? 1 : 0);
