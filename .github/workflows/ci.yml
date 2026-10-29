@@ -15,9 +15,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: nearby_admission_test_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d nearby_admission_test_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     env:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/nearby_ci
       DIRECT_URL: postgresql://ci:ci@localhost:5432/nearby_ci
+      NEARBY_ADMISSION_TEST_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/nearby_admission_test_ci
 
     steps:
       - name: Download code
@@ -34,6 +50,9 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+      - name: Verify PostgreSQL admission functions
+        run: npm run test:admission:postgres
 
       - name: Check types
         run: npm run check
