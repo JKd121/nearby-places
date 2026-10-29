@@ -28,3 +28,12 @@ npm run test:admission:postgres
 逐语句诊断覆盖 BEGIN、configure、function、COMMIT，记录相对批次开始的 submittedMs／settledMs、状态、命令白名单、SQLSTATE 和固定错误分类。`functionToCommitMs` 表示客户端观察到的函数结果返回至 COMMIT 结果到达的间隔；函数未成功返回或 COMMIT 未结算时为 null。`commitAck` 区分 confirmed_commit、confirmed_rollback、unconfirmed、not_submitted；`connectionDestroyed` 记录执行器是否以 `release(true)` 请求销毁已借用连接。BEGIN 失败使用独立的 begin 标签，acquire 专指借连接。
 
 2026-10-29 增补回归：COMMIT 读取超时与逐语句 SQLSTATE、延迟提交计时、断连时仍保留已确认提交、同步发送失败、取消后排空、诊断读取异常和日志输出异常、reserve／多次 grant 的 attemptId 关联，以及日志敏感字段排除。对应验证结果见[事务诊断交付记录](../harness/build/2026-10-29-admission-transaction-diagnostics.md)。
+
+
+## 2026-10-29：异常恢复与两类并行回归
+
+reserve／grant 已发送批次读取排空上限为 3000ms，独立于业务 2s 与票据期限；事务空闲上限 5000ms。此前 1200ms 参数描述保留为历史版本背景。
+
+admission-diagnostics 覆盖安全日志、恢复性质、空闲状态及 COMMIT 观测抵扣。readiness/runtime 覆盖冷却等待、共享恢复、取消隔离及剩余健康连接。search-service、request-lifecycle 和真实 Route 覆盖最多两任务、准入停止令牌、乱序完成、按索引截止快照、全失败列表和实际 termination；内部 concurrency: 1 保留串行对照。
+
+admission-postgres 增加 reserve／grant COMMIT 延迟 100／400／1200／2500／3300ms、约 104ms 票据余量及 5s 事务空闲回归；SQL 取消、锁等待、死锁、序列化、断连和驱动读取超时后，同轮后续类别可成功。高德使用模拟响应，仅连接独立 loopback 临时库。相关源码及准确提交验证见[交付记录](../harness/build/2026-10-29-recovery-parallel.md)。

@@ -4,9 +4,10 @@ import { readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { createServer, connect as connectSocket, type Socket } from "node:net";
 import { Pool } from "pg";
-import { PipelinedAdmissionDatabase, type AdmissionExecution, type AdmissionPool } from "../src/admission/database.js";
+import { PipelinedAdmissionDatabase, type AdmissionExecution, type AdmissionPool, type AdmissionDiagnostic } from "../src/admission/database.js";
 import { budgetPeriod, createAdmission, PostgresAdmissionStore, type AdmissionDatabase } from "../src/admission/service.js";
 import { createRequestContext, cancellableDelay } from "../src/amap/request-context.js";
+import { AdmissionError } from "../src/admission/errors.js";
 import { createAmapTransport } from "../src/amap/transport.js";
 import { AmapApiError } from "../src/amap/errors.js";
 import { CATEGORIES } from "../src/amap/categories.js";
@@ -68,7 +69,7 @@ test("actual PostgreSQL: ten sequential categories tolerate 300ms TCP round trip
     const transport = createAmapTransport(async () => { sends++; return Response.json({ status: "1", count: "0", pois: [] }); }, { beforeAttempt: createAdmission(new PostgresAdmissionStore(delayed), "test") });
     const client = createAmapClientWithTransport("fake", transport);
     const center = { query: "test", formattedAddress: "test", province: "", city: "", district: "", longitude: 114, latitude: 22, level: "" };
-    const result = await executeResolvedSearch({ center, resolvedLocation: center, categoryIds: CATEGORIES.map(c => c.key), radiusMeters: 3000 }, client);
+    const result = await executeResolvedSearch({ center, resolvedLocation: center, categoryIds: CATEGORIES.map(c => c.key), radiusMeters: 3000 }, client, { concurrency: 1 });
     assert.equal(result.categories.length, 10); assert.equal(sends, 10, JSON.stringify(phases));
     assert.equal((await stateFor("amap-search")).dayUsed, 210);
   });
@@ -439,6 +440,81 @@ async function withTcpLatency(run: (database: PipelinedAdmissionDatabase) => Pro
   }
 }
 
+/** Hold only the first reserve/grant COMMIT responses, preserving wire order. */
+async function withCommitAckDelay(run: (database: PipelinedAdmissionDatabase, pool: Pool) => Promise<void>, delays = [696, 300]) {
+  const sockets = new Set<Socket>(), timers = new Set<ReturnType<typeof setTimeout>>();
+  let commits = 0;
+  const proxy = createServer(downstream => {
+    const upstream = connectSocket({ host: "127.0.0.1", port: Number(target.port || 5432) });
+    sockets.add(downstream); sockets.add(upstream); downstream.pipe(upstream);
+    let input: Buffer<ArrayBufferLike> = Buffer.alloc(0), held: Buffer[] = [], holding = false;
+    upstream.on("data", chunk => {
+      input = Buffer.concat([input, chunk]);
+      while (input.length >= 5) {
+        const size = input.readInt32BE(1) + 1;
+        if (input.length < size) break;
+        const frame = input.subarray(0, size); input = input.subarray(size);
+        if (frame[0] === 67 && frame.subarray(5).toString() === "COMMIT\0") {
+          const delay = delays[commits++] ?? 0;
+          if (delay > 0) {
+            holding = true; held.push(frame);
+            const timer = setTimeout(() => {
+              timers.delete(timer); holding = false;
+              if (!downstream.destroyed) downstream.write(Buffer.concat(held));
+              held = [];
+            }, delay);
+            timers.add(timer); continue;
+          }
+        }
+        if (holding) held.push(frame); else if (!downstream.destroyed) downstream.write(frame);
+      }
+    });
+    upstream.on("end", () => downstream.end());
+    upstream.on("error", () => downstream.destroy()); downstream.on("error", () => upstream.destroy());
+    downstream.on("close", () => { upstream.destroy(); sockets.delete(downstream); });
+    upstream.on("close", () => sockets.delete(upstream));
+  });
+  await new Promise<void>(resolve => { proxy.listen(0, "127.0.0.1", resolve); });
+  const address = proxy.address(); assert.ok(address && typeof address === "object");
+  const url = new URL(connectionString!); url.port = String(address.port);
+  const delayedPool = new Pool({ connectionString: url.href, pipeline: true, max: 1, connectionTimeoutMillis: 1000 });
+  delayedPool.on("error", () => {});
+  try { await delayedPool.query("SELECT 1"); await run(new PipelinedAdmissionDatabase(delayedPool), delayedPool); }
+  finally {
+    await delayedPool.end(); for (const timer of timers) clearTimeout(timer); for (const socket of sockets) socket.destroy();
+    await new Promise<void>(resolve => { proxy.close(() => resolve()); });
+  }
+}
+
+test("actual PostgreSQL: ticket expiry drains COMMIT and allows the next category", { timeout: 10000 }, async t => {
+  await seed(10, 10, 800);
+  await pool.query('UPDATE "AmapResource" SET "graceMs"=800,"permitTtlMs"=400');
+  await pool.query('UPDATE "AmapResource" SET "nextGrantAt"=\'1970-01-01 UTC\',"nextReservationAt"=\'1970-01-01 UTC\'');
+  const logs: unknown[][] = []; t.mock.method(console, "error", (...args: unknown[]) => { logs.push(args); });
+  await withCommitAckDelay(async delayedDb => {
+    const phases: AdmissionDiagnostic[] = [];
+    const observed: AdmissionDatabase = { async execute(...args) {
+      try { const execution = await delayedDb.execute(...args); phases.push(execution.diagnostic); return execution; }
+      catch (error) { phases.push((error as { diagnostic: AdmissionDiagnostic }).diagnostic); throw error; }
+    } };
+    let sends = 0;
+    const transport = createAmapTransport(async () => { sends++; return Response.json({ status: "1", count: "0", pois: [] }); }, { beforeAttempt: createAdmission(new PostgresAdmissionStore(observed), "test") });
+    const client = createAmapClientWithTransport("fake", transport);
+    const center = { query: "fixture", formattedAddress: "fixture", province: "", city: "", district: "", level: "", longitude: 114, latitude: 22 };
+    const response = await executeResolvedSearch({ center, resolvedLocation: center, categoryIds: ["bakery", "billiards"], radiusMeters: 3000 }, client, { concurrency: 1 });
+    assert.deepEqual(response.categories.map(c => c.status), ["error", "empty"]);
+    assert.equal(response.categories[0]!.error?.code, "ADMISSION_WAIT_EXCEEDED"); assert.equal(response.termination, undefined);
+    assert.equal(sends, 1); assert.equal((await state()).dayUsed, 2);
+    const grant = phases.find(d => d.phase === "grant")!;
+    assert.equal(grant.commitAck, "confirmed_commit"); assert.equal(grant.committed, true);
+    assert.equal(grant.errorKind, "deadline"); assert.equal(grant.connectionDestroyed, false);
+    assert.ok(grant.budgetMs < 250); assert.ok(grant.completionRemainingMs > 1000); assert.equal(grant.readTimeoutMs, 3000);
+    const data = logs[0]![1] as { reservation: { elapsedMs: number; validForMs: number; waitMs: number } };
+    assert.ok(data.reservation.elapsedMs >= 590); assert.equal(data.reservation.validForMs, 800);
+    assert.ok(data.reservation.waitMs >= 0); assert.equal(logs.length, 1);
+  });
+});
+
 test("actual PostgreSQL: 300ms TCP round trips complete reserve and grant in two batches", { timeout: 15000 }, async () => {
   await seedHalf();
   await withTcpLatency(async delayedDb => {
@@ -512,6 +588,96 @@ test("actual PostgreSQL: server SQL timeout rolls back the pipelined batch and r
   } finally { client.release(); }
   const rows = await pool.query("SELECT count(*)::int AS n FROM pg_stat_activity WHERE state='active' AND query='SELECT pg_sleep(5)'");
   assert.equal(rows.rows[0].n, 0);
+});
+
+test("actual PostgreSQL: reserve/grant delayed acknowledgements drain independently of caller expiry", { timeout: 45000 }, async t => {
+  t.mock.method(console, "error", () => {});
+  for (const phase of ["reserve", "grant"] as const) for (const delay of [100, 400, 1200, 2500, 3300]) {
+    await seed(100, 100, 1);
+    await withCommitAckDelay(async (database, scopedPool) => {
+      const phases: AdmissionDiagnostic[] = [];
+      let drain: Promise<unknown> | undefined, sends = 0;
+      const observed: AdmissionDatabase = { execute(...args) {
+        const work = database.execute(...args).then(result => { phases.push(result.diagnostic); return result; }, error => {
+          phases.push(error.diagnostic); throw error;
+        });
+        if (args[0] === phase) drain = work;
+        return work;
+      } };
+      const transport = createAmapTransport(async () => { sends++; return Response.json({ status: "1", pois: [] }); }, {
+        beforeAttempt: createAdmission(new PostgresAdmissionStore(observed), "test")
+      });
+      const url = new URL("https://restapi.amap.com/v5/place/around?key=fake");
+      const started = performance.now();
+      await transport.requestJson(url, "nearby").catch(error => {
+        assert.ok(error instanceof AdmissionError); assert.equal(error.code, "ADMISSION_WAIT_EXCEEDED");
+      });
+      const callerMs = performance.now() - started;
+      assert.ok(callerMs < 2250, `${phase}/${delay}: caller ${callerMs}`);
+      assert.ok(drain); await drain.catch(() => {});
+      const diagnostic = phases.find(d => d.phase === phase)!;
+      assert.equal(diagnostic.readTimeoutMs, 3000);
+      assert.equal(diagnostic.commitAck, delay > 3000 ? "unconfirmed" : "confirmed_commit");
+      assert.equal(diagnostic.connectionDestroyed, delay > 3000);
+      if (delay > 3000) { assert.equal(diagnostic.errorKind, "driver_read_timeout"); assert.equal(scopedPool.totalCount, 0); }
+      else { assert.equal(scopedPool.idleCount, 1); const client = await scopedPool.connect(); assert.equal(client.getTransactionStatus(), "I"); client.release(); }
+      if (delay >= (phase === "grant" ? 400 : 1200)) assert.equal(sends, 0);
+      assert.equal((await state()).dayUsed, phase === "grant" || sends > 0 ? 1 : 0);
+      // A fresh category gets a new ticket after the old batch has settled.
+      const before = sends; await transport.requestJson(url, "nearby"); assert.equal(sends, before + 1);
+      console.log("admission.ack-matrix", { phase, delayMs: delay, callerMs: Math.round(callerMs), commitAck: diagnostic.commitAck, replaced: diagnostic.connectionDestroyed });
+    }, phase === "reserve" ? [delay] : [0, delay]);
+  }
+});
+
+test("actual PostgreSQL: transient SQL and socket failures recover in the same search", async t => {
+  t.mock.method(console, "error", () => {});
+  for (const fault of ["57014", "55P03", "40P01", "40001", "disconnect", "read_timeout"] as const) {
+    await seed(100, 100, 1);
+    const scopedPool = new Pool({ connectionString, pipeline: true, max: 1 });
+    const pids: number[] = [], releases: boolean[] = [];
+    let inject = true, sends = 0;
+    const observed: AdmissionPool = { async connect() {
+      const client = await scopedPool.connect(); pids.push((await client.query("SELECT pg_backend_pid() AS pid")).rows[0].pid);
+      return { pipeline: client.pipeline, getTransactionStatus: () => client.getTransactionStatus(),
+        on: (event, listener) => client.on(event, listener), removeListener: (event, listener) => client.removeListener(event, listener),
+        query(config) {
+          if (inject && config.text.includes("amap_admission_reserve_v1")) {
+            inject = false;
+            if (fault === "disconnect") return client.query({ ...config, text: "SELECT pg_terminate_backend(pg_backend_pid())", values: [] });
+            if (fault === "read_timeout") {
+              const timedQuery = { ...config, text: "SELECT pg_sleep(0.1)", values: [], query_timeout: 30 };
+              return client.query(timedQuery);
+            }
+            return client.query({ ...config, text: `DO $$ BEGIN RAISE EXCEPTION USING ERRCODE = '${fault}'; END $$`, values: [] });
+          }
+          return client.query(config);
+        }, release(destroy = false) { releases.push(destroy); client.release(destroy); }
+      };
+    } };
+    try {
+      const transport = createAmapTransport(async () => { sends++; return Response.json({ status: "1", pois: [] }); }, { beforeAttempt: createAdmission(new PostgresAdmissionStore(new PipelinedAdmissionDatabase(observed)), "test") });
+      const center = { query: "fixture", formattedAddress: "fixture", province: null, city: null, district: null, level: null, longitude: 114, latitude: 22 };
+      const response = await executeResolvedSearch({ center, resolvedLocation: center, categoryIds: ["bakery", "billiards", "gym"], radiusMeters: 3000 }, createAmapClientWithTransport("fake", transport));
+      assert.deepEqual(response.categories.map(c => c.status), ["error", "empty", "empty"], fault);
+      assert.equal(response.termination, undefined); assert.equal(sends, 2);
+      const replaced = fault === "disconnect" || fault === "read_timeout";
+      assert.equal(releases[0], replaced);
+      assert.equal(pids[0] === pids[1], !replaced);
+      assert.equal((await state()).dayUsed, 2);
+    } finally { await scopedPool.end(); }
+  }
+});
+
+test("actual PostgreSQL: 5s transaction idle timeout terminates only its idle session", { timeout: 7000 }, async () => {
+  const scopedPool = new Pool({ connectionString, pipeline: true, max: 1 });
+  const client = await scopedPool.connect(); let observed: { code?: string } | undefined;
+  client.on("error", error => { observed ??= error as { code?: string }; });
+  try {
+    await client.query("BEGIN"); await client.query("SET LOCAL idle_in_transaction_session_timeout='5s'");
+    await cancellableDelay(5150); assert.equal(observed?.code, "25P03"); client.release(true);
+    const next = await scopedPool.connect(); assert.equal(next.getTransactionStatus(), "I"); await next.query("SELECT 1"); next.release();
+  } finally { await scopedPool.end(); }
 });
 
 test("actual PostgreSQL: real server factories and all three routes enforce the shared pool", async () => {

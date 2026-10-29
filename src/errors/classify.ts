@@ -1,4 +1,5 @@
 import { AmapApiError } from "../amap/errors.js";
+import { AdmissionError } from "../admission/errors.js";
 
 export type ErrorAction = "recover" | "stop" | "abort" | "fatal";
 export type PublicSearchErrorCode = "ADMISSION_WAIT_EXCEEDED" | "ADMISSION_UNAVAILABLE" | "DAILY_BUDGET_EXHAUSTED" | "MONTHLY_BUDGET_EXHAUSTED" | "SERVICE_UNAVAILABLE" | "REQUEST_DEADLINE_EXCEEDED";
@@ -16,7 +17,7 @@ export function classifyFailure(error: unknown): FailureClassification {
     case "REQUEST_DEADLINE_EXCEEDED": return { nature: "timeout", scope: "request" };
     case "REQUEST_BODY_TOO_LARGE": return { nature: "invalid-request", scope: "request" };
     case "ADMISSION_WAIT_EXCEEDED": return { nature: "timeout", scope: "category" };
-    case "ADMISSION_UNAVAILABLE": return { nature: "database", scope: "shared-resource", resource: "admission" };
+    case "ADMISSION_UNAVAILABLE": return { nature: "database", scope: error instanceof AdmissionError && error.recovery === "next-category" ? "category" : "shared-resource", resource: "admission" };
     case "DAILY_BUDGET_EXHAUSTED": case "MONTHLY_BUDGET_EXHAUSTED": return { nature: "quota", scope: "shared-resource", resource: "admission" };
     case "UPSTREAM_AUTH_FAILED": return { nature: "authentication", scope: "shared-resource", resource: "amap-credential" };
     case "UPSTREAM_HTTP":

@@ -88,7 +88,7 @@ for (const [name, post, body] of [
       const response = await post(stuck);
       assert.equal(response.status, 504);
       assert.equal((await response.json() as { error: { code: string } }).error.code, "REQUEST_DEADLINE_EXCEEDED");
-    }, { AMAP_UPSTREAM_TIMEOUT_MS: "5", AMAP_REQUEST_TIMEOUT_MS: "5" });
+    }, { AMAP_UPSTREAM_TIMEOUT_MS: "5", AMAP_REQUEST_TIMEOUT_MS: "50" });
     assert.equal(calls, 0);
   });
 }
@@ -102,13 +102,14 @@ test("real resolver/search/page Route entry points all use guarded transport", a
   }); assert.equal(calls, 3);
 });
 
-test("all failures are 502; authentication and provider daily quota stop category 2", async () => {
-  for (const [infocode, status, count] of [["10021", 502, 2], ["10001", 503, 1], ["10003", 429, 1]] as const) {
+test("all recoverable failures retain categories; authentication and provider daily quota stop category 2", async () => {
+  for (const [infocode, status, count] of [["10021", 200, 2], ["10001", 503, 2], ["10003", 429, 2]] as const) {
     let calls = 0;
     await isolated(async () => { calls++; return Response.json({ status: "0", info: "SECRET raw upstream", infocode }); }, async () => {
       const response = await search(makeRequest(searchBody)); assert.equal(response.status, status);
-      const serialized = await response.text(); for (const forbidden of ["SECRET", "10021", "10001", "10003", "infocode", "restapi"]) assert.equal(serialized.includes(forbidden), false);
-      assert.equal(JSON.parse(serialized).error.code, infocode === "10021" ? "ALL_CATEGORIES_FAILED" : infocode === "10003" ? "DAILY_BUDGET_EXHAUSTED" : "SERVICE_UNAVAILABLE");
+      const serialized = await response.text(); for (const forbidden of ["SECRET", "10021", "10001", "10003", "restapi"]) assert.equal(serialized.includes(forbidden), false);
+      if (infocode === "10021") assert.deepEqual(JSON.parse(serialized).categories.map((c: {status:string})=>c.status),["error","error"]);
+      else assert.equal(JSON.parse(serialized).error.code, infocode === "10003" ? "DAILY_BUDGET_EXHAUSTED" : "SERVICE_UNAVAILABLE");
     }); assert.equal(calls, count);
   }
 });
@@ -150,10 +151,10 @@ test("search Route deadline preserves the completed snapshot and cancels a stuck
     const response = await search(makeRequest({ ...searchBody, categoryIds: ["hotel", "mall", "hotpot"] }));
     assert.equal(response.status, 200);
     const result = await response.json();
-    assert.deepEqual(result.categories.map((item: { status: string }) => item.status), ["empty", "error", "skipped"]);
+    assert.deepEqual(result.categories.map((item: { status: string }) => item.status), ["empty", "error", "error"]);
     assert.deepEqual(result.termination, { code: "REQUEST_DEADLINE_EXCEEDED", categoryId: "mall" });
     assert.equal(activeSignal?.aborted, true);
-    assert.equal(calls, 2);
+    assert.equal(calls, 3);
   }, { AMAP_REQUEST_TIMEOUT_MS: "80", AMAP_UPSTREAM_TIMEOUT_MS: "80" });
 });
 
@@ -180,7 +181,7 @@ test("search Route deadline during admission keeps completed results and sends n
       const response = await search(makeRequest({ ...searchBody, categoryIds: ["hotel", "mall", "hotpot"] }));
       assert.equal(response.status, 200);
       const result = await response.json();
-      assert.deepEqual(result.categories.map((item: { status: string }) => item.status), ["empty", "error", "skipped"]);
+      assert.deepEqual(result.categories.map((item: { status: string }) => item.status), ["empty", "error", "error"]);
       assert.equal(result.termination.code, "REQUEST_DEADLINE_EXCEEDED");
       assert.equal(admissions, 2); assert.equal(sends, 1);
     }, { AMAP_REQUEST_TIMEOUT_MS: "60", AMAP_UPSTREAM_TIMEOUT_MS: "20" });

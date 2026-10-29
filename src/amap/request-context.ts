@@ -5,6 +5,7 @@ export interface RequestContext {
   remainingMs?(): number;
   check?(): void;
   abort(error: AmapApiError): void;
+  admission?: { signal: AbortSignal; check(): void; run?<T>(task: () => Promise<T>, signal: AbortSignal): Promise<T> } | undefined;
 }
 
 export function throwIfAborted(signal?: AbortSignal): void {
@@ -46,6 +47,7 @@ export function createRequestContext(parent?: AbortSignal | RequestContext, time
   };
   if (Number.isFinite(budget)) timer = setTimeout(tick, Math.ceil(budget));
   return {
+    admission: parentContext?.admission,
     signal: controller.signal,
     check,
     remainingMs() { return Math.max(0, deadline - performance.now()); },

@@ -1,5 +1,5 @@
-import { AdmissionError } from "../admission/errors.js";
-import { abortable, createRequestContext, throwIfAborted } from "../amap/request-context.js";
+import { AdmissionError, transientAdmission, isTransientDatabaseError } from "../admission/errors.js";
+import { abortable, cancellableDelay, createRequestContext, throwIfAborted } from "../amap/request-context.js";
 
 export interface DatabaseReadinessOptions {
   probe(): Promise<void>;
@@ -25,14 +25,16 @@ export function createDatabaseReadiness(options: DatabaseReadinessOptions) {
   function start() {
     const current = generation;
     // The shared probe owns its clock; cancelling one waiter only ends its wait.
-    const lifetime = createRequestContext(undefined, timeoutMs, new AdmissionError("ADMISSION_UNAVAILABLE"));
+    const lifetime = createRequestContext(undefined, timeoutMs, transientAdmission());
     const raw = Promise.resolve().then(options.probe);
     const result = abortable(raw, lifetime.signal).then(() => {
-      if (generation !== current || !options.hasConnection()) throw new AdmissionError("ADMISSION_UNAVAILABLE");
+      if (generation !== current || !options.hasConnection()) throw transientAdmission();
       readyAt = now(); failedAt = null;
-    }).catch(() => {
+    }).catch(error => {
       readyAt = null; failedAt = now();
-      throw new AdmissionError("ADMISSION_UNAVAILABLE");
+      if (error instanceof AdmissionError) throw error;
+      const code = (error as { code?: string } | null)?.code;
+      throw code && /^[0-9A-Z]{5}$/.test(code) && !isTransientDatabaseError(error) ? new AdmissionError("ADMISSION_UNAVAILABLE") : transientAdmission();
     }).finally(() => lifetime.dispose());
     pending = result;
     // Keep the slot occupied until BOTH the caller deadline and underlying work settle.
@@ -47,9 +49,11 @@ export function createDatabaseReadiness(options: DatabaseReadinessOptions) {
       throwIfAborted(signal);
       if (!pending && healthy()) return;
       const failureAge = failedAt === null ? Infinity : now() - failedAt;
-      if (!pending && failureAge >= 0 && failureAge < cooldownMs) throw new AdmissionError("ADMISSION_UNAVAILABLE");
+      if (!pending && failureAge >= 0 && failureAge < cooldownMs) await cancellableDelay(cooldownMs - failureAge, signal);
+      throwIfAborted(signal);
+      if (!pending && healthy()) return;
       await abortable(pending ?? start(), signal);
-      if (!healthy()) throw new AdmissionError("ADMISSION_UNAVAILABLE");
+      if (!healthy()) throw transientAdmission();
     },
   };
 }

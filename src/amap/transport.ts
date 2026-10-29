@@ -59,12 +59,16 @@ export function createAmapTransport(fetchImpl: typeof fetch = fetch, options: Am
       context?.check?.();
       throwIfAborted(context?.signal);
       // Budget checks will run here before each real HTTP attempt. No retries/refunds.
-      const permit = options.beforeAttempt ? await abortable(options.beforeAttempt(operation, context?.signal ?? new AbortController().signal, context), context?.signal) : undefined;
+      const admissionSignal = context?.admission ? AbortSignal.any([context.signal, context.admission.signal]) : context?.signal ?? new AbortController().signal;
+      const admissionContext = context ? { ...context, signal: admissionSignal } : undefined;
+      const enter = () => abortable(options.beforeAttempt!(operation, admissionSignal, admissionContext), admissionSignal);
+      const permit = options.beforeAttempt ? await (context?.admission?.run ? context.admission.run(enter, admissionSignal) : enter()) : undefined;
       throwIfAborted(context?.signal);
       const call = createRequestContext(context, policy.upstreamTimeoutMs, "UPSTREAM_TIMEOUT");
       try {
         const response = await measureAsync(diagnostics, "amap.fetch", () => {
           call.check();
+          context?.admission?.check();
           permit?.assertValid();
           return abortable(fetchImpl(url, { signal: call.signal, redirect: "error", cache: "no-store" }).catch(() => { throw new AmapApiError("Upstream network failure", null, null, "UPSTREAM_NETWORK"); }).then(response => {
           if (call.signal.aborted) void response.body?.cancel().catch(() => {});

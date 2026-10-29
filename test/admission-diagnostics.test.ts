@@ -49,7 +49,7 @@ test("successful phases enqueue one ordered batch with existing limits and log n
     assert.equal(f.queries.length, 4); assert.equal(f.queries[0]!.text, "BEGIN"); assert.equal(f.queries[3]!.text, "COMMIT");
     assert.ok(f.queries[2]!.text.includes("amap_admission_" + phase + "_v1"));
     assert.deepEqual(f.queries[1]!.values, ["800", "150"]); assert.equal(f.queries[2]!.values!.at(-1), 2000);
-    assert.ok(f.queries.every(q => q.query_timeout === 1200)); assert.deepEqual(f.released, [false]);
+    assert.ok(f.queries.every(q => q.query_timeout === 3000)); assert.deepEqual(f.released, [false]);
   }
   assert.equal(logs.length, 0);
 });
@@ -66,7 +66,7 @@ test("SQL and acknowledgement failures emit one safe diagnostic and no permit", 
     assert.equal(detailed.commitAck, fail === 3 ? "unconfirmed" : "confirmed_rollback");
   }
   assert.equal(logs.length, 4); assert.ok(!JSON.stringify(logs).includes(secret));
-  assert.deepEqual(Object.keys(logs[0]![1] as object).sort(), ["phase", "step", "acquireMs", "batchMs", "elapsedMs", "remainingMs", "budgetMs", "maxWaitMs", "committed", "sqlState", "admissionCode", "readTimeoutMs", "statements", "functionToCommitMs", "commitAck", "connectionDestroyed", "errorKind", "attemptId", "operation"].sort());
+  assert.deepEqual(Object.keys(logs[0]![1] as object).sort(), ["phase", "step", "acquireMs", "batchMs", "elapsedMs", "remainingMs", "completionRemainingMs", "reservation", "budgetMs", "maxWaitMs", "committed", "sqlState", "admissionCode", "readTimeoutMs", "statements", "functionToCommitMs", "commitAck", "connectionDestroyed", "errorKind", "attemptId", "operation", "recovery", "connectionState"].sort());
 });
 
 test("COMMIT read timeout reports earlier results, acknowledgement uncertainty and safe timing", async t => {
@@ -76,7 +76,7 @@ test("COMMIT read timeout reports earlier results, acknowledgement uncertainty a
   assert.equal(logs.length, 1);
   const data = logs[0]![1] as FailureLog;
   assert.equal(data.step, "commit"); assert.equal(data.errorKind, "driver_read_timeout");
-  assert.equal(data.readTimeoutMs, 1200); assert.equal(data.commitAck, "unconfirmed");
+  assert.equal(data.readTimeoutMs, 3000); assert.equal(data.commitAck, "unconfirmed");
   assert.equal(data.committed, false); assert.equal(data.connectionDestroyed, true);
   assert.deepEqual(data.statements.map(s => s.step), ["begin", "configure", "function", "commit"]);
   assert.deepEqual(data.statements.map(s => s.status), ["fulfilled", "fulfilled", "fulfilled", "rejected"]);
@@ -102,7 +102,7 @@ test("controlled function outcomes retain codes and validate retryAt", async t =
   }
   await assert.rejects(fixture({ value: { code: "DAILY_BUDGET_EXHAUSTED", retryAt: secret } }).store.reserve(secret, "nearby", signal, remaining), unavailable);
   assert.ok(!JSON.stringify(logs).includes(secret));
-  assert.deepEqual(await fixture({ value: { code: "WAIT", delayMs: 20 } }).store.grant(secret, "nearby", ticket, signal, remaining), { delayMs: 20 });
+  assert.deepEqual(await fixture({ value: { code: "WAIT", delayMs: 20 } }).store.grant(secret, "nearby", ticket, signal, remaining), { delayMs: 20, remainingDelayMs: 20 });
 });
 
 test("unknown codes and a throwing log sink retain safe mapping without retry", async t => {
@@ -154,9 +154,9 @@ test("acquisition deadlines own late cleanup; dispatch respects remaining time",
   await assert.rejects(store.reserve(secret, "nearby", signal, () => 15), unavailable);
   lease.resolve(f.connection); await cancellableDelay(0); assert.deepEqual(f.released, [false]); assert.equal(f.queries.length, 0);
   const limited = fixture(); await limited.store.reserve(secret, "nearby", signal, () => 100);
-  assert.deepEqual(limited.queries[1]!.values, ["100", "100"]); assert.equal(limited.queries[0]!.query_timeout, 100);
+  assert.deepEqual(limited.queries[1]!.values, ["100", "100"]); assert.equal(limited.queries[0]!.query_timeout, 3000);
   const execution = await fixture().executor.execute("reserve", [secret, "nearby"], signal, () => 100);
-  assert.equal(execution.diagnostic.readTimeoutMs, 100); assert.equal(execution.diagnostic.commitAck, "confirmed_commit");
+  assert.equal(execution.diagnostic.readTimeoutMs, 3000); assert.equal(execution.diagnostic.commitAck, "confirmed_commit");
 });
 
 test("a synchronous enqueue failure drains prior promises and destroys the partial transaction", async t => {
@@ -183,6 +183,22 @@ test("function-to-COMMIT timing measures client-observed return separation", asy
   const { diagnostic: data } = await pending;
   assert.ok(data.functionToCommitMs !== null && data.functionToCommitMs >= 15);
   assert.equal(data.functionToCommitMs, Math.round((data.statements[3]!.settledMs! - data.statements[2]!.settledMs!) * 100) / 100);
+});
+
+test("expired operation window drains COMMIT within a separate bounded completion window", async () => {
+  const hold = deferred<void>(), f = fixture({ commitHold: hold.promise });
+  const started = performance.now();
+  const pending = assert.rejects(f.executor.execute("grant", [], signal, () => Math.max(0, 40 - (performance.now() - started)), () => 1000),
+    (e: unknown) => {
+      const error = e as { original: AdmissionError; diagnostic: AdmissionDiagnostic };
+      assert.equal(error.original.code, "ADMISSION_WAIT_EXCEEDED");
+      assert.equal(error.diagnostic.commitAck, "confirmed_commit"); assert.equal(error.diagnostic.committed, true);
+      assert.equal(error.diagnostic.connectionDestroyed, false); return true;
+    });
+  await cancellableDelay(60); hold.resolve(); await pending;
+  assert.ok(f.queries.every(q => q.query_timeout === 3000));
+  assert.ok(Number(f.queries[1]!.values![0]) <= 40);
+  assert.deepEqual(f.released, [false]);
 });
 
 test("socket errors preserve confirmed COMMIT and request connection destruction", async t => {
@@ -262,4 +278,34 @@ test("startup/API module copies preserve database diagnostics and controlled adm
     assert.equal(data.sqlState, "42883"); assert.equal(data.step, "function"); assert.equal(data.batchMs, 12); assert.equal(data.budgetMs, 800);
   }
   assert.ok(!JSON.stringify(logs).includes("PRIVATE_"));
+});
+
+
+test("SQL cancellations and connection faults recover; missing functions and permissions stop", async t => {
+  const logs: unknown[][]=[];t.mock.method(console,"error",(...args:unknown[])=>{logs.push(args);});
+  for(const code of ["57014","55P03","40001","40P01","08006","57P01","53300","42883","42501"]){
+    await assert.rejects(fixture({fail:2,error:{code,message:secret}}).store.reserve(secret,"nearby",signal,remaining),(e:unknown)=>e instanceof AdmissionError&&e.recovery===(["42883","42501"].includes(code)?"stop":"next-category"));
+  }
+  assert.equal(logs.length,9);assert.ok(!JSON.stringify(logs).includes(secret));
+});
+
+test("a non-idle transaction status prevents pool reuse and permit issue", async t => {
+  t.mock.method(console,"error",()=>{});const f=fixture();f.connection.getTransactionStatus=()=>"T";
+  await assert.rejects(f.store.reserve(secret,"nearby",signal,remaining),unavailable);assert.deepEqual(f.released,[true]);
+});
+
+test("ticket/admission expiry is explicitly recoverable for the next category", () => {
+  assert.equal(new AdmissionError("ADMISSION_WAIT_EXCEEDED").recovery, "next-category");
+  assert.equal(new AdmissionError("DAILY_BUDGET_EXHAUSTED").recovery, "stop");
+});
+
+test("COMMIT observation credit reduces only time actually observed after the function result", async t => {
+  t.mock.method(console,"error",()=>{});
+  const execution=await fixture({value:{...reservation,delayMs:200,validForMs:1000,expiresAtMs:1800}}).executor.execute("reserve",[],signal,remaining);
+  execution.diagnostic.functionToCommitMs=120.8;
+  const store=new PostgresAdmissionStore({async execute(){return execution;}});
+  const ticket=await store.reserve(secret,"nearby",signal,remaining);assert.equal(ticket.delayMs,200);assert.equal(ticket.remainingDelayMs,81);
+  execution.value={code:"WAIT",delayMs:200};
+  const grant=await store.grant(secret,"nearby",ticket,signal,remaining);assert.ok(grant.delayMs!==undefined);assert.equal(grant.remainingDelayMs,81);
+  execution.diagnostic.functionToCommitMs=0.9;const unchanged=await store.grant(secret,"nearby",ticket,signal,remaining);assert.ok(unchanged.delayMs!==undefined);assert.equal(unchanged.remainingDelayMs,200);
 });
