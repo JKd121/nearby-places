@@ -1,4 +1,4 @@
-import { AdmissionError } from "./errors.js";
+import { AdmissionError, transientAdmission, isTransientDatabaseError, logAdmissionFailure } from "./errors.js";
 import { AmapApiError } from "../amap/errors.js";
 import { abortable, createRequestContext, throwIfAborted, type RequestContext } from "../amap/request-context.js";
 import type { AmapOperation, AttemptPermit, BeforeAmapAttempt } from "../amap/transport.js";
@@ -8,9 +8,14 @@ export type { AdmissionDatabase } from "./database.js";
 export interface Reservation {
   resourceId: string; version: number; scheduledAt: Date; expiresAt: Date;
   delayMs: number; validForMs: number;
+  remainingDelayMs?: number;
 }
-export type Grant = { delayMs: number; validForMs?: never } | { validForMs: number; delayMs?: never };
-export interface AdmissionTrace { attemptId: string; }
+export type Grant = { delayMs: number; remainingDelayMs?: number; validForMs?: never } | { validForMs: number; delayMs?: never };
+export interface AdmissionTrace {
+  attemptId: string;
+  logged?: boolean;
+  reservation?: { elapsedMs: number; validForMs: number; delayMs: number; waitMs: number };
+}
 const WAIT_LIMIT_MS = 2_000;
 const record = (value: unknown): Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {};
 function integer(value: unknown, min: number, max = Number.MAX_SAFE_INTEGER): number {
@@ -32,11 +37,11 @@ export function budgetPeriod(now: Date) {
 export class PostgresAdmissionStore {
   constructor(private readonly db: AdmissionDatabase) {}
 
-  private async call<T>(phase: AdmissionPhase, values: readonly unknown[], signal: AbortSignal, remaining: () => number, decode: (row: Record<string, unknown>) => T, operation: AmapOperation, trace?: AdmissionTrace): Promise<T> {
+  private async call<T>(phase: AdmissionPhase, values: readonly unknown[], signal: AbortSignal, remaining: () => number, decode: (row: Record<string, unknown>, creditMs: number) => T, operation: AmapOperation, trace?: AdmissionTrace, completionRemaining?: () => number): Promise<T> {
     throwIfAborted(signal);
     let execution: AdmissionExecution | undefined;
     try {
-      execution = await this.db.execute(phase, values, signal, remaining);
+      execution = await this.db.execute(phase, values, signal, remaining, completionRemaining);
       throwIfAborted(signal);
       if (remaining() <= 0) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
       const row = record(execution.value);
@@ -48,27 +53,38 @@ export class PostgresAdmissionStore {
         }
         throw new AdmissionError(row.code as ConstructorParameters<typeof AdmissionError>[0], retryAt);
       }
-      return decode(row);
+      const observed = execution.diagnostic.functionToCommitMs;
+      const creditMs = typeof observed === "number" && Number.isFinite(observed) ? Math.max(0, Math.floor(observed) - 1) : 0;
+      return decode(row, creditMs);
     } catch (caught) {
       const databaseError = isAdmissionDatabaseError(caught) ? caught : undefined;
       let error = databaseError ? databaseError.original : caught;
       const diagnostic = databaseError?.diagnostic ?? execution?.diagnostic;
+      const connection = diagnostic?.connectionDestroyed ? "replace" :
+        diagnostic?.commitAck === "confirmed_commit" || diagnostic?.commitAck === "confirmed_rollback" ? "healthy" : "unknown";
       // The shared startup executor can also construct its own copy of AdmissionError.
       const original = record(error);
       if (databaseError && original.name === "AdmissionError" && (original.code === "ADMISSION_UNAVAILABLE" || original.code === "ADMISSION_WAIT_EXCEEDED")) {
-        error = new AdmissionError(original.code);
+        error = new AdmissionError(original.code, undefined, original.recovery === "next-category" || original.code === "ADMISSION_WAIT_EXCEEDED" ? "next-category" : "stop",
+          connection);
       }
+      if (!(error instanceof AmapApiError)) error = new AdmissionError("ADMISSION_UNAVAILABLE", undefined,
+        isTransientDatabaseError(error) ? "next-category" : "stop", connection);
+      if (signal.aborted && signal.reason instanceof AmapApiError) error = signal.reason;
       try {
-        console.error("admission.failed", { phase, step: diagnostic?.step ?? "response", acquireMs: diagnostic?.acquireMs ?? 0,
+        if (!trace?.logged) logAdmissionFailure(error as AmapApiError, { phase, step: diagnostic?.step ?? "response", acquireMs: diagnostic?.acquireMs ?? 0,
           batchMs: diagnostic?.batchMs ?? 0, elapsedMs: diagnostic?.elapsedMs ?? 0,
           remainingMs: diagnostic?.remainingMs ?? Math.max(0, Math.floor(remaining())), budgetMs: diagnostic?.budgetMs ?? 0,
+          completionRemainingMs: diagnostic?.completionRemainingMs ?? null, reservation: trace?.reservation ?? null,
           maxWaitMs: diagnostic?.maxWaitMs ?? 0, committed: diagnostic?.committed ?? false, sqlState: diagnostic?.sqlState ?? null,
           admissionCode: error instanceof AmapApiError ? error.code : null,
           attemptId: trace?.attemptId ?? null, operation,
+          recovery: error instanceof AdmissionError ? error.recovery : "stop", connectionState: error instanceof AdmissionError ? error.connection : "unknown",
           readTimeoutMs: diagnostic?.readTimeoutMs ?? 0, statements: diagnostic?.statements ?? [],
           functionToCommitMs: diagnostic?.functionToCommitMs ?? null, commitAck: diagnostic?.commitAck ?? "not_submitted",
           connectionDestroyed: diagnostic?.connectionDestroyed ?? false, errorKind: diagnostic?.errorKind ?? admissionErrorKind(error) });
       } catch { /* A log sink failure cannot change admission behavior. */ }
+      if (trace) trace.logged = true;
       throwIfAborted(signal);
       if (error instanceof AmapApiError) throw error;
       throw new AdmissionError("ADMISSION_UNAVAILABLE");
@@ -76,22 +92,22 @@ export class PostgresAdmissionStore {
   }
 
   reserve(credentialId: string, operation: AmapOperation, signal: AbortSignal, remaining: () => number, trace?: AdmissionTrace): Promise<Reservation> {
-    return this.call("reserve", [credentialId, operation], signal, remaining, row => {
+    return this.call("reserve", [credentialId, operation], signal, remaining, (row, creditMs) => {
       if (row.code !== "OK" || typeof row.resourceId !== "string" || row.resourceId.length === 0) throw new AdmissionError("ADMISSION_UNAVAILABLE");
       const scheduled = integer(row.scheduledAtMs, 0, 8_640_000_000_000_000), expires = integer(row.expiresAtMs, 0, 8_640_000_000_000_000);
       const validForMs = integer(row.validForMs, 1, WAIT_LIMIT_MS), delayMs = integer(row.delayMs, 0, WAIT_LIMIT_MS);
       if (scheduled >= expires || expires - scheduled !== validForMs - delayMs || delayMs >= validForMs) throw new AdmissionError("ADMISSION_UNAVAILABLE");
-      return { resourceId: row.resourceId, version: integer(row.version, 1), scheduledAt: new Date(scheduled), expiresAt: new Date(expires), delayMs, validForMs };
+      return { resourceId: row.resourceId, version: integer(row.version, 1), scheduledAt: new Date(scheduled), expiresAt: new Date(expires), delayMs, validForMs, remainingDelayMs: Math.max(0, delayMs - creditMs) };
     }, operation, trace);
   }
 
-  async grant(credentialId: string, operation: AmapOperation, ticket: Reservation, signal: AbortSignal, remaining: () => number, trace?: AdmissionTrace): Promise<Grant> {
+  async grant(credentialId: string, operation: AmapOperation, ticket: Reservation, signal: AbortSignal, remaining: () => number, trace?: AdmissionTrace, completionRemaining?: () => number): Promise<Grant> {
     return this.call("grant", [credentialId, operation, ticket.resourceId, ticket.version,
-      integer(ticket.scheduledAt.getTime(), 0), integer(ticket.expiresAt.getTime(), 0)], signal, remaining, row => {
-      if (row.code === "WAIT") return { delayMs: integer(row.delayMs, 1, WAIT_LIMIT_MS) };
+      integer(ticket.scheduledAt.getTime(), 0), integer(ticket.expiresAt.getTime(), 0)], signal, remaining, (row, creditMs) => {
+      if (row.code === "WAIT") { const delayMs = integer(row.delayMs, 1, WAIT_LIMIT_MS); return { delayMs, remainingDelayMs: Math.max(0, delayMs - creditMs) }; }
       if (row.code !== "OK") throw new AdmissionError("ADMISSION_UNAVAILABLE");
       return { validForMs: integer(row.validForMs, 1, WAIT_LIMIT_MS) };
-    }, operation, trace);
+    }, operation, trace, completionRemaining);
   }
 }
 
@@ -100,8 +116,13 @@ export function createAdmission(store: PostgresAdmissionStore | (() => Promise<P
   let active = 0;
   return async (operation, parentSignal, context?: RequestContext): Promise<AttemptPermit> => {
     throwIfAborted(parentSignal);
-    if (active >= 12) throw new AdmissionError("ADMISSION_UNAVAILABLE");
     const trace: AdmissionTrace = { attemptId: crypto.randomUUID() };
+    if (active >= 12) {
+      const error = transientAdmission();
+      logAdmissionFailure(error, { phase: "admission", operation, attemptId: trace.attemptId,
+        admissionCode: error.code, recovery: error.recovery, connectionState: error.connection });
+      throw error;
+    }
     active++;
     const lifetime = createRequestContext(context ?? parentSignal, WAIT_LIMIT_MS, new AdmissionError("ADMISSION_WAIT_EXCEEDED"));
     const signal = lifetime.signal;
@@ -116,25 +137,27 @@ export function createAdmission(store: PostgresAdmissionStore | (() => Promise<P
       check();
       const reservedStart = performance.now();
       const ticket = await repository.reserve(credentialId, operation, signal, remaining, trace);
+      trace.reservation = { elapsedMs: performance.now() - reservedStart, validForMs: ticket.validForMs, delayMs: ticket.delayMs, waitMs: 0 };
       // Conservatively subtract the entire DB round trip, not just its return leg.
       const ticketEnd = reservedStart + ticket.validForMs;
       check();
       if (performance.now() >= ticketEnd) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
-      // DB v1 rejects arrivals before scheduledAt. A round trip cannot identify
-      // the response leg, so wait from receipt rather than subtracting its RTT.
-      await lifetime.wait(ticket.delayMs);
+      // Only observed function-to-COMMIT time is credited; the database checks
+      // scheduledAt again before issuing a permit.
+      const waitStart = performance.now();
+      await lifetime.wait(ticket.remainingDelayMs ?? ticket.delayMs);
+      trace.reservation.waitMs = performance.now() - waitStart;
       check();
       if (performance.now() >= ticketEnd) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
       let grantStart = performance.now();
-      let grant = await repository.grant(credentialId, operation, ticket, signal, () => Math.min(remaining(), ticketEnd - performance.now()), trace);
+      let grant = await repository.grant(credentialId, operation, ticket, signal, () => Math.min(remaining(), ticketEnd - performance.now()), trace, remaining);
       if (grant.delayMs !== undefined) {
-        // WAIT was sampled inside the DB. Waiting from receipt is conservative and
-        // bounds this protocol to one final recheck without a polling loop.
-        await lifetime.wait(grant.delayMs);
+        // One final recheck keeps WAIT bounded without a polling loop.
+        await lifetime.wait(grant.remainingDelayMs ?? grant.delayMs);
         check();
         if (performance.now() >= ticketEnd) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
         grantStart = performance.now();
-        grant = await repository.grant(credentialId, operation, ticket, signal, () => Math.min(remaining(), ticketEnd - performance.now()), trace);
+        grant = await repository.grant(credentialId, operation, ticket, signal, () => Math.min(remaining(), ticketEnd - performance.now()), trace, remaining);
       }
       if (grant.validForMs === undefined) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
       const permitEnd = Math.min(ticketEnd, grantStart + grant.validForMs);
@@ -145,6 +168,11 @@ export function createAdmission(store: PostgresAdmissionStore | (() => Promise<P
         used = true;
       } };
     } catch (error) {
+      try { check(); } catch (terminal) { error = terminal; }
+      if (!(error instanceof AmapApiError)) error = new AdmissionError("ADMISSION_UNAVAILABLE");
+      if (!trace.logged) logAdmissionFailure(error as AmapApiError, { phase: "admission", operation, attemptId: trace.attemptId,
+        reservation: trace.reservation ?? null, remainingMs: remaining(), drainTimeoutMs: 3000,
+        admissionCode: (error as AmapApiError).code, recovery: error instanceof AdmissionError ? error.recovery : "stop" });
       if (error instanceof AmapApiError) throw error;
       throw new AdmissionError("ADMISSION_UNAVAILABLE");
     } finally { lifetime.dispose(); active--; } })();

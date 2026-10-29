@@ -36,9 +36,9 @@ test("pre-cancelled preparation starts no database work", async () => {
 
 test("failed probe is sanitized, backs off, and allows a later independent request", async () => {
   let time = 0, calls = 0;
-  const state = createDatabaseReadiness({ now: () => time, hasConnection: () => true, probe: async () => { if (++calls === 1) throw Error("SECRET connection string"); } });
+  const state = createDatabaseReadiness({ now: () => time, hasConnection: () => true, cooldownMs: 5, probe: async () => { if (++calls === 1) throw Error("SECRET connection string"); } });
   await assert.rejects(state.ensure(), unavailable); await tick();
-  await assert.rejects(state.ensure(), unavailable); assert.equal(calls, 1);
+  await state.ensure(); assert.equal(calls, 2);
   time = 1001; await state.ensure(); assert.equal(calls, 2);
 });
 
@@ -117,4 +117,30 @@ test("overall request cancellation still bounds a shared preparation waiter", as
   try { await assert.rejects(hook("nearby", context.signal, context), (e: unknown) => (e as { code: string }).code === "REQUEST_DEADLINE_EXCEEDED"); }
   finally { probe.resolve(); context.dispose(); }
   assert.equal(admits, 0);
+});
+
+
+test("a cancelled cooldown waiter leaves one shared recovery for other categories", async () => {
+  let calls=0;const state=createDatabaseReadiness({cooldownMs:20,hasConnection:()=>true,probe:async()=>{if(++calls===1)throw Error("fixture");}});
+  await assert.rejects(state.ensure(),unavailable);await tick();
+  const parent=new AbortController();const cancelled=assert.rejects(state.ensure(parent.signal));const recovered=state.ensure();parent.abort();await cancelled;await recovered;
+  assert.equal(calls,2);await state.ensure();assert.equal(calls,2);
+});
+
+test("a failed preparation category recovers after cooldown within the same two-worker search", async t => {
+  const logs: unknown[][] = []; t.mock.method(console, "error", (...args: unknown[]) => { logs.push(args); });
+  const { executeResolvedSearch } = await import("../src/search/service.js");
+  const { createAmapTransport } = await import("../src/amap/transport.js");
+  const { createAmapClientWithTransport } = await import("../src/amap/client.js");
+  let probes = 0, sends = 0, admits = 0;
+  const readiness = createDatabaseReadiness({ cooldownMs: 5, hasConnection: () => true,
+    probe: async () => { if (++probes === 1) throw Object.assign(Error("PRIVATE"), { code: "ECONNRESET" }); } });
+  const transport = createAmapTransport(async () => { sends++; return Response.json({ status: "1", pois: [] }); }, {
+    beforeAttempt: withAdmissionPreparation(async () => { admits++; }, async () => readiness)
+  });
+  const center = { query: "fixture", formattedAddress: "fixture", province: null, city: null, district: null, level: null, longitude: 114, latitude: 22 };
+  const response = await executeResolvedSearch({ center, resolvedLocation: center, categoryIds: ["bakery", "billiards", "gym"], radiusMeters: 3000 }, createAmapClientWithTransport("fake", transport));
+  assert.deepEqual(response.categories.map(c => c.status), ["error", "empty", "empty"]);
+  assert.equal(response.termination, undefined); assert.equal(probes, 2); assert.equal(admits, 2); assert.equal(sends, 2);
+  assert.equal(logs.length, 1); assert.ok(!JSON.stringify(logs).includes("PRIVATE"));
 });

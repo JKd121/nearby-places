@@ -3,7 +3,8 @@ import test from "node:test";
 import { getEventListeners } from "node:events";
 import { abortable, cancellableDelay, createRequestContext } from "../src/amap/request-context.js";
 import { AmapApiError, RequestTerminatedError } from "../src/amap/errors.js";
-import { executeResolvedSearch, executeSecondPageSearch } from "../src/search/service.js";
+import { executeResolvedSearch as runConcurrentSearch, executeSecondPageSearch } from "../src/search/service.js";
+function executeResolvedSearch(...[request,client,options]: Parameters<typeof runConcurrentSearch>) { return runConcurrentSearch(request,client,{ concurrency: 1, ...options }); }
 import { getRequestPolicy, RequestPolicyError } from "../src/server/request-policy.js";
 import { STAGE_A_POLICY } from "../src/amap/policy.js";
 import { readRequestJson, withRequestLifecycle } from "../src/server/request-lifecycle.js";
@@ -89,9 +90,10 @@ test("total deadline bounds a non-cooperative first category", async () => {
     assert.equal(calls, 1); context.dispose();
 });
 
-test("all failed is an error; mixed and empty categories preserve ordering and safe partial results", async () => {
+test("all failed retains per-category errors; mixed and empty categories preserve ordering and safe partial results", async () => {
   const client = { geocode: async () => centre, searchNearby: async () => { throw new AmapApiError("SECRET raw upstream", null, null, "UPSTREAM_NETWORK"); } };
-  await assert.rejects(executeResolvedSearch(request, client), code("ALL_CATEGORIES_FAILED"));
+  const failed = await executeResolvedSearch(request, client);
+  assert.deepEqual(failed.categories.map(c=>c.status), ["error", "error", "error"]);
   let calls = 0;
   const result = await executeResolvedSearch(request, { ...client, searchNearby: async () => { if (++calls === 1) throw new AmapApiError("SECRET", null, null, "UPSTREAM_NETWORK"); return empty; } });
   assert.deepEqual(result.categories.map(r => r.category.key), request.categoryIds);

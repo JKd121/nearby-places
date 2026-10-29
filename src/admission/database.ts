@@ -1,4 +1,4 @@
-import { AdmissionError } from "./errors.js";
+import { AdmissionError, transientAdmission } from "./errors.js";
 import { abortable, createRequestContext, throwIfAborted } from "../amap/request-context.js";
 
 export type AdmissionPhase = "reserve" | "grant";
@@ -9,6 +9,7 @@ export interface AdmissionConnection {
   release(destroy?: boolean): void;
   on?(event: "error", listener: (error: unknown) => void): unknown;
   removeListener?(event: "error", listener: (error: unknown) => void): unknown;
+  getTransactionStatus?(): string | null;
 }
 export interface AdmissionPool { connect(): Promise<AdmissionConnection>; }
 export type AdmissionErrorKind = "driver_read_timeout" | "database" | "connection" | "cancelled" | "deadline" | "admission_refused" | "unknown";
@@ -23,7 +24,7 @@ export interface AdmissionDiagnostic {
   phase: AdmissionPhase;
   step: "acquire" | "begin" | "configure" | "function" | "commit" | "response";
   acquireMs: number; batchMs: number; elapsedMs: number;
-  remainingMs: number; budgetMs: number; maxWaitMs: number;
+  remainingMs: number; completionRemainingMs: number; budgetMs: number; maxWaitMs: number;
   committed: boolean; sqlState: string | null;
   readTimeoutMs: number; statements: AdmissionStatementDiagnostic[];
   functionToCommitMs: number | null;
@@ -32,7 +33,8 @@ export interface AdmissionDiagnostic {
 }
 export interface AdmissionExecution { value: unknown; diagnostic: AdmissionDiagnostic; }
 export interface AdmissionDatabase {
-  execute(phase: AdmissionPhase, values: readonly unknown[], signal: AbortSignal, remaining: () => number): Promise<AdmissionExecution>;
+  /** remaining bounds acquisition/SQL/validity; sent batches drain for at most 3s. */
+  execute(phase: AdmissionPhase, values: readonly unknown[], signal: AbortSignal, remaining: () => number, completionRemaining?: () => number): Promise<AdmissionExecution>;
 }
 const DATABASE_ERROR = Symbol.for("nearby.admission.database.error.v1");
 export class AdmissionDatabaseError extends Error {
@@ -48,7 +50,7 @@ const SQL = {
   reserve: "SELECT public.amap_admission_reserve_v1($1::text,$2::text,$3::integer) AS result",
   grant: "SELECT public.amap_admission_grant_v1($1::text,$2::text,$3::text,$4::integer,$5::bigint,$6::bigint,$7::integer) AS result",
 };
-const CONFIGURE = "SELECT set_config('statement_timeout',$1,true),set_config('lock_timeout',$2,true),set_config('idle_in_transaction_session_timeout',$1,true)";
+const CONFIGURE = "SELECT set_config('statement_timeout',$1,true),set_config('lock_timeout',$2,true),set_config('idle_in_transaction_session_timeout','5000',true)";
 const ms = (n: number) => Math.max(0, Math.round(n * 100) / 100);
 function sqlState(error: unknown): string | null {
   const code = typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
@@ -77,10 +79,10 @@ export class PipelinedAdmissionDatabase implements AdmissionDatabase {
   private acquiring = 0;
   constructor(private readonly pool: AdmissionPool) {}
 
-  async execute(phase: AdmissionPhase, values: readonly unknown[], signal: AbortSignal, remaining: () => number): Promise<AdmissionExecution> {
+  async execute(phase: AdmissionPhase, values: readonly unknown[], signal: AbortSignal, remaining: () => number, completionRemaining: () => number = remaining): Promise<AdmissionExecution> {
     const started = performance.now();
     const diagnostic: AdmissionDiagnostic = { phase, step: "acquire", acquireMs: 0, batchMs: 0, elapsedMs: 0,
-      remainingMs: Math.max(0, Math.floor(remaining())), budgetMs: 0, maxWaitMs: Math.max(0, Math.floor(Math.min(600, remaining()))), committed: false, sqlState: null,
+      remainingMs: Math.max(0, Math.floor(remaining())), completionRemainingMs: Math.max(0, Math.floor(completionRemaining())), budgetMs: 0, maxWaitMs: Math.max(0, Math.floor(Math.min(600, remaining()))), committed: false, sqlState: null,
       readTimeoutMs: 0, statements: (["begin", "configure", "function", "commit"] as const).map(step => ({
         step, submittedMs: null, settledMs: null, status: "not_submitted", command: null, sqlState: null, errorKind: null })),
       functionToCommitMs: null, commitAck: "not_submitted", connectionDestroyed: false, errorKind: null };
@@ -91,10 +93,10 @@ export class PipelinedAdmissionDatabase implements AdmissionDatabase {
       throwIfAborted(signal);
       if (diagnostic.maxWaitMs < 1) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
       // A cancelled/expired acquisition retains this slot until the underlying pool settles.
-      if (this.acquiring >= 12) throw new AdmissionError("ADMISSION_UNAVAILABLE");
+      if (this.acquiring >= 12) throw transientAdmission();
       this.acquiring++;
       const lease = Promise.resolve().then(() => this.pool.connect()).finally(() => { this.acquiring--; });
-      const acquisition = createRequestContext(signal, diagnostic.maxWaitMs, new AdmissionError("ADMISSION_UNAVAILABLE"));
+      const acquisition = createRequestContext(signal, diagnostic.maxWaitMs, transientAdmission());
       try {
         client = await abortable(lease, acquisition.signal);
       } catch (error) {
@@ -109,7 +111,10 @@ export class PipelinedAdmissionDatabase implements AdmissionDatabase {
       diagnostic.budgetMs = Math.min(800, diagnostic.remainingMs);
       if (diagnostic.budgetMs < 1) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
       if (!client.pipeline) throw new AdmissionError("ADMISSION_UNAVAILABLE");
-      const readTimeout = Math.min(1200, diagnostic.remainingMs);
+      // Expiry controls SQL and permit validity. Completion retains a bounded chance
+      // to observe COMMIT after that window, before reporting expiry to the caller.
+      diagnostic.completionRemainingMs = 3000;
+      const readTimeout = 3000;
       diagnostic.readTimeoutMs = readTimeout;
       const queries = [
         { text: "BEGIN" },
@@ -155,7 +160,8 @@ export class PipelinedAdmissionDatabase implements AdmissionDatabase {
       const command = commit?.status === "fulfilled" ? commit.value.command : null;
       diagnostic.committed = command === "COMMIT";
       // ROLLBACK is a healthy, fully drained connection; a missing acknowledgement is ambiguous.
-      destroy ||= command !== "COMMIT" && command !== "ROLLBACK";
+      destroy ||= (command !== "COMMIT" && command !== "ROLLBACK") ||
+        (!!client.getTransactionStatus && client.getTransactionStatus() !== "I");
       const failed = settled.findIndex(result => result.status === "rejected");
       if (failed >= 0) {
         diagnostic.step = diagnostic.statements[failed]!.step;
@@ -163,6 +169,7 @@ export class PipelinedAdmissionDatabase implements AdmissionDatabase {
       }
       if (socketFailed) throw socketError;
       diagnostic.step = "commit";
+      if (client.getTransactionStatus && client.getTransactionStatus() !== "I") throw transientAdmission("replace");
       if (!diagnostic.committed) throw new AdmissionError("ADMISSION_UNAVAILABLE");
       throwIfAborted(signal);
       if (remaining() <= 0) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");

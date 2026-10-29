@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { AmapApiError } from "../src/amap/client.js";
 import { CATEGORIES } from "../src/amap/categories.js";
-import { executeResolvedSearch, executeSearch, executeSecondPageSearch } from "../src/search/service.js";
+import { executeResolvedSearch as runConcurrentSearch, executeSearch, executeSecondPageSearch } from "../src/search/service.js";
+function executeResolvedSearch(...[request,client,options]: Parameters<typeof runConcurrentSearch>) { return runConcurrentSearch(request,client,{ concurrency: 1, ...options }); }
 import type { GeocodedPlace, PlacePage } from "../src/amap/types.js";
-import { AdmissionError } from "../src/admission/errors.js";
+import { AdmissionError, transientAdmission } from "../src/admission/errors.js";
 import { createRequestContext } from "../src/amap/request-context.js";
 import { classifyError, classifyFailure } from "../src/errors/classify.js";
 import type { DiagnosticFields, DiagnosticEvent, DiagnosticStage, Diagnostics } from "../src/diagnostics.js";
@@ -23,7 +24,7 @@ function diagnosticsRecorder() {
   return { diagnostics, events };
 }
 
-test("ten product categories stay serial and schedule no fixed-delay timers", async t => {
+test("explicit serial mode stays serial and schedule no fixed-delay timers", async t => {
   const timers = t.mock.method(globalThis, "setTimeout");
   const calls: string[] = [];
   let active = 0, maximum = 0;
@@ -156,12 +157,13 @@ test("consecutive admission timeouts continue through a later successful categor
   assert.equal(events.some(item => item.event === "search.stopped" || item.stage === "search.inter_category_wait"), false);
 });
 
-test("all admission timeouts visit each category and yield all-categories failure", async () => {
+test("all admission timeouts retain every category failure", async () => {
   let calls = 0;
-  await assert.rejects(executeResolvedSearch({ center: centre, resolvedLocation: centre, categoryIds: ["hotel", "mall"], radiusMeters: 3000 }, {
+  const response = await executeResolvedSearch({ center: centre, resolvedLocation: centre, categoryIds: ["hotel", "mall"], radiusMeters: 3000 }, {
     geocode: async () => centre,
     searchNearby: async () => { calls++; throw new AdmissionError("ADMISSION_WAIT_EXCEEDED"); },
-  }), (error: unknown) => error instanceof AmapApiError && error.code === "ALL_CATEGORIES_FAILED");
+  });
+  assert.deepEqual(response.categories.map(c=>c.status), ["error", "error"]); assert.equal(response.termination, undefined);
   assert.equal(calls, 2);
 });
 
@@ -189,15 +191,16 @@ for (const code of ["ADMISSION_UNAVAILABLE", "DAILY_BUDGET_EXHAUSTED", "MONTHLY_
     calls = 0;
     const partial = await executeResolvedSearch({...request, categoryIds: [...request.categoryIds]}, { ...failing, searchNearby: async () => { if (++calls === 1) return emptyPage; throw new AdmissionError(code); } });
     assert.deepEqual(partial.categories.map(c => c.status), ["empty", "error"]);
-    assert.deepEqual(partial.termination, { code, categoryId: "mall" });
+    assert.equal(partial.termination, undefined);
   });
 }
 
-test("consecutive recoverable errors continue but no completed category yields controlled failure", async () => {
+test("consecutive recoverable errors retain the complete failed result", async () => {
   let calls = 0;
-  await assert.rejects(executeResolvedSearch({center: centre, resolvedLocation: centre, categoryIds: ["hotel", "mall"], radiusMeters: 3000}, {
+  const response = await executeResolvedSearch({center: centre, resolvedLocation: centre, categoryIds: ["hotel", "mall"], radiusMeters: 3000}, {
     geocode: async () => centre, searchNearby: async () => { calls++; throw new AmapApiError("safe", null, null, "UPSTREAM_NETWORK"); },
-  }), (e: unknown) => e instanceof AmapApiError && e.code === "ALL_CATEGORIES_FAILED");
+  });
+  assert.deepEqual(response.categories.map(c=>c.status), ["error", "error"]); assert.equal(response.status, "partial success");
   assert.equal(calls, 2);
 });
 
@@ -295,4 +298,51 @@ test("second-page search propagates provider failure without retry", async () =>
     searchNearby: async () => { calls += 1; throw failure; },
   }), (error: unknown) => error === failure);
   assert.equal(calls, 1);
+});
+
+
+test("default two workers preserve request order despite non-prefix completion", async () => {
+  let active=0, peak=0; const order: string[]=[];
+  const result=await runConcurrentSearch({center:centre,resolvedLocation:centre,categoryIds:["hotel","mall","hotpot","bakery"],radiusMeters:3000}, {
+    geocode:async()=>centre,searchNearby:async(_c,category)=>{active++;peak=Math.max(peak,active);await new Promise(r=>setTimeout(r,category.key==="hotel"?25:2));order.push(category.key);active--;return emptyPage;}
+  });
+  assert.equal(peak,2);assert.notEqual(order[0],"hotel");assert.deepEqual(result.categories.map(c=>c.category.key),["hotel","mall","hotpot","bakery"]);
+});
+
+test("transient database failures continue and never manufacture termination", async () => {
+  for(const all of [false,true]){
+    const result=await runConcurrentSearch({center:centre,resolvedLocation:centre,categoryIds:["hotel","mall","hotpot"],radiusMeters:3000},{geocode:async()=>centre,searchNearby:async(_c,category)=>{if(all||category.key==="hotel")throw transientAdmission("replace");return emptyPage;}});
+    assert.deepEqual(result.categories.map(c=>c.status),all?["error","error","error"]:["error","empty","empty"]);
+    assert.equal(result.termination,undefined);assert.equal(result.status,"partial success");
+  }
+});
+
+test("parallel deadline retains completed later slots and marks queued work skipped", async () => {
+  const context=createRequestContext(undefined,30);let calls=0;
+  try{
+    const result=await runConcurrentSearch({center:centre,resolvedLocation:centre,categoryIds:["hotel","mall","hotpot","bakery"],radiusMeters:3000},{geocode:async()=>centre,searchNearby:async(_c,category)=>{calls++;return category.key==="mall"?emptyPage:new Promise<PlacePage>(()=>{});}},{context});
+    assert.equal(calls,3);assert.deepEqual(result.categories.map(c=>c.status),["error","empty","error","skipped"]);
+    assert.equal(result.termination?.code,"REQUEST_DEADLINE_EXCEEDED");
+  }finally{context.dispose();}
+});
+
+test("global quota stop cancels waiting admission while already-sent HTTP completes", async () => {
+  const {createAmapTransport}=await import("../src/amap/transport.js");
+  const {createAmapClientWithTransport}=await import("../src/amap/client.js");
+  let admissions=0,sends=0;let sent!:()=>void;const started=new Promise<void>(r=>{sent=r;});
+  const transport=createAmapTransport(async()=>{sends++;sent();await new Promise(r=>setTimeout(r,15));return Response.json({status:"1",pois:[]});},{beforeAttempt:async()=>{if(++admissions===2){await started;throw new AdmissionError("DAILY_BUDGET_EXHAUSTED");}}});
+  const response=await runConcurrentSearch({center:centre,resolvedLocation:centre,categoryIds:["hotel","mall","hotpot"],radiusMeters:3000},createAmapClientWithTransport("fake",transport));
+  assert.equal(admissions,2);assert.equal(sends,1);assert.deepEqual(response.categories.map(c=>c.status),["empty","error","skipped"]);
+  assert.equal(response.termination?.categoryId,"mall");
+});
+
+test("stop token withdraws an admission waiter before any HTTP send", async () => {
+  const {createAmapTransport}=await import("../src/amap/transport.js");const {createAmapClientWithTransport}=await import("../src/amap/client.js");
+  let admissions=0,sends=0,withdrawn=false;
+  const transport=createAmapTransport(async()=>{sends++;return Response.json({status:"1",pois:[]});},{beforeAttempt:async(_op,signal)=>{
+    if(++admissions===1){await new Promise(r=>setTimeout(r,5));throw new AdmissionError("MONTHLY_BUDGET_EXHAUSTED");}
+    await new Promise<void>((_r,reject)=>{signal.addEventListener("abort",()=>{withdrawn=true;reject(signal.reason);},{once:true});});
+  }});
+  await assert.rejects(runConcurrentSearch({center:centre,resolvedLocation:centre,categoryIds:["hotel","mall","hotpot"],radiusMeters:3000},createAmapClientWithTransport("fake",transport)),(e:unknown)=>e instanceof AdmissionError&&e.code==="MONTHLY_BUDGET_EXHAUSTED");
+  assert.equal(admissions,1);assert.equal(sends,0);assert.equal(withdrawn,false);
 });

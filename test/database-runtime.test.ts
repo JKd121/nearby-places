@@ -48,6 +48,14 @@ test("Vercel idle removal and pool errors invalidate the actual shared readiness
   await prepareServerAdmission(); assert.equal(queries, 3); assert.equal(attached, 1);
 });
 
+test("removing one connection preserves the readiness of remaining healthy clients", async () => {
+  await new Promise(resolve => setTimeout(resolve, 0));
+  const state = db.getAdmissionRuntime(), pool = state.pool as unknown as Pool;
+  const beforeQueries = queries;
+  pool.totalCount = 1; pool.emit("remove");
+  await prepareServerAdmission(); assert.equal(queries, beforeQueries);
+});
+
 test.after(() => {
   if (before.database === undefined) delete process.env.DATABASE_URL; else process.env.DATABASE_URL = before.database;
   if (before.vercel === undefined) delete process.env.VERCEL; else process.env.VERCEL = before.vercel;

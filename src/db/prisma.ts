@@ -46,7 +46,7 @@ function createAdmissionRuntime() {
     hasConnection: () => pool.totalCount > 0 && !pool.ending,
   });
   pool.on("error", () => readiness.invalidate());
-  pool.on("remove", () => readiness.invalidate());
+  pool.on("remove", () => { if (pool.totalCount === 0) readiness.invalidate(); });
   return { pool, database, readiness, close: () => pool.end() };
 }
 export function getAdmissionRuntime() {
