@@ -1,5 +1,5 @@
 import { AdmissionError } from "./errors.js";
-import { abortable, throwIfAborted } from "../amap/request-context.js";
+import { abortable, createRequestContext, throwIfAborted } from "../amap/request-context.js";
 
 export type AdmissionPhase = "reserve" | "grant";
 export interface AdmissionQueryResult { command: string; rows: Record<string, unknown>[]; }
@@ -62,14 +62,13 @@ export class PipelinedAdmissionDatabase implements AdmissionDatabase {
       if (this.acquiring >= 12) throw new AdmissionError("ADMISSION_UNAVAILABLE");
       this.acquiring++;
       const lease = Promise.resolve().then(() => this.pool.connect()).finally(() => { this.acquiring--; });
-      let timer: ReturnType<typeof setTimeout> | undefined;
+      const acquisition = createRequestContext(signal, diagnostic.maxWaitMs, new AdmissionError("ADMISSION_UNAVAILABLE"));
       try {
-        const deadline = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new AdmissionError("ADMISSION_UNAVAILABLE")), diagnostic.maxWaitMs); });
-        client = await abortable(Promise.race([lease, deadline]), signal);
+        client = await abortable(lease, acquisition.signal);
       } catch (error) {
         void lease.then(late => { try { late.release(); } catch { /* Detached cleanup must stay handled. */ } }, () => {});
         throw error;
-      } finally { clearTimeout(timer); }
+      } finally { acquisition.dispose(); }
       // pg-pool removes its idle error listener while a client is checked out.
       client.on?.("error", onConnectionError);
       diagnostic.acquireMs = ms(performance.now() - started);

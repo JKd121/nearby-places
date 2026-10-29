@@ -29,6 +29,7 @@ before(async () => {
   await pool.query('DROP TABLE IF EXISTS "AmapOperationBinding", "AmapResource", "AdmissionAudit" CASCADE; DROP FUNCTION IF EXISTS amap_admission_policy_change() CASCADE; DROP FUNCTION IF EXISTS public.amap_admission_reserve_v1(text,text,integer); DROP FUNCTION IF EXISTS public.amap_admission_grant_v1(text,text,text,integer,bigint,bigint,integer);');
   await pool.query(await readFile(new URL("../../prisma/migrations/20261027000000_amap_admission/migration.sql", import.meta.url), "utf8").catch(() => readFile("prisma/migrations/20261027000000_amap_admission/migration.sql", "utf8")));
   await pool.query(await readFile("prisma/migrations/20261028000000_amap_admission_functions/migration.sql", "utf8"));
+  await pool.query(await readFile("prisma/migrations/20261029000000_amap_admission_slot_alignment/migration.sql", "utf8"));
   await pool.query(`CREATE TABLE "AdmissionAudit" (at timestamptz NOT NULL);
     CREATE OR REPLACE FUNCTION admission_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
       IF NEW."dayUsed" <> OLD."dayUsed" OR NEW."monthUsed" <> OLD."monthUsed" THEN
@@ -296,10 +297,11 @@ test("actual PostgreSQL: a remap while reserve waits for its resource is revalid
 
 test("actual PostgreSQL: readiness recheck owns no connection while waiting and spends once", async () => {
   await seed(10, 10, 1);
-  await pool.query(`UPDATE "AmapResource" SET "nextGrantAt"=clock_timestamp()+interval '90 milliseconds'`);
   const phases: string[] = []; let waits = 0;
   const observed: AdmissionDatabase = { async execute(...args) {
     phases.push(args[0]); const result = await db.execute(...args);
+    // A different, late ticket may move the final barrier after this reservation.
+    if (args[0] === "reserve") await pool.query(`UPDATE "AmapResource" SET "nextGrantAt"=clock_timestamp()+interval '90 milliseconds'`);
     if ((result.value as { code: string }).code === "WAIT") {
       waits++; assert.equal(admissionPool.idleCount, admissionPool.totalCount); assert.equal((await state()).dayUsed, 0);
     }
@@ -308,6 +310,27 @@ test("actual PostgreSQL: readiness recheck owns no connection while waiting and 
   const permit = await createAdmission(new PostgresAdmissionStore(observed), "test")("nearby", signal);
   assert.ok(permit); permit.assertValid();
   assert.deepEqual(phases, ["reserve", "grant", "grant"]); assert.equal(waits, 1); assert.equal((await state()).dayUsed, 1);
+});
+
+test("actual PostgreSQL: reservations honor a later grant barrier without changing counters", async () => {
+  await seed(10, 10, 1);
+  await pool.query(`UPDATE "AmapResource" SET "nextGrantAt"=clock_timestamp()+interval '100 milliseconds'`);
+  const before = await state();
+  const bindings = (await pool.query('SELECT * FROM "AmapOperationBinding" ORDER BY operation')).rows;
+  await pool.query(await readFile("prisma/migrations/20261029000000_amap_admission_slot_alignment/migration.sql", "utf8"));
+  assert.deepEqual(await state(), before);
+  assert.deepEqual((await pool.query('SELECT * FROM "AmapOperationBinding" ORDER BY operation')).rows, bindings);
+  const ticket = await store.reserve("test", "nearby", signal, remaining);
+  const reserved = await state();
+  assert.ok(ticket.scheduledAt.getTime() >= before.nextGrantAt.getTime());
+  assert.equal(reserved.dayUsed, before.dayUsed);
+  assert.equal(reserved.monthUsed, before.monthUsed);
+  assert.equal(+reserved.nextGrantAt, +before.nextGrantAt);
+  assert.equal(reserved.policyVersion, before.policyVersion);
+  await cancellableDelay(ticket.delayMs);
+  const grant = await store.grant("test", "nearby", ticket, signal, remaining);
+  assert.ok(grant.validForMs !== undefined);
+  assert.equal((await state()).dayUsed, 1);
 });
 
 test("actual PostgreSQL: function SQL timeout rolls back writes and leaves the pipeline reusable", async () => {
@@ -385,7 +408,7 @@ test("actual PostgreSQL: a multi-category quota stop preserves completed results
   const transport = createAmapTransport(async () => { sends++; return Response.json({ status: "1", count: "0", pois: [] }); }, { beforeAttempt: createAdmission(store, "test") });
   const client = createAmapClientWithTransport("fake", transport);
   const center = { query: "test", formattedAddress: "test", province: "", city: "", district: "", longitude: 114, latitude: 22, level: "" };
-  const result = await executeResolvedSearch({ center, resolvedLocation: center, categoryIds: CATEGORIES.slice(0, 4).map(c => c.key), radiusMeters: 3000 }, client, async () => {});
+  const result = await executeResolvedSearch({ center, resolvedLocation: center, categoryIds: CATEGORIES.slice(0, 4).map(c => c.key), radiusMeters: 3000 }, client);
   assert.equal(result.status, "partial success"); assert.deepEqual(result.categories.map(c => c.status), ["empty", "empty", "error", "skipped"]);
   assert.equal(sends, 2); assert.equal((await state()).dayUsed, 2);
 });

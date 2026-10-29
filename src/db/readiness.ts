@@ -1,5 +1,5 @@
 import { AdmissionError } from "../admission/errors.js";
-import { abortable, throwIfAborted } from "../amap/request-context.js";
+import { abortable, createRequestContext, throwIfAborted } from "../amap/request-context.js";
 
 export interface DatabaseReadinessOptions {
   probe(): Promise<void>;
@@ -24,16 +24,16 @@ export function createDatabaseReadiness(options: DatabaseReadinessOptions) {
   function invalidate() { generation++; readyAt = null; }
   function start() {
     const current = generation;
-    let timer: ReturnType<typeof setTimeout>;
+    // The shared probe owns its clock; cancelling one waiter only ends its wait.
+    const lifetime = createRequestContext(undefined, timeoutMs, new AdmissionError("ADMISSION_UNAVAILABLE"));
     const raw = Promise.resolve().then(options.probe);
-    const deadline = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new AdmissionError("ADMISSION_UNAVAILABLE")), timeoutMs); });
-    const result = Promise.race([raw, deadline]).then(() => {
+    const result = abortable(raw, lifetime.signal).then(() => {
       if (generation !== current || !options.hasConnection()) throw new AdmissionError("ADMISSION_UNAVAILABLE");
       readyAt = now(); failedAt = null;
     }).catch(() => {
       readyAt = null; failedAt = now();
       throw new AdmissionError("ADMISSION_UNAVAILABLE");
-    }).finally(() => clearTimeout(timer));
+    }).finally(() => lifetime.dispose());
     pending = result;
     // Keep the slot occupied until BOTH the caller deadline and underlying work settle.
     // A slow/cancelled operation cannot trigger overlapping replacement probes.

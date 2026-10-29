@@ -119,11 +119,14 @@ test("only expected HTTPS host and operation path allowed", async () => {
 
 test("8-second candidate timeout is exact under a mocked clock", async t => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
+  let monotonic = 0;
+  t.mock.method(performance, "now", () => monotonic);
   let signal: AbortSignal | null | undefined;
   const pending = createAmapTransport(async (_url, init) => { signal = init?.signal; return new Promise<Response>(() => {}); }).requestJson(url, "geocode");
   const rejected = assert.rejects(pending, hasCode("UPSTREAM_TIMEOUT"));
+  monotonic += STAGE_A_POLICY.upstreamTimeoutMs - 1;
   t.mock.timers.tick(STAGE_A_POLICY.upstreamTimeoutMs - 1); assert.equal(signal?.aborted, false);
-  t.mock.timers.tick(1); assert.equal(signal?.aborted, true); await rejected;
+  monotonic++; t.mock.timers.tick(1); assert.equal(signal?.aborted, true); await rejected;
 });
 
 test("local mock HTTP: body timeout closes the connection and redirect makes no second request", async t => {

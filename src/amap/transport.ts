@@ -56,14 +56,15 @@ export function createAmapTransport(fetchImpl: typeof fetch = fetch, options: Am
   return {
     async requestJson(url, operation, context = options.context) {
       if (url.origin !== "https://restapi.amap.com" || url.pathname !== PATHS[operation] || url.username || url.password) throw new AmapApiError("Unsupported upstream endpoint", null, null, "UPSTREAM_INVALID_PAYLOAD");
+      context?.check?.();
       throwIfAborted(context?.signal);
       // Budget checks will run here before each real HTTP attempt. No retries/refunds.
       const permit = options.beforeAttempt ? await abortable(options.beforeAttempt(operation, context?.signal ?? new AbortController().signal, context), context?.signal) : undefined;
       throwIfAborted(context?.signal);
-      const call = createRequestContext(context?.signal, policy.upstreamTimeoutMs, "UPSTREAM_TIMEOUT");
+      const call = createRequestContext(context, policy.upstreamTimeoutMs, "UPSTREAM_TIMEOUT");
       try {
         const response = await measureAsync(diagnostics, "amap.fetch", () => {
-          throwIfAborted(call.signal);
+          call.check();
           permit?.assertValid();
           return abortable(fetchImpl(url, { signal: call.signal, redirect: "error", cache: "no-store" }).catch(() => { throw new AmapApiError("Upstream network failure", null, null, "UPSTREAM_NETWORK"); }).then(response => {
           if (call.signal.aborted) void response.body?.cancel().catch(() => {});
