@@ -1,36 +1,59 @@
-# 高德地点周边数据能力 Spike
+# 地点周边生活服务聚合器
 
-## 搜索部分结果与错误处理
+输入地点、确认搜索中心，按类别和半径查询附近生活服务。项目已从高德 API 能力 Spike 演进为 Next.js 全栈 Web 应用，包含统一搜索工作台、访客历史记录和请求安全基线；早期 CLI 调研脚本仍保留。
 
-多类别搜索默认最多两个任务，同次搜索的准备和准入排队，HTTP 可重叠；返回与跨类别去重保留原请求顺序。暂时数据库故障及单类别上游错误记录后继续；额度、认证或明确配置错误停止新增类别，已发出 HTTP 可结算。取消与总截止中断任务，截止快照保留按类别索引保存的已完成结果。全部类别尝试失败时返回 200 partial success、完整类别列表及逐类原因。
+## 目前支持
 
-已发送的 reserve／grant 事务独立排空最多 3s，事务本地空闲上限 5s；明确提交或回滚并核验 pg 空闲状态后复用健康连接，损坏或未确认连接从池移除。保留总请求 60s、单次准入 2s、高德 HTTP 8s、SQL 800ms、锁 150ms 及资源额度／速率策略。设计和验证见 [恢复与并行记录](harness/build/2026-10-29-recovery-parallel.md)。
+- 地点解析、候选选择及确认后搜索；搜索使用已确认坐标。地址解析后的进一步用户确认及补充信息入口继续跟进 [Issue #6](https://github.com/JKd121/nearby-places/issues/6)。
+- 酒店、商场、火锅、面包、甜品、KTV、台球厅、健身房、公交站、地铁站共 10 类，支持分组选择及 1/2/3/5 km 半径。
+- 类别过滤、去重、距离/评分排序、适用类别的消费排序；本地“加载更多”与按单类别获取高德第 2 页。
+- 结果卡展示地址、距离、可用的评分/消费/标签及高德原始营业时间文字，提供高德位置链接。缺失字段不补造，不推断“正在营业”。
+- 多类别搜索默认最多两个任务并行，同一搜索的准入排队，HTTP 响应可重叠；返回与去重仍按原类别顺序。临时数据库故障逐类记录后继续，额度、认证或明确配置错误停止新增类别；整体截止保留已完成结果，用户取消结束请求。
+- 全部类别尝试失败时仍显示完整类别列表、零类完成和逐类失败原因。准入事务独立排空至多 3 秒，确认空闲的健康连接复用，损坏连接从池中移除后替换。
+- 最近搜索保存到 PostgreSQL，按访客 Cookie 隔离；支持刷新、删除，以及恢复原确认中心、类别和半径后直接查询新结果。缺少完整确认地点的旧记录保留在数据库，列表不展示。
+- 工作空间、最近搜索和静态个人中心，共用加载、空结果、错误和重试组件；设置为无操作占位。
 
-内部诊断接口在实际停止后续工作时提供 search.stopped 事件。搜索历史仅在至少一个类别完成时保存，失败或未执行类别保留分页限制。
+尚未实现账号、跨设备同步、收藏、内嵌地图、POI 照片和公交线路/时刻表。公交与地铁类别目前只查询站点 POI。当前项目状态和待办见 [PLANS.md](PLANS.md)。
 
-这是一个最小 Node.js + TypeScript + Next.js App Router 产品化骨架：保留 v0.1A 的 AMap 搜索核心，并提供两阶段“解析地点 → 用户确认 → 周边搜索”页面和服务端 API。v0.1B-2A 已加入类别/半径选择、本地过滤、排序、去重和加载更多；最终视觉精修仍未实现。
+## 本地运行
 
-## 运行环境
+使用 **Node.js 24**（与 CI 一致）、npm、高德 Web Service Key 和可访问的 PostgreSQL。依赖版本以 `package-lock.json` 为准，当前为 Next.js 16.3.3、React 19.2.0、Prisma 7.10.0、TypeScript 5.9.3。
 
-- Node.js 18 或更高版本（需要原生 `fetch`）
-- 高德 Web Service API Key
+在仓库根目录操作；首次配置时从示例创建 `.env`，已有文件则直接编辑，保留原配置：
 
 ```powershell
-npm install
-$env:AMAP_WEB_SERVICE_KEY = "你的 Web Service Key"
-npm run smoke
+if (-not (Test-Path -LiteralPath .env)) { Copy-Item -LiteralPath .env.example -Destination .env }
+```
+
+填写以下服务端变量，不要提交真实值：
+
+| 变量 | 用途 |
+| --- | --- |
+| `AMAP_WEB_SERVICE_KEY` | 地点解析及周边搜索；只在服务端使用，不使用 `NEXT_PUBLIC_` 前缀 |
+| `DATABASE_URL` | 应用历史使用 Prisma PostgreSQL adapter，准入使用独立 pg 池；均读取此运行连接 |
+| `DIRECT_URL` | `prisma7.config.ts` 中的 Prisma CLI 数据源；迁移使用直连地址，本地可与上项相同 |
+
+安装锁定依赖并生成客户端：
+
+```powershell
+npm ci
+npx prisma generate --config prisma7.config.ts
+```
+
+对**指定的本地开发数据库**应用仓库已有迁移，再启动页面：
+
+```powershell
+npx prisma migrate deploy --config prisma7.config.ts
 npm run dev
 ```
 
-默认测试 `深圳北站` 和 `香港特别行政区九龙达之路香港城市大学`，半径为 3,000 米。Smoke 会对每个地点比较 keyword-only baseline 与 types-only candidate，并追加酒店、健身房、甜品的 keyword-and-types 最终实验；也可以传入其他地点名称：
+打开 [本地页面](http://localhost:3000)。迁移命令会修改目标数据库结构；线上迁移和发布按具体任务授权执行。`npm ci` 的 postinstall 也会执行 `prisma generate`，显式命令用于指定本仓库的非默认配置文件。
 
-```powershell
-npm run smoke -- "深圳北站"
-```
+Next.js 会加载根目录 `.env*`；`prisma7.config.ts` 通过 `dotenv/config` 加载 `.env`。CLI Spike 脚本自身不加载 `.env`，需要进程环境变量。Web 构建导入历史数据库模块时需要有效格式的 `DATABASE_URL`；隔离构建可使用测试说明中的 localhost 占位值，不能据此认为真实数据库已验证。
 
-Key 只从 `AMAP_WEB_SERVICE_KEY` 环境变量读取；项目不会自动加载 `.env`。`.env.example` 仅说明变量名。
+高德准入池有独立的连接准备阶段：Next Node 实例通过 `instrumentation.ts` 启动预热，请求在预约前共享准备任务。准备只执行 `SELECT 1`，成功后开始原有 2 秒准入计时。普通历史连接池沿用原配置。本地常驻与 Vercel 生命周期设计见 [预热实现说明](harness/build/2026-10-28-admission-warmup-pr.md)。
 
-## 验证命令
+## 检查与测试
 
 ```powershell
 npm test
@@ -38,40 +61,70 @@ npm run check
 npm run build
 ```
 
-`npm run dev` 启动页面；浏览器调用 `/api/resolve-location` 完成地点解析，确认后调用 `/api/search`。页面默认选择 8 类和 3 km，也支持 1/2/3/5 km、类别分组、结果过滤、排序和本地加载更多。AMap Key 只在服务端从 `AMAP_WEB_SERVICE_KEY` 读取，浏览器请求不会携带 Key。搜索请求直接使用已确认的中心坐标，不会再次 geocode。
+| 命令 | 实际范围 |
+| --- | --- |
+| `npm test` | 高德出口 AST 门禁、核心及历史 Route 测试编译、Node.js 测试、AST 门禁正反例；不调用真实高德或 PostgreSQL |
+| `npm run check` | 核心 TypeScript 检查、Next 路由类型生成及 Web TypeScript 检查 |
+| `npm run build` | 核心编译和 Next.js webpack 生产构建 |
+| `npm run test:admission:postgres` | loopback 可丢弃 PostgreSQL 集成库，高德使用模拟响应 |
+| `npm run check:boundary` | 单独检查生产代码是否绕过统一高德传输出口 |
 
-## 距离与商业字段说明
+测试分层、定向执行和浏览器夹具说明见 [test/README.md](test/README.md)。这些命令会产生 `dist/`、`.next/` 或类型缓存。CI 对所有目标分支的 PR 和 `master` push 运行安装、隔离测试、PostgreSQL 17 集成、类型检查及构建。生产 job 在主线 CI 通过后发布；浏览器场景采用独立验收。维护和发布流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
-请求显式使用 `sortrule=distance` 和 `show_fields=business`。标准模型始终计算 Haversine 距离；若 AMap 返回有效的 native `distance`，`distanceMeters` 使用该值并标记 `distanceSource=amap`，否则使用 computed fallback 并标记 `computed`。`computedDistanceMeters` 始终保留。computed 值是本地直线距离，不是高德 API 原生字段，也不是步行或驾车距离。
+### 真实 API 调研
 
-`business.cost`、`business.rating`、`business.tag` 缺失时统一输出 `null`。高德主要为美食 POI 返回 `tag`，主要为餐饮、酒店、景点、影院返回 `rating`/`cost`，因此其他类别缺失并非错误。
+以下命令会消耗高德额度，需要单独确认调用范围；不属于 `npm test`：
 
-香港城市大学仅用于能力验证。普通 Key 可能遇到地区、数据或权限限制；程序保留高德响应中的 `info` 和 `infocode`，不会改用其他数据源绕过。
+```powershell
+$env:AMAP_WEB_SERVICE_KEY = "你的 Web Service Key"
+npm run smoke -- "深圳北站"
+```
 
-八个类别按配置顺序逐一请求，相邻 Around 请求之间等待约 500ms；单个类别失败仍会继续下一类。输入包含“香港”但地理编码结果的地址和行政区均不含“香港”时，Smoke Test 会报告 `geocode validation failure` 并跳过该错误坐标的周边搜索。
+不传地点时默认测试深圳北站和香港城市大学，半径 3 km；对比 keyword-only、types-only，并对酒店/健身房/甜品追加 keyword-and-types 实验。这是保留的策略比较工具；**产品当前 10 类均使用 `types-only`**，配置集中在 [src/amap/categories.ts](src/amap/categories.ts)。`resolver:spike`、`resolver:address-micro`、`result-card:spike`、`result-card:photo-review` 同样属于真实 API 调研，不要当作隔离检查运行。香港输入会额外核对地理编码的行政区，明显不匹配时跳过周边查询；地区覆盖受高德数据和权限限制。
 
-类别的 AMap typecode、关键词、候选搜索策略和 cost 语义集中在 `src/amap/categories.ts`。当前 `types-only` 只是待真实数据比较的候选，不预设为最终策略；Smoke 输出每类请求策略、请求 type(s)、返回 POI `type`/`typecode`、baseline 与 candidate 前 10 名和数量差异。最终策略可按类别独立选择 `types-only`、`keyword-and-types` 或 `keyword-only`。
+## 代码入口与 API
 
-产品核心契约位于 `src/search/`：请求只接受地点、预设类别 id 和四个允许半径；服务默认每类请求 page 1/25，并返回每类别独立的 success/empty/error 与 AMap `info`/`infocode`。`src/search/sort.ts` 提供不修改原数组的距离、评分和受限 cost 排序。
+| 位置 | 职责 |
+| --- | --- |
+| `app/page.tsx`、`src/web/SearchApp.tsx` | 搜索页面与交互，取消旧请求并防止过期响应覆盖 |
+| `src/web/SearchPanels.tsx`、`src/web/ui/` | 结果卡、工作台布局和统一反馈组件 |
+| `src/web/search-history-store.ts`、`src/web/useSearchHistory.ts` | 历史缓存、读取、保存、删除及 UI 状态 |
+| `src/location/` | 地点意图路由、候选解析、地址归一化 |
+| `src/search/` | 搜索请求校验、类别编排、结果状态和排序 |
+| `src/amap/transport.ts` | 统一高德网络出口、超时、限读及安全错误 |
+| `src/server/` | Route 生命周期、策略配置和服务端高德工厂 |
+| `src/history/`、`src/db/`、`prisma/` | 访客历史服务、Prisma 访问、模型及迁移 |
+| `scripts/`、`test/`、`.github/workflows/ci.yml` | 调研脚本、隔离测试及 CI |
 
-## 范围
+| API | 方法与输入 | 行为 |
+| --- | --- | --- |
+| `/api/resolve-location` | POST：`query` | 返回确认地点、候选或未找到 |
+| `/api/search` | POST：`center`、`resolvedLocation`、`categoryIds`、`radiusMeters` | 每类查询第 1 页，单页 25 条；使用确认坐标 |
+| `/api/search/page` | POST：`center`、`categoryId`、`radiusMeters` | 指定单类别查询第 2 页，单页 25 条 |
+| `/api/history` | GET：可选 `limit=10` 或 `20`；POST：`query`、`categoryIds`、`radiusMeters`、`confirmedLocation`；DELETE：`id` | 读取/保存/删除当前访客历史，GET 使用 `private, no-store` |
 
-当前包含 v0.1B-1 基础页面与服务端路由，以及 v0.1B-2A 的功能交互；不包含 v0.1B-2B 最终视觉/响应式/无障碍精修、收藏、地图、数据库、账号或其他产品功能。
+精确字段及限制以 `src/location/types.ts`、`src/search/contracts.ts`、对应 validator 和 `src/history/contracts.ts` 为准。`/ui-preview` 是保留的导航视觉预览入口，不是正式搜索页面。
 
-## 准入连接准备与短事务
+## 请求安全与准入
 
-高德请求先经过专用 pg 池的共享预热，再进入原有 2 秒准入。预约和放行各调用一个数据库函数，通过有界流水事务执行；正常共两个数据库往返批次，应用等待期间释放连接，确认 COMMIT 和许可新鲜度后发送。保留额度、速率与一次性许可，普通历史继续使用 Prisma。目标环境先应用新增函数迁移，再发布应用。设计、参数与验证见 [交付记录](harness/build/2026-10-28-admission-functions.md)。
+三个高德 POST Route 使用统一生命周期、超时、安全错误和入站 JSON 限制。业务默认总请求 60s、HTTP 8s、准入 2s，入站 JSON 64KiB、上游响应 1MiB；配置见 src/amap/policy.ts 和 src/server/request-policy.ts。
 
-## 时间与失败治理（2026-10-29）
+准入通过独立 pg 池共享连接准备，预约和放行各调用一个数据库函数，等待期间释放连接。已发送批次独立排空最多 3s，事务空闲保护 5s；明确提交及许可有效后才发送高德请求。数据库资源保存共享日／月额度、速率和操作绑定；迁移创建结构，真实政策单独核实并启用，缺少有效绑定返回安全 503。
 
-类别按请求顺序串行调用，下一类在上一类完成后立即进入准入；不自动重试。单次 HTTP 超时、普通上游错误及 `ADMISSION_WAIT_EXCEEDED` 记录为单类失败并继续；全部类别失败返回 `ALL_CATEGORIES_FAILED`。额度、认证或准入数据库故障停止后续共享同一 `nearby` 操作和凭据的类别，已有结果继续返回。整体期限耗尽时返回已完成结果、超时类别及其余 `skipped` 类别；尚无完成结果时返回 504。主动取消沿用 499。
+AMAP_CREDENTIAL_ID 默认 primary，对应 geocode、poi-text、nearby 的资源绑定。首次运行需配置并启用资源；模型见 [schema](prisma/schema.prisma)，初始化背景见 [准入记录](harness/build/2026-10-27-amap-admission.md)。
 
-时间计算、父子预算、取消传播和可取消等待统一复用 `src/amap/request-context.ts`。默认总期限 60s，准入最多 2s，准入后的单次 HTTP 最多 8s；子期限取本层上限与父剩余时间的较小值。数据库连接、SQL、锁及驱动保护继续受剩余准入时间约束。数据库预约等待从响应接收后计算：v1 函数会拒绝提前到达，跨主机时间与网络方向未知时保留这段等待；产品搜索的固定 500ms 间隔已删除。独立 smoke CLI 和 POI 调研脚本保留自身节流策略。完整责任表及验证见 [时间与失败治理交付记录](harness/build/2026-10-29-time-and-failure-governance.md)。
+暂时数据库及单类上游故障保存逐类结果；额度、认证和明确配置错误停止新增任务。已提交扣额按保守消耗处理。事务失败输出固定字段的 admission.failed，成功路径保持静默。最新行为与测试见 [恢复及并行记录](harness/build/2026-10-29-recovery-parallel.md)。
 
-长期原则：业务模块声明自身的超时需求和失败策略；时间计算、取消传播及终止决策通过可复用基础能力协调。准入负责共享资源的预约与放行，搜索调度器依据错误性质、影响范围和当前可用能力决定后续类别。
+发布先应用兼容函数迁移，再发布应用；应用回退保留函数、资源和额度账本。真实 Vercel 客户端断连及最新版本完整高德验收继续跟进 [Issue #24](https://github.com/JKd121/nearby-places/issues/24)。
 
-发布前先应用 `20261029000000_amap_admission_slot_alignment` 迁移，使预约同时遵守预约队列和实际放行屏障，再发布应用。资源计数、绑定和策略保持原值。
+## 文档分工
 
-## 准入事务诊断（2026-10-29）
+- [README.md](README.md)：现有功能、安装运行、代码入口和检查命令。
+- [AGENTS.md](AGENTS.md)：协作规则与开发边界。
+- [PLANS.md](PLANS.md)：当前状态、待办、风险和阶段约束；顶部现状优先于历史快照。
+- [test/README.md](test/README.md)：测试覆盖、执行方式与证据边界。
+- [harness/build-log.md](harness/build-log.md)、[harness/build/](harness/build/)：按日期保留的决策与验证证据，不代表实时部署状态或新的操作授权。
 
-事务失败通过单条 `admission.failed` 汇总诊断：`attemptId` 关联一次准入的预约和放行，`statements` 记录四条 SQL 的客户端提交／结果返回时间、状态及安全错误分类，`readTimeoutMs` 记录实际读取上限，`functionToCommitMs` 记录函数返回至提交结果到达的间隔。提交确认使用 `commitAck` 四种状态表达，连接处理记录销毁请求；成功路径保持静默。字段含义、验证及本地交付状态见[事务诊断记录](harness/build/2026-10-29-admission-transaction-diagnostics.md)。
+修改功能、环境变量或命令时，同步对应说明；状态变化更新 PLANS 顶部，历史报告通过带日期的补充说明纠正，不把旧验收改写成新验收。
+
+维护流程见 [CONTRIBUTING.md](CONTRIBUTING.md)，发布索引见 [GitHub Releases](https://github.com/JKd121/nearby-places/releases)。联合查询实验的独立成果见 [Issue #27](https://github.com/JKd121/nearby-places/issues/27)。

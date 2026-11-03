@@ -1,0 +1,27 @@
+name: 功能
+description: 说明目标与可检查的完成条件
+labels: [enhancement]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: 用户目标与使用场景
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 本次工作与约束
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+    validations:
+      required: true
+  - type: textarea
+    id: progress
+    attributes:
+      label: 当前状态与下一步
+      value: "状态：待评估\n下一步：\n成果／关联 PR："

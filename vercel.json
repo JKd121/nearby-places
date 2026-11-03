@@ -1,5 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "master": false
+    }
+  },
   "functions": {
     "app/api/resolve-location/route.ts": {
       "supportsCancellation": true

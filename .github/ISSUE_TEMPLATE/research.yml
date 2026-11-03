@@ -1,0 +1,27 @@
+name: 研究
+description: 记录问题、方法和可交付结论
+labels: [research]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: 研究问题与已有证据
+    validations:
+      required: true
+  - type: textarea
+    id: method
+    attributes:
+      label: 方法、范围及外部调用预算
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 交付与验收标准
+    validations:
+      required: true
+  - type: textarea
+    id: progress
+    attributes:
+      label: 当前状态与下一步
+      value: "状态：待研究\n下一步：\n成果／关联 PR："
