@@ -64,3 +64,13 @@ GitHub Production 环境的组织／项目 ID 已通过 API 加密配置。当�
 ## 平台状态补充
 
 仓库已公开，master 保护及管理员约束已启用。10 个已合并远端分支已清理；所有本地分支保留。生产切换和远端运行结果随维护 PR 更新。
+
+## 远端验收补充
+
+- 初次提交 b034f67 的 [PR CI 41664724438](https://github.com/JKd121/nearby-places/actions/runs/41664724438) 成功，包含真实临时 PostgreSQL 17 集成、类型和构建；PR 的 production job 按预期跳过。
+- Preview dpl_H7dnXeCXecVc8L28gqeL2txsFDP2 READY，API 元数据关联 b034f67；地址为 https://nearby-places-4eyxirsjf-jk-d.vercel.app。匿名请求进入保护登录页，经 vercel curl 认证验证首页 200、无效搜索 400，原保护保持开启。
+- 临时夹具 [PR #34](https://github.com/JKd121/nearby-places/pull/34) 先以维护分支为目标，成功触发 [CI 41664991890](https://github.com/JKd121/nearby-places/actions/runs/41664991890)，Tests, types and build 预期失败，production 跳过；转为 master 目标后 API mergeable_state=blocked。夹具未合并，已关闭并删除远端分支。
+- Production 环境限制为受保护分支，三个 secrets 齐全；用户误建的空 VERCEL_TOKEN 环境经核对无 secret／变量／部署后清理。
+- 历史发布索引 [release-2026-10-29](https://github.com/JKd121/nearby-places/releases/tag/release-2026-10-29) 已补录到准确提交 1d778f9。
+- 使用关闭 credential.helper 和 HTTP extraheader 的 git ls-remote 成功读取主线，核验匿名仓库访问；master 保护 API 已复核。
+- 入场保留文件共 83 个的 SHA-256 全部一致。最终维护合并、主线 CI 和生产部署的实际结果在 PR #33 及对应 Release 中记录。

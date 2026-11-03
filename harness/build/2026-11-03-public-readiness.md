@@ -27,3 +27,5 @@
 - master 保护已启用：严格必需检查绑定 GitHub Actions app 15368；管理员约束开启，必需审批人数 0，讨论解决开启，强推／删除关闭。
 - Production 已配置三个 secrets，令牌由用户在 GitHub 页面填写；本轮工具只读取密钥名称。
 - 已清理 10 个满足清单条件的远端分支，保留草稿、原型、历史研究及所有本地分支和未提交成果。
+
+匿名核验：关闭 git credential.helper 与 HTTP extraheader 后，git ls-remote 成功读取 master。GitHub 匿名 API 因共享出口限额返回 403，匿名 Git 协议读取得到实际验证。Production 环境已限制受保护分支，Vercel fork 保护保持启用。
