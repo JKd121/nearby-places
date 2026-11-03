@@ -1,100 +1,29 @@
-# 项目状态与计划
+# 项目状态与待办
 
-## 数据库异常恢复与最多两类并行（2026-10-29，PR／Preview 交付）
+## 业务发布基线（2026-11-03 核对）
 
-- 暂时性数据库异常逐类保存，后续类别独立准入；健康连接复用，损坏连接替换。已发送批次独立排空 3s，事务本地空闲上限 5s，原额度／速率及业务截止策略沿用。
-- 默认最多两个类别任务，同次准入排队并与 HTTP 重叠；保留原类别顺序、取消及按索引截止快照，全部失败返回完整类别列表。
-- 三轮 300ms 数据库 RTT＋2s 模拟 HTTP 的本地对照中位耗时降低 45.75%，60 个模拟类别均成功。准确提交快照使用 master 的测试入口独立验证，最终数量见交付记录。
-- 当前授权为提交、推送、面向 master 的 PR 和 Preview 验证；等待用户在 Preview 测试后批准正式发布。真实高德采样账本保持关闭。
-- 详细行为、证据及交付说明见[恢复与并行记录](harness/build/2026-10-29-recovery-parallel.md)。下方保留此前记录发生时状态。
+- 业务基线：`1d778f9342cc84c3a84f9dd59052e35f5c5fe965`，PR #32 已于 2026-10-29 合并；包含数据库异常恢复、连接收尾与最多两类并行搜索。
+- 对应该提交的 PR CI／master CI 成功，Vercel Production 状态成功；PR #32 记录首页 200 和无效搜索 400。此处为既有发布证据，本轮另行记录新的核验。
+- 上次准确提交验证：243 项核心／Route、19 项 AST、35 项临时 PostgreSQL 集成，以及 check/build。性能 45.75% 改善来自 300ms 数据库 RTT＋2s 模拟 HTTP 的三轮本地对照。
+- 最新版本的完整真实高德生产验收和 Vercel 断连验收仍待完成，跟进 [Issue #24](https://github.com/JKd121/nearby-places/issues/24)。
 
-## 准入事务诊断补充（2026-10-29，本地完成）
+## 维护交付
 
-- 本轮只读核对确认 PR #29／#30 已合并，正式部署为 master `5b0456e`，Vercel 状态 READY。下方各次交付记录继续保留发生时状态。
-- 正式站 13:01:02 与 12:56:40 的搜索均在 reserve／commit 确认阶段失败，批次约 1201ms、借连接约 0.1–0.2ms、SQLSTATE 为 null；具体提交延迟来源继续调查。
-- 本地补充逐语句客户端计时、实际读取上限、固定错误分类、四态提交确认、连接销毁请求及 attemptId／operation 关联；BEGIN 标签独立。沿用原有超时、流水发送、错误响应和搜索策略。
-- 本轮验证：270 项核心／Route／实验测试、19 项 AST、独立 loopback PostgreSQL 18 集成 31 项，check/build 通过；真实高德调用 0 次，临时库已清理。
-- 当前补丁留在本地工作区，提交／推送／部署另行安排。下一步交付后，用同一请求的新增失败日志定位各条结果返回时间及提交确认间隔。字段含义及证据见[事务诊断记录](harness/build/2026-10-29-admission-transaction-diagnostics.md)。
+- [PR #33](https://github.com/JKd121/nearby-places/pull/33)：维护指南、Issue／PR 模板、文档同步、历史整理和 CI 成功后的生产发布。
+- Vercel 项目身份及 GitHub Production 三个 secrets 名称已核对，生产任务的实际运行结果随本轮交付记录更新。
+- 公开前审查已覆盖 Git 历史、讨论、Actions 和图片；仓库已公开，master 强制 PR／CI／最新基线／讨论解决及管理员约束已启用。
+- PR CI 已通过四类检查；Preview READY，经认证核验首页 200、无效搜索 400。失败门禁夹具 #34 已验证 CI 失败时主线合并受阻、生产任务跳过，并已关闭清理。
+- 最新维护合并、生产结果及发布索引见 [PR #33](https://github.com/JKd121/nearby-places/pull/33) 和 [Releases](https://github.com/JKd121/nearby-places/releases)。
+- 本轮交付与历史整理清单：[维护记录](harness/build/2026-11-03-github-maintenance.md)。
 
+## 产品及工程待办
 
-## 时间治理 Stage A 与失败调度 Stage B（2026-10-29，本地完成）
+- [#6](https://github.com/JKd121/nearby-places/issues/6)：补充地点信息入口及地址解析后的用户确认交互尚有缺项，保留开放。
+- [#14](https://github.com/JKd121/nearby-places/issues/14)：请求级诊断、会话关联和导出仍有独立价值；已有准入失败诊断见 PR #31。
+- [#17](https://github.com/JKd121/nearby-places/issues/17)：额度／共享速率已落地，公平性、滥用治理和协议研究继续跟进。
+- [#24](https://github.com/JKd121/nearby-places/issues/24)：补齐真实生产验收和仍有效的根因调查。
+- 旧方案、草稿及实验逐项处置见本轮维护记录；当前代码入口见 README，维护约定见 CONTRIBUTING。
 
-- 已完成覆盖 A／B 的只读影响面核验，随后连续实施；沿用当前工作区、串行搜索、已有短事务和预热成果。
-- 请求上下文统一父子剩余预算、同步截止检查、超时原因、取消传播及等待；数据库准备和连接获取也复用该机制。产品搜索删除固定 500ms 等待，保留总期限 60s、准入 2s、HTTP 8s 及数据库保护。
-- 删除类别等待后，真实临时 PostgreSQL 测试揭示预约队列与实际放行屏障错位。新增 `20261029000000_amap_admission_slot_alignment` 迁移，预约取当前时间、预约队列和实际放行屏障的最大值；旧迁移保持原样，既有计数、绑定、策略和最终复核沿用。
-- 错误分类提供性质与范围，搜索调度器决定停止或继续；准入等待失败可继续，额度／认证／数据库故障停止共享链路；整体截止保留已完成结果，主动取消沿用 499。高德明确日额度错误也停止后续调用。
-- 本轮最终验证：264 项核心／Route／实验测试、19 项 AST、独立 PostgreSQL 18.4 集成测试 31 项通过；check/build 通过。约 300ms TCP RTT 下十类别全部完成；单次准入两批约 634ms。真实高德调用 0 次。
-- 本轮已获提交 PR 授权，独立分支 `Nearby-超时治理与失败调度` 基于 PR #29 最新提交，仅收录 A／B。PR 先以 #29 分支为目标，依赖合并后调整到 master；Preview／生产迁移和合并部署按后续授权执行。完整责任表、失败策略及验证见 [交付记录](harness/build/2026-10-29-time-and-failure-governance.md)。
+## 历史记录
 
-
-## 地点解析与准入链路调查（2026-10-29）
-
-- 已还原原解析、准入、预热、短事务及诊断版本；确认 Preview 两个函数缺失，并按已有授权迁移。迁移前后原资源及绑定保持原样。
-- 以实际 Vercel Preview＋Preview 数据库＋真实高德验证：深圳北站解析返回 10 个候选，十类别真实搜索全部成功、约 20.7s；合计 11 次真实调用，搜索资源月计数增加 11 次。保留请求 ID、周期变化及数据库放行时间序列。
-- 补充 Preview 独立资源回归、原计划 9 场景及时间窗口实验；测试资源已清理。Stage A 时间机制与 Stage B 调度改造按调查证据细化，当前业务源码沿用原状态。
-- 调查、版本／环境区分、重现方法、剩余验收见[调查文件](harness/build/2026-10-29-admission-chain-investigation.md)。下方内容保留各次交付发生时状态。
-
-
-## 2026-10-28：准入短事务与两批次链路 PR
-
-基于已合并的预热 PR #28，将预约和放行下沉为两个 PostgreSQL 函数，专用 pg 池各执行一个流水短事务。原参数、额度、速率与类别串行保持原值；取消、提交确认和连接清理继续受控。提交源码在独立导出目录验证，CI 增加 PostgreSQL 集成步骤。目标环境函数迁移及 Preview 验收为后续步骤。详见 [交付记录](harness/build/2026-10-28-admission-functions.md)。
-
-下方为此前记录。
-
-## Stage C 搜索异常传播（2026-10-28）
-
-- 本地实现集中错误分类、部分结果保留、未执行类别和停止事件；不改变数据库准入算法、QPS、额度或串行策略。
-- 当前工作提交供 PR 审查，不代表已合并、生产部署或故障根因已解决。故障及待调查项见 [Issue #24](https://github.com/JKd121/nearby-places/issues/24)，本地验证见 `harness/build/2026-10-28-stage-c-local.md`。
-- 以下内容为历史阶段快照，不代表当前状态或新授权。
-
-## 当前任务：高德请求安全工程 Stage A（2026-10-25）
-
-- Branch / Baseline: `高德请求安全基线` / `df84cf2f6f788596a6e5e2de418b6ad38d515313`（UI PR #19 合并提交）；当前目录，无新增 Worktree。旧 `界面开发` 分支及性能 Worktree 原样保留。
-- Workflow State: LOCAL_GIT_DELIVERY — 用户确认Stage A v2（含64KiB补丁）独立审查通过、无新增P1/P2阻止Preview，并仅授权当前分支本地提交。提交前重新验证受审源码哈希及npm test/check/build；本地提交后停止等待Preview授权。此前浏览器14/20项为历史证据，未执行Preview验收。
-- Approved Scope / Source: 本聊天Stage A实施及入站补丁授权；最新用户明确“Stage A v2独立代码审查通过”并批准本地Git交付。允许当前分支提交已审代码、测试和必要说明，不允许推送、PR或部署。
-- Scope: 浏览器取消/旧响应保护、三个 Route 的完整生命周期、统一高德传输、独立单次/整体超时、实际字节限读、终止异常/安全消息、全失败分类、最小预算接入口契约及隔离回归；用户追加批准三个高德Route的64KiB入站正文限制与独立413，未扩展其他接口。
-- Non-goals: 数据库/schema/迁移/预算扣减、并发调度、WAF、真实高德smoke、平台配置、Issue/PR/推送/部署或新分支/Worktree。UI、历史回放、搜索策略、排序、串行及500ms间隔保留。
-- Evidence / Detail: `harness/build/2026-10-25-request-safety-stage-a.md`、`harness/build/2026-10-25-stage-a-inbound-body-limit.md`、`harness/build/request-safety-stage-a-inbound-evidence.json`；本次重验命令记录 `harness/build/request-safety-stage-a-local-delivery.json`。两个完整审查包仅为本地附件，不纳入Git交付；生成目录、环境文件和原始日志不暂存。
-- Parameters: `src/amap/policy.ts`集中定义8s/60s/1MiB/入站64KiB候选默认值，部署即生效但尚未批准为正式生产参数；60秒为应用时限，不是宿主300秒上限。64KiB限制应用接受/累计的字节，不等于网络/运行时内存峰值。不修改真实环境配置。
-- Coordination: 性能分支 `周边搜索性能优化` / `0ec6ebe` 未改动。复用其 `src/diagnostics.ts` 注入契约并保持主要诊断参数位置，未合并诊断日志/Route包装或性能调度。
-- Next Action: 本地提交交付后等待下一步Preview授权，不推送、不创建PR、不部署、不启动B/C/D。Preview重点验证真实Vercel断连及候选参数；beforeAttempt预算/数据库终止协议留待Stage B，AST范围暂不调整。本地提交标识以当前分支git log为准。
-
-## UI 任务历史记录（下列状态不作为当前授权）
-
-## 当前任务：UI 工作台改版（2026-10-24）
-
-- Branch / Baseline: `界面开发` / `3bc08d4`（最初由Agent以`codex/ui-neubrutalism`从当时的`origin/master`建立，后续核对发现分支已改名；沿用现名，未再次切换/重命名；当前目录，无新增 worktree）。
-- Workflow State: REVIEW/VERIFY PASS — UI_FINAL_HANDOFF。用户已完成人工视觉验收；最终代码审查及重新执行的103项测试、check/build通过。准备提交当前分支并创建指向master的PR；合并和正式部署必须等待人工确认。
-- Approved Scope / Source: 用户认可导航版后明确“可以，我认可这一版。继续做吧”，特别要求搜索、提醒、错误和重试全部使用同一新组件系统。该后续授权取代此前仅导航预览的阶段边界，覆盖既有方案的本地前端实施与验证，不包含发布。
-- Current Plan: `harness/build/2026-10-24-ui-neubrutalism-design-plan.md`，最新完成记录优先于其中保留的早期提案/导航阶段历史。
-- Confirmed Design Revision: 候选/附近结果共用有界纵向滚动面板并互斥；工作空间/个人空间、240/72px折叠导航及底部空设置；个人中心有完整静态布局，不关联业务函数。已实现。
-- Evidence: `harness/build/ui-workspace-evidence/README.md`、实际桌面/候选/个人中心/错误/手机截图、browser-checks.json、fixture-evidence.json、handler-preservation.json。最终版本103/103测试、npm run check、npm run build与git diff --check通过；关键浏览器流程使用受控provider和内存历史。后端/API/schema/依赖/环境配置未改；没有重跑真实高德/数据库smoke。
-- Navigation Preview Evidence: `harness/build/ui-navigation-preview-evidence/README.md`、实际展开/折叠/390px截图与`browser-checks.json`。本地<http://localhost:3108/ui-preview>；1440px下240/72px，390px下72px；check/build通过，控制台warn/error为空。仅新增`app/ui-preview/`，现有页面、业务代码、schema和依赖清单保持原样。
-- Latest Tiny Edit: 按用户要求新增底部齿轮“设置”占位行，展开有文字、折叠仅图标，不关联任何操作。改后`npm run check:web`及实际浏览器检查PASS；截图`desktop-settings-expanded.png`；全量build结果为此前导航版本，本小改未重复运行。
-- Active Approval: 用户明确“UI开发已完成人工视觉验收”，要求小范围最终审查、重新执行npm test/check/build；全部通过可在当前界面开发分支提交并按既有GitHub流程准备合并master。严禁擅自合并/正式部署、新建Worktree或无关分支。未发现需扩大修复的业务风险。
-- Latest Review Evidence: `harness/build/ui-workspace-evidence/final-code-review.md`。fetch后origin/master仍为3bc08d4；独立只读审查及主Agent复核通过；三个fetch请求体和13个主要处理函数保持，未发现本次UI引入额外高德请求。原UI规划/截图/受控证据完整保留；构建缓存、环境文件与原始测试日志不提交。
-- Next Action: 当前分支提交并准备PR，等待用户对合并/正式部署的人工确认；不得自动执行该门禁之后的操作。请求安全Stage A的技术方案已从聊天“规划请求链路与高德额度保护”恢复；按用户指定顺序，UI交付结束后再启动，不混入UI提交或PR。当前尚未执行Stage A代码、数据库或WAF改动；不新建分支/Worktree。
-- Coordination: 性能分支也改动`src/web/SearchApp.tsx`，合入前须核对其诊断逻辑；`b368`工作区保留。原历史分支仍在；Preview未提交记录已保存到stash commit `37432f8dd750c5e1f295e9d6eaa1956b58d5d46c`，不恢复进本轮UI提交。
-- Recovery Note: 下方为主分支继承的历史记录，包含过时的“发布进行中”描述，不作为当前任务状态或新授权。历史发布已完成的归档仍在`codex/history-confirmed-location`上的`16503c1`；不为本轮设计复制/覆盖该分支成果。
-
-## 继承的历史记录（非当前任务状态）
-
-- Project: 地点周边生活服务聚合器
-- Repository: `C:\Users\lenovo\Documents\ChatGPT\地点聚合器`
-- Released Baseline: v0.1C COMPLETE
-- Current State: 2026-10-05 历史直接搜索本地实现及人工验收通过，103/103、check/build/schema及实际浏览器通过。用户已授权上线；生产confirmedLocation迁移成功，14条旧记录数量/摘要未变。应用发布及真实链路验证进行中。此前偶发历史更新失败根因仍未确认。
-- Active Approved Phase: History Confirmed Location — 生产迁移、发布与验证
-- Approval Source: 本聊天用户在完整方案展示后明确“我确认授权”，人工核验后回复“通過”，继而明确要求“进行上线部署”；当前授权覆盖已验收范围的必要数据库迁移、Git提交/推送、正式部署和生产核验。
-- Current Workflow State: IMPLEMENT — HISTORY_CONFIRMED_LOCATION_RELEASE（用户已人工核验通过并授权“进行上线部署”；迁移、发布及真实链路验证进行中）
-- Current Plan: `harness/build/2026-10-05-history-confirmed-location-release.md`（用户授权上线）；实施计划：`harness/build/2026-10-05-history-confirmed-location-plan.md`；上轮已完成计划：`harness/build/2026-10-04-history-experience-plan.md`
-- Current Evidence: `harness/build/2026-10-05-history-confirmed-location-verification.md`；`harness/build/history-confirmed-location-evidence/`。上轮发布证据：`harness/build/2026-10-04-history-production-release.md`；历史性能根因见 `harness/build/2026-10-04-history-performance-investigation.md`
-- Historical State: v0.2B-1 complete; v0.2B-2 Phase B evidence complete, visual relevance mixed; Phase C photo authorization remains ambiguous and Production Photo implementation is blocked. v0.2C provider page 2 is locally implemented and live verification was user-reported as passed. v0.2D raw provider business-hours display is implemented locally. 交通 v1 实现和发布前置授权为较早阶段记录，不作为本轮历史优化实施或部署的授权。
-- Historical Plan: `harness/build/2026-09-11-v0.1C-deployment-plan.md`
-- Plan: `harness/build/2026-09-14-v0.2C-provider-pagination-plan.md`
-- Implementation Plan: `harness/build/2026-09-12-v0.2B-1-result-card-enrichment-implementation-plan.md`
-- Next Action: 提交/推送本轮已验收版本，沿现有master→Vercel上线并验证真实持久化回放；生产新增字段迁移已完成。偶发历史更新失败的根因与出现频率留待后续实际浏览器评估，本轮不追加机制修复。Any open-now inference requires a separate task and approval. Photo work remains blocked: do not implement photos, add photo caching/proxy/storage, or alter Production configuration without separate authorization. Transit enrichment remains out of scope: do not add `/v3/bus/*`, routes, timetables, or fuzzy station deduplication.
-- Deferred: 历史记录跨刷新持久化缓存、数据库/区域/连接配置调整、偶发更新失败的后续评估；v0.2B-2 POI photos remain blocked pending Phase B visual-relevance and authorization evidence; provider pagination beyond page 2; favorites, custom categories/templates, hotel offers, maps, multi-provider, AI, and recommendation work. 较早记录中的“persistence 未实现”与当前 PostgreSQL 历史代码不符，不再用作当前项目事实。
-
-## 2026-10-28：准入数据库连接预热独立交付
-
-仅整理准入池预热、实例生命周期与失败诊断，独立于POI实验，直接基于master；联合查询探索停止，证据保存在Issue #27。预热只读验证成功，完整准入仍有reserve/clock.select的P2028待查。事务预算和额度/QPS保持原值，Preview生命周期验收待后续安排。详见 [交付记录](harness/build/2026-10-28-admission-warmup-pr.md)。
+整理前 PLANS 原文完整保存于 [2026-11-03 归档](harness/build/2026-11-03-plans-history.md)。按日期的决策、参数和测试结果继续保存在 [build-log](harness/build-log.md) 及 [build](harness/build/)；当前摘要随对应发布更新。

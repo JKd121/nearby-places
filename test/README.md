@@ -1,5 +1,24 @@
 # 测试与验证
 
+## 当前执行入口（2026-11-03 整理）
+
+使用 Node.js 24 和 npm ci。在仓库根目录运行 npm test、npm run check、npm run build。npm test 的具体文件以 package.json 显式列表为准，新增测试同步该列表；部署检查与 AST 的 .mjs 用例在末尾单独运行。测试使用受控替身，真实高德调用为 0。
+
+构建需要有效格式的数据库环境；独立终端可设置 DATABASE_URL、DIRECT_URL 为 postgresql://ci:ci@localhost:5432/nearby_ci，仅供隔离检查。Prisma 客户端生成使用 npx prisma generate --config prisma7.config.ts。命令会写入 dist、.next 和类型缓存。
+
+npm run test:admission:postgres 仅连接 NEARBY_ADMISSION_TEST_DATABASE_URL 指定的 loopback 可丢弃库，数据库名必须以 nearby_admission_test 开头；会重建测试表／函数，高德使用模拟响应。CI 启动 PostgreSQL 17 临时服务。
+
+CI 对全部目标分支的 PR 和 master push 运行上述四类检查。生产 job 只在 master push 验证成功后运行；同分支 PR 的重复验证可取消，生产发布串行并核验最新主线 SHA。发布配置及结果见 [维护指南](../CONTRIBUTING.md#发布与回退)。
+
+新增 deployment.test.mjs 使用内存 fetch 替身，覆盖无效输入、异常状态、部署提交不符、元数据匹配及凭据仅发送到 Vercel API，真实网络调用为 0。
+
+当前生产业务默认最多两个类别任务、同次准入排队、HTTP 可重叠。全部类别失败保留完整列表和逐类原因；已发送批次独立排空 3s，事务空闲保护 5s。以下按日期记录保留此前版本的覆盖背景，当前行为以此段及主线源码为准。
+
+浏览器夹具采用 mock API／内存历史，独立于 CI。真实高德、生产数据库和真实 Vercel 断连分别验收。本轮维护验证见 [交付记录](../harness/build/2026-11-03-github-maintenance.md)。
+
+## 历史覆盖记录
+
+
 默认 npm test 使用受控替身，包含 AST 高德出口门禁、核心/Route 测试及数据库连接准备、流水批次、诊断和取消测试。npm run check、npm run build 分别验证类型和生产构建。
 
 独立数据库集成命令：

@@ -1,0 +1,29 @@
+name: 故障
+description: 记录可复现问题与验收要求
+labels: [bug]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题与影响
+      description: 写明环境、版本、预期与实际行为。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现与证据
+      description: 提供脱敏步骤和结果，地点、Cookie、密钥及连接串使用占位值。
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+    validations:
+      required: true
+  - type: textarea
+    id: progress
+    attributes:
+      label: 当前状态与下一步
+      value: "状态：待定位\n下一步：\n成果／关联 PR："
