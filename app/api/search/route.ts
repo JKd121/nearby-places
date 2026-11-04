@@ -5,10 +5,12 @@ import type { ConfirmedSearchRequest } from "../../../src/search/contracts.js";
 import { parseConfirmedSearchRequest, SearchRequestValidationError } from "../../../src/search/validation.js";
 import { readRequestJson, withRequestLifecycle } from "../../../src/server/request-lifecycle.js";
 import { throwIfAborted } from "../../../src/amap/request-context.js";
+import { searchStreamResponse } from "../../../src/server/search-stream.js";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request): Promise<Response> {
+  if (request.headers.get("accept")?.split(",").some(value => value.trim() === "application/x-ndjson")) return searchStreamResponse(request);
   let parsed: ConfirmedSearchRequest | undefined;
   let completed: SearchSnapshot = { results: [], active: [], pending: [] };
   return withRequestLifecycle(request, async (context, policy) => {

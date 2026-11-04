@@ -1,5 +1,12 @@
 # 项目状态与待办
 
+## 分类结果 Preview 用户验收通过（2026-11-04）
+
+- 基于最新主线18230cf与本轮分类流式补丁发布[Preview](https://nearby-places-ftx9m8ic2-jk-d.vercel.app)，状态Ready，沿用Vercel登录保护。
+- 47项API、14项浏览器验收及构建、类型检查通过；线上有认证检查首页200、无效搜索400。真实高德调用0次。
+- 用户已确认本轮Preview“审核通过”；交付和证据见[Preview记录](harness/build/2026-11-04-category-preview.md)。当前工作树保留供后续交付，正在按用户“进行下一步”的授权提交PR、核对CI及发布生产。
+
+
 ## Codex 协作与自动回归（2026-11-04）
 
 - 基于 master `dc7c7e6` 交付 Playwright Chromium、真实 Route 接口模拟、历史 HTTP／Prisma／PostgreSQL 集成及协作指南。日常运行 `npm run test:acceptance`，单独接口运行 `npm run test:api`。

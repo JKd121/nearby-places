@@ -101,6 +101,7 @@ test("浏览器搜索后真实保存，刷新与回放复用原中心，删除�
   await page.getByRole("button", { name: "最近搜索", exact: true }).click();
   const replaySave = page.waitForResponse(result => result.url().endsWith("/api/history") && result.request().method() === "POST");
   await page.getByRole("region", { name: "搜索历史" }).getByRole("button", { name: new RegExp(`^${center.name}`) }).click();
+  await page.getByRole("button", { name: /^酒店/ }).click();
   await expect(page.getByRole("heading", { name: "合成hotel地点1", exact: true })).toBeVisible();
   expect((await (await replaySave).json()).item.id).toBe(item.id);
   expect(api.resolveCalls).toBe(1);

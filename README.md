@@ -6,9 +6,9 @@
 
 - 地点解析、候选选择及确认后搜索；搜索使用已确认坐标。地址解析后的进一步用户确认及补充信息入口继续跟进 [Issue #6](https://github.com/JKd121/nearby-places/issues/6)。
 - 酒店、商场、火锅、面包、甜品、KTV、台球厅、健身房、公交站、地铁站共 10 类，支持分组选择及 1/2/3/5 km 半径。
-- 类别过滤、去重、距离/评分排序、适用类别的消费排序；本地“加载更多”与按单类别获取高德第 2 页。
+- 分类结果逐步返回，每类独立结果框默认收起，可同时展开；每类独立排序和分段加载，整轮完成后可手动获取第2页。
 - 结果卡展示地址、距离、可用的评分/消费/标签及高德原始营业时间文字，提供高德位置链接。缺失字段不补造，不推断“正在营业”。
-- 多类别搜索默认最多两个任务并行，同一搜索的准入排队，HTTP 响应可重叠；返回与去重仍按原类别顺序。临时数据库故障逐类记录后继续，额度、认证或明确配置错误停止新增类别；整体截止保留已完成结果，用户取消结束请求。
+- 多类别搜索默认最多两个任务并行，同一搜索的准入排队，HTTP 响应可重叠；类别框按原类别顺序排列，已完成类别即时更新。临时数据库故障逐类记录后继续，额度、认证或明确配置错误停止新增类别；整体截止保留已完成结果，用户取消结束请求。
 - 全部类别尝试失败时仍显示完整类别列表、零类完成和逐类失败原因。准入事务独立排空至多 3 秒，确认空闲的健康连接复用，损坏连接从池中移除后替换。
 - 最近搜索保存到 PostgreSQL，按访客 Cookie 隔离；支持刷新、删除，以及恢复原确认中心、类别和半径后直接查询新结果。缺少完整确认地点的旧记录保留在数据库，列表不展示。
 - 工作空间、最近搜索和静态个人中心，共用加载、空结果、错误和重试组件；设置为无操作占位。
@@ -101,9 +101,13 @@ npm run smoke -- "深圳北站"
 | API | 方法与输入 | 行为 |
 | --- | --- | --- |
 | `/api/resolve-location` | POST：`query` | 返回确认地点、候选或未找到 |
-| `/api/search` | POST：`center`、`resolvedLocation`、`categoryIds`、`radiusMeters` | 每类查询第 1 页，单页 25 条；使用确认坐标 |
+| `/api/search` | POST：`center`、`resolvedLocation`、`categoryIds`、`radiusMeters` | 每类查询第 1 页，单页 25 条；使用确认坐标，支持NDJSON流式进度 |
 | `/api/search/page` | POST：`center`、`categoryId`、`radiusMeters` | 指定单类别查询第 2 页，单页 25 条 |
 | `/api/history` | GET：可选 `limit=10` 或 `20`；POST：`query`、`categoryIds`、`radiusMeters`、`confirmedLocation`；DELETE：`id` | 读取/保存/删除当前访客历史，GET 使用 `private, no-store` |
+
+搜索页面发送 `Accept: application/x-ndjson`，响应按行发送JSON：`progress` 包含 `progress.results`（已返回类别）、`active`（搜索中）、`pending`（等待）和可选 `termination`；`complete` 包含最终 `response: SearchResponse`；`error` 包含安全的错误信息。正常流以一条终结消息结束；开启流前的校验错误使用HTTP JSON错误。普通JSON调用沿用完整 `SearchResponse`。
+
+类别框展开先显示10条，按10→20→25→35→45→50分段展示。搜索期间可查看与排序已返回类别；整轮完成后开放第2页。中途更换地点或条件取消旧搜索，意外断流保留已返回地点并提示重试。[Preview验收记录](harness/build/2026-11-04-category-preview.md)。
 
 精确字段及限制以 `src/location/types.ts`、`src/search/contracts.ts`、对应 validator 和 `src/history/contracts.ts` 为准。`/ui-preview` 是保留的导航视觉预览入口，不是正式搜索页面。
 
