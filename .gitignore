@@ -19,3 +19,7 @@ harness/build/*-real-api-verification.txt
 
 # Generated Prisma Client
 /generated/prisma/
+
+# Browser and HTTP integration evidence
+/playwright-report/
+/test-results/

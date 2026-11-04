@@ -4,15 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "postinstall": "prisma generate",
+    "postinstall": "node scripts/generate-prisma.mjs",
     "dev": "next dev --webpack",
     "build:core": "tsc -p tsconfig.core.json",
     "check:core": "tsc -p tsconfig.core.json --noEmit",
     "build:web": "next build --webpack",
     "check:web": "next typegen && tsc --noEmit -p tsconfig.json",
-    "build": "npm run build:core && npm run build:web",
+    "build": "npm run build:core && npm run build:web && node scripts/mark-test-build.mjs",
     "check": "npm run check:core && npm run check:web",
-    "test": "npm run check:boundary && npm run build:core --silent && npm run build:test-route --silent && node --experimental-test-module-mocks --experimental-specifier-resolution=node --experimental-loader ./test/history-route-loader.mjs --conditions=react-server --test dist/test/categories.test.js dist/test/client.test.js dist/test/distance.test.js dist/test/history-route.test.js dist/test/history-store.test.js dist/test/search-history.test.js dist/test/search-service.test.js dist/test/search-validation.test.js dist/test/search-page-route.test.js dist/test/smoke.test.js dist/test/sort.test.js dist/test/web-logic.test.js dist/test/location-router.test.js dist/test/location-normalize.test.js dist/test/location-resolver.test.js dist/test/location-route.test.js dist/test/result-card-spike.test.js dist/test/admission.test.js dist/test/transport.test.js dist/test/request-lifecycle.test.js dist/test/request-safety-route.test.js dist/test/database-readiness.test.js dist/test/database-startup.test.js dist/test/database-runtime.test.js dist/test/admission-diagnostics.test.js && node --test test/amap-boundary.test.mjs test/deployment.test.mjs",
+    "test": "npm run check:boundary && npm run build:core --silent && npm run build:test-route --silent && node test/run-unit.mjs",
     "build:test-route": "tsc --target ES2022 --module ESNext --moduleResolution Bundler --rootDir . --outDir dist --strict --esModuleInterop --skipLibCheck app/api/history/route.ts",
     "smoke": "npm run build:core --silent && node dist/scripts/amap-smoke-test.js",
     "resolver:spike": "npm run build:core --silent && node dist/scripts/spikes/location-intent-spike.js",
@@ -20,9 +20,19 @@
     "result-card:spike": "npm run build:core --silent && node dist/scripts/spikes/result-card-enrichment-spike.js",
     "result-card:photo-review": "npm run build:core --silent && node dist/scripts/spikes/result-card-enrichment-spike.js --phase-b",
     "check:boundary": "node scripts/check-amap-boundary.mjs",
-    "test:admission:postgres": "npm run build:core --silent && node --conditions=react-server --test dist/test/admission-postgres.test.js"
+    "test:admission:postgres": "npm run build:core --silent && node --conditions=react-server --test dist/test/admission-postgres.test.js",
+    "test:browser": "node scripts/test-evidence.mjs browser",
+    "test:history:integration": "node scripts/test-evidence.mjs history",
+    "test:browser:report": "playwright show-report playwright-report/browser",
+    "test:history:report": "playwright show-report playwright-report/history",
+    "test:api:run": "npm run build:core --silent && npm run build:test-route --silent && node test/run-api.mjs",
+    "test:api": "node scripts/test-evidence.mjs api",
+    "test:browser:run": "playwright test",
+    "test:history:run": "playwright test --config playwright.history.config.ts",
+    "test:acceptance": "node scripts/test-evidence.mjs acceptance"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@types/node": "^24.0.0",
     "@types/pg": "^8.23.1",
     "@types/react": "^19.2.0",
@@ -34,12 +44,12 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "@vercel/functions": "3.6.1",
     "dotenv": "^18.0.1",
     "next": "^16.3.3",
     "pg": "^8.23.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "server-only": "^0.0.1",
-    "@vercel/functions": "3.6.1"
+    "server-only": "^0.0.1"
   }
 }

@@ -49,7 +49,7 @@ npm run dev
 
 打开 [本地页面](http://localhost:3000)。迁移命令会修改目标数据库结构；线上迁移和发布按具体任务授权执行。`npm ci` 的 postinstall 也会执行 `prisma generate`，显式命令用于指定本仓库的非默认配置文件。
 
-Next.js 会加载根目录 `.env*`；`prisma7.config.ts` 通过 `dotenv/config` 加载 `.env`。CLI Spike 脚本自身不加载 `.env`，需要进程环境变量。Web 构建导入历史数据库模块时需要有效格式的 `DATABASE_URL`；隔离构建可使用测试说明中的 localhost 占位值，不能据此认为真实数据库已验证。
+Next.js 会加载根目录 `.env*`；`prisma7.config.ts` 通过 `dotenv/config` 加载 `.env`。`npm ci` 的客户端生成脚本显式选择该配置，缺少 DIRECT_URL 时仅在生成子进程使用 loopback 占位值，安装可在未配置数据库时完成。运行与迁移仍需准备对应环境。CLI Spike 脚本自身不加载 `.env`，需要进程环境变量。Web 构建导入历史数据库模块时需要有效格式的 `DATABASE_URL`；隔离构建可使用测试说明中的 localhost 占位值。
 
 高德准入池有独立的连接准备阶段：Next Node 实例通过 `instrumentation.ts` 启动预热，请求在预约前共享准备任务。准备只执行 `SELECT 1`，成功后开始原有 2 秒准入计时。普通历史连接池沿用原配置。本地常驻与 Vercel 生命周期设计见 [预热实现说明](harness/build/2026-10-28-admission-warmup-pr.md)。
 
@@ -67,9 +67,11 @@ npm run build
 | `npm run check` | 核心 TypeScript 检查、Next 路由类型生成及 Web TypeScript 检查 |
 | `npm run build` | 核心编译和 Next.js webpack 生产构建 |
 | `npm run test:admission:postgres` | loopback 可丢弃 PostgreSQL 集成库，高德使用模拟响应 |
+| `npm run test:browser` | Chromium + 最新生产构建，受控 API 的页面回归、手机尺寸及键盘操作 |
+| `npm run test:history:integration` | 真实 Next Route／Prisma／独立 PostgreSQL，含浏览器持久化、刷新回放与删除 |
 | `npm run check:boundary` | 单独检查生产代码是否绕过统一高德传输出口 |
 
-测试分层、定向执行和浏览器夹具说明见 [test/README.md](test/README.md)。这些命令会产生 `dist/`、`.next/` 或类型缓存。CI 对所有目标分支的 PR 和 `master` push 运行安装、隔离测试、PostgreSQL 17 集成、类型检查及构建。生产 job 在主线 CI 通过后发布；浏览器场景采用独立验收。维护和发布流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+测试分层、环境准备、固定测试入口与报告说明见 [test/README.md](test/README.md)。这些命令会产生 `dist/`、`.next/`、类型缓存或 Web 测试报告。CI 对所有目标分支的 PR 和 `master` push 运行安装、隔离测试、PostgreSQL 17 集成、类型检查、构建及上述两层 Web 测试，报告保留 7 天。生产 job 在主线 CI 通过后发布。维护流程见 [CONTRIBUTING.md](CONTRIBUTING.md)，需求示例、分工及验收方法见 [Codex 协作指南](docs/codex-workflow.md)。
 
 ### 真实 API 调研
 
@@ -128,3 +130,5 @@ AMAP_CREDENTIAL_ID 默认 primary，对应 geocode、poi-text、nearby 的资源
 修改功能、环境变量或命令时，同步对应说明；状态变化更新 PLANS 顶部，历史报告通过带日期的补充说明纠正，不把旧验收改写成新验收。
 
 维护流程见 [CONTRIBUTING.md](CONTRIBUTING.md)，发布索引见 [GitHub Releases](https://github.com/JKd121/nearby-places/releases)。联合查询实验的独立成果见 [Issue #27](https://github.com/JKd121/nearby-places/issues/27)。
+
+自动验收：`npm run test:acceptance` 依次构建、验证服务端接口模拟及浏览器交互；单独接口入口为 `npm run test:api`。报告、截图和请求记录见 [测试指南](test/README.md)。
