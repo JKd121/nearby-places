@@ -15,6 +15,8 @@ type HistoryItem = {
 
 let cookieValue: string | undefined;
 const cookieSets: Array<{ name: string; value: string; options: Record<string, unknown> }> = [];
+let saveError: Error | undefined;
+let saveCalls = 0;
 let saveInput: Record<string, unknown> | undefined;
 let recentVisitorId: string | undefined;
 let recentLimit: number | undefined;
@@ -33,6 +35,8 @@ const cookieStore = {
 
 const serviceMock = {
   saveSearchHistory: async (input: Record<string, unknown>) => {
+    saveCalls++;
+    if (saveError) throw saveError;
     saveInput = input;
     return {
       confirmedLocation: input.confirmedLocation as typeof confirmedLocation,
@@ -107,6 +111,7 @@ function resetState(visitorId?: string): void {
   recentVisitorId = undefined;
   recentLimit = undefined;
   saveInput = undefined;
+  saveError = undefined; saveCalls = 0;
   recentVisitorId = undefined;
   deleteInputs = [];
   deletedHistoryRows = [
@@ -315,4 +320,16 @@ test("missing visitor cookie generates and sets a secure cookie contract", async
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
   });
+});
+
+
+test("POST propagates a failed history write exactly once without returning a success item", async () => {
+  resetState("visitor-failure");
+  saveError = new Error("synthetic database unavailable");
+  try {
+    await assert.rejects(POST(request({ confirmedLocation, query: "合成历史", categoryIds: ["hotel"], radiusMeters: 3000 })), /synthetic database unavailable/);
+    assert.equal(saveCalls, 1);
+    assert.equal(saveInput, undefined);
+    assert.equal(cookieSets.length, 0);
+  } finally { saveError = undefined; }
 });

@@ -1,5 +1,14 @@
 # 项目状态与待办
 
+## Codex 协作与自动回归（2026-11-04）
+
+- 基于 master `dc7c7e6` 交付 Playwright Chromium、真实 Route 接口模拟、历史 HTTP／Prisma／PostgreSQL 集成及协作指南。日常运行 `npm run test:acceptance`，单独接口运行 `npm run test:api`。
+- 浏览器 11 场景覆盖候选、条件、排序、空结果、失败、分页、取消／迟到、历史、手机键盘，以及请求隔离门禁；接口模拟 47 场景复用真实 Route，验证协议与副作用，拦截真实网络。
+- 本轮本地验证：248 核心／Route +25 mjs、35 准入 PostgreSQL、11 浏览器、4 历史集成、check/build 通过。Node.js 24.19.0、PostgreSQL 18.4；CI 使用 PostgreSQL 17 临时服务，并在同一必需检查内执行新增套件。
+- 报告包括 HTML、JSON、请求、截图、失败 trace、HEAD 和源码指纹。错误状态码及分页故障注入均被测试捕获，源码逐字节恢复；过期构建会阻止浏览器验收。真实高德调用 0 次。
+- 单元测试自动发现源码；无 DIRECT_URL 时的安装生成使用子进程占位配置。原 Documents 工作区保持原样。
+- 本轮审查已获用户确认，远端 CI、Preview、主线合并和发布证据归档到对应 PR 与 [Releases](https://github.com/JKd121/nearby-places/releases)。实施及本地结果见 [本轮记录](harness/build/2026-11-04-codex-web-testing.md)。
+
 ## 业务发布基线（2026-11-03 核对）
 
 - 业务基线：`1d778f9342cc84c3a84f9dd59052e35f5c5fe965`，PR #32 已于 2026-10-29 合并；包含数据库异常恢复、连接收尾与最多两类并行搜索。
