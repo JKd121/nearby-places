@@ -4,26 +4,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import WorkspaceShell, { type WorkspaceView } from "./ui/WorkspaceShell";
 import { Badge, EmptyState, Feedback, LoadingState } from "./ui/Feedback";
 import { Icon } from "./ui/icons";
-import { CandidateList, CategorySelector, HistoryView, PersonalCenter, PlaceList, categoryLabel } from "./SearchPanels";
+import { CandidateList, CategorySelector, HistoryView, PersonalCenter } from "./SearchPanels";
 import s from "./search-workspace.module.css";
 import { useSearchHistory } from "./useSearchHistory";
 import type { SearchHistoryItem, SearchHistoryInput } from "./search-history-store";
 import { isSearchHistoryItem } from "./search-history-store";
 import { copyConfirmedLocation } from "../history/validation";
-import type { CategoryKey, CategorySearchResult, GeocodedPlace, Place } from "../amap/types";
+import type { CategoryKey, GeocodedPlace } from "../amap/types";
 import type { LocationCandidate } from "../location/types";
-import type { SearchRadius, SearchResponse, SearchSecondPageResponse } from "../search/contracts";
+import type { SearchRadius, SearchResponse, SearchSecondPageResponse, SearchProgress } from "../search/contracts";
 import { isCategoryCompleted } from "../search/status";
-import { publicSearchErrorMessage } from "../errors/classify";
-import type { SortMode } from "../search/sort";
+import { CategoryResults } from "./CategoryResults";
+import { readSearchStream } from "./search-stream";
 import {
   ALLOWED_RADIUS_METERS, ALL_CATEGORY_IDS,
-  ensureValidSortMode, getAllowedSortModes,
-  canRequestSecondProviderPage, getAvailableFilters, getCategoryResult,
-  getCategoryCounts,
-  getInitialVisibleCount, getNextVisibleCount, getPlacesForFilter, mergeProviderPageResult,
-  resetSearchView, resolveProviderPageCategory, selectAllCategories, sortPlacesForFilter,
-  getEmptyStateMessage, type ActiveFilter,
+  canRequestSecondProviderPage, getCategoryResult, getCategoryCounts,
+  getPlacesForFilter, mergeProviderPageResult, selectAllCategories,
 } from "./logic";
 
 type Phase = "initial" | "resolving" | "needs-confirmation" | "resolved" | "not-found" | "searching" | "results" | "resolve-error" | "search-error";
@@ -37,7 +33,6 @@ type HistoryReplaySnapshot = {
 };
 
 async function readJson(response: Response): Promise<unknown> { try { return await response.json(); } catch { return null; } }
-function sortLabel(mode: SortMode): string { return { "distance-asc": "距离最近", "rating-desc": "评分最高", "cost-asc": "消费最低", "cost-desc": "消费最高" }[mode]; }
 
 export default function SearchApp() {
   const [query, setQuery] = useState("");
@@ -50,9 +45,8 @@ export default function SearchApp() {
   const [publicError, setPublicError] = useState<string | null>(null);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<CategoryKey[]>(selectAllCategories);
   const [radiusMeters, setRadiusMeters] = useState<SearchRadius>(3_000);
-  const [activeFilter, setActiveFilter] = useState<ActiveFilter>("all");
-  const [sortMode, setSortMode] = useState<SortMode>("distance-asc");
-  const [visibleCount, setVisibleCount] = useState(getInitialVisibleCount("all"));
+  const [progress, setProgress] = useState<SearchProgress | null>(null);
+  const [searchVersion, setSearchVersion] = useState(0);
   const [loadingProviderCategory, setLoadingProviderCategory] = useState<CategoryKey | null>(null);
   const [providerPageErrors, setProviderPageErrors] = useState<Partial<Record<CategoryKey, string>>>({});
   const history = useSearchHistory();
@@ -62,26 +56,15 @@ export default function SearchApp() {
   const requestId = useRef(0);
   const activeRequest = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const availableFilters = useMemo(() => getAvailableFilters(response), [response]);
-  const activeResult = useMemo(() => getCategoryResult(response, activeFilter), [response, activeFilter]);
-  const activePlaces = useMemo(() => getPlacesForFilter(response, activeFilter), [response, activeFilter]);
-  const allowedSortModes = useMemo(() => getAllowedSortModes(activeFilter, selectedCategoryIds), [activeFilter, selectedCategoryIds]);
-  const effectiveSortMode = useMemo(() => ensureValidSortMode(sortMode, activeFilter, selectedCategoryIds), [sortMode, activeFilter, selectedCategoryIds]);
-  const sortedPlaces = useMemo(() => sortPlacesForFilter(activePlaces, effectiveSortMode, activeFilter, selectedCategoryIds), [activePlaces, effectiveSortMode, activeFilter, selectedCategoryIds]);
-  const visiblePlaces = useMemo(() => sortedPlaces.slice(0, visibleCount), [sortedPlaces, visibleCount]);
+  const providerPageBusy = useRef(false);
   const counts = useMemo(() => getCategoryCounts(response?.categories ?? []), [response]);
   const successfulCount = counts.completed;
-  const failedCount = counts.failed;
-  const canLoadMore = visiblePlaces.length < sortedPlaces.length;
-  const providerPageCategory = useMemo(() => resolveProviderPageCategory(activeFilter, selectedCategoryIds), [activeFilter, selectedCategoryIds]);
-  const providerPageResult = useMemo(() => providerPageCategory ? getCategoryResult(response, providerPageCategory) : null, [response, providerPageCategory]);
-  const canRequestProviderPage = !canLoadMore && loadingProviderCategory === null && canRequestSecondProviderPage(providerPageResult);
-  const canAnyCategoryRequestProviderPage = useMemo(() => response?.categories.some(canRequestSecondProviderPage) ?? false, [response]);
 
   function invalidateRequests(): void {
     requestId.current += 1;
     activeRequest.current?.abort();
     activeRequest.current = null;
+    providerPageBusy.current = false;
   }
 
   function beginRequest(): AbortController {
@@ -94,8 +77,7 @@ export default function SearchApp() {
   useEffect(() => () => invalidateRequests(), []);
 
   function resetView(): void {
-    const next = resetSearchView();
-    setResponse(null); setActiveFilter(next.activeFilter); setSortMode(next.sortMode); setVisibleCount(next.visibleCount); setPublicError(null); setLoadingProviderCategory(null); setProviderPageErrors({});
+    setResponse(null); setProgress(null); setPublicError(null); setLoadingProviderCategory(null); setProviderPageErrors({});
   }
 
   function invalidateLocation(nextQuery: string): void {
@@ -214,6 +196,9 @@ export default function SearchApp() {
     if (snapshot.categoryIds.length === 0) return;
     const controller = beginRequest();
     const currentId = requestId.current;
+    resetView();
+    setSearchVersion(current => current + 1);
+    setProgress({ results: [], active: [], pending: snapshot.categoryIds });
     setPhase("searching"); setPublicError(null);
     try {
       const searchLocation: GeocodedPlace = { query: snapshot.query.trim(), formattedAddress: location.address ?? location.name, province: null, city: location.city, district: location.district, level: location.placeType, longitude: location.location.longitude, latitude: location.location.latitude };
@@ -223,30 +208,24 @@ export default function SearchApp() {
         radiusMeters: snapshot.radiusMeters,
         confirmedLocation: copyConfirmedLocation(location),
       };
-      const result = await fetch("/api/search", { signal: controller.signal, method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ center: { longitude: location.location.longitude, latitude: location.location.latitude }, resolvedLocation: searchLocation, categoryIds: snapshot.categoryIds, radiusMeters: snapshot.radiusMeters }) });
-      const payload = await readJson(result) as (SearchResponse & { error?: PublicApiError }) | null;
+      const result = await fetch("/api/search", { signal: controller.signal, method: "POST", headers: { "content-type": "application/json", "accept": "application/x-ndjson" }, body: JSON.stringify({ center: { longitude: location.location.longitude, latitude: location.location.latitude }, resolvedLocation: searchLocation, categoryIds: snapshot.categoryIds, radiusMeters: snapshot.radiusMeters }) });
+      if (!result.ok) {
+        const errorPayload = await readJson(result) as { error?: PublicApiError } | null;
+        throw new Error(errorPayload?.error?.message ?? "周边搜索失败");
+      }
+      const payload = result.headers.get("content-type")?.includes("application/x-ndjson")
+        ? await readSearchStream(result, current => {
+          if (controller.signal.aborted || currentId !== requestId.current) return;
+          setProgress(current);
+          setResponse({ resolvedLocation: searchLocation, categories: [...current.results], status: "partial success", ...(current.termination ? { termination: current.termination } : {}) });
+        }, controller.signal)
+        : await readJson(result) as SearchResponse | null;
       if (controller.signal.aborted || currentId !== requestId.current) return;
-
-if (!result.ok || !payload?.categories) {
-  throw new Error(
-    payload?.error?.message ?? "周边搜索失败",
-  );
-}
-
-setResponse(payload);
-setActiveFilter("all");
-setSortMode("distance-asc");
-setVisibleCount(getInitialVisibleCount("all"));
-setPhase("results");
-
-const hasSuccessfulCategory =
-  payload.categories.some(
-    (category) => isCategoryCompleted(category.status),
-  );
-
-if (hasSuccessfulCategory) {
-  void history.save(historyInput);
-}
+      if (!payload?.categories) throw new Error("周边搜索失败");
+      setResponse(payload);
+      setProgress(null);
+      setPhase("results");
+      if (payload.categories.some(category => isCategoryCompleted(category.status))) void history.save(historyInput);
     } catch (error) {
       if (controller.signal.aborted || currentId !== requestId.current) return;
       setPublicError(error instanceof Error ? error.message : "周边搜索失败"); setPhase("search-error");
@@ -255,46 +234,38 @@ if (hasSuccessfulCategory) {
     }
   }
 
-  function changeFilter(nextFilter: ActiveFilter): void {
-    if (!availableFilters.includes(nextFilter)) return;
-    setActiveFilter(nextFilter); setSortMode(ensureValidSortMode(sortMode, nextFilter, selectedCategoryIds)); setVisibleCount(getInitialVisibleCount(nextFilter));
-  }
-
-  function changeSort(nextMode: SortMode): void { if (allowedSortModes.includes(nextMode)) setSortMode(nextMode); }
-  function loadMore(): void { setVisibleCount(getNextVisibleCount(activeFilter, visibleCount, sortedPlaces.length)); }
-
-  async function loadProviderPage(): Promise<void> {
-    const categoryId = providerPageCategory;
-    if (!response || !categoryId || !canRequestSecondProviderPage(providerPageResult) || loadingProviderCategory !== null) return;
+  async function loadProviderPage(categoryId: CategoryKey): Promise<number | null> {
+    const categoryResult = getCategoryResult(response, categoryId);
+    if (!response || phase !== "results" || !canRequestSecondProviderPage(categoryResult) || providerPageBusy.current) return null;
     const controller = beginRequest();
     const currentId = requestId.current;
+    providerPageBusy.current = true;
     setLoadingProviderCategory(categoryId);
-    setProviderPageErrors((current) => {
+    setProviderPageErrors(current => {
       const { [categoryId]: _cleared, ...remaining } = current;
       return remaining;
     });
     try {
       const result = await fetch("/api/search/page", { signal: controller.signal, method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ center: { longitude: response.resolvedLocation.longitude, latitude: response.resolvedLocation.latitude }, categoryId, radiusMeters }) });
       const payload = await readJson(result) as (SearchSecondPageResponse & { error?: PublicApiError }) | null;
-      if (controller.signal.aborted || currentId !== requestId.current) return;
+      if (controller.signal.aborted || currentId !== requestId.current) return null;
       if (!result.ok || !payload?.page || payload.categoryId !== categoryId) throw new Error(payload?.error?.message ?? "获取更多地点失败");
-      const nextResponse = mergeProviderPageResult(response, categoryId, payload.page);
-      const nextTotal = sortPlacesForFilter(getPlacesForFilter(nextResponse, activeFilter), effectiveSortMode, activeFilter, selectedCategoryIds).length;
-      setResponse(nextResponse);
-      setVisibleCount((current) => getNextVisibleCount(activeFilter, current, nextTotal));
+      setResponse(current => current ? mergeProviderPageResult(current, categoryId, payload.page) : current);
+      return getCategoryResult(mergeProviderPageResult(response, categoryId, payload.page), categoryId)?.places.length ?? null;
     } catch (error) {
-      if (controller.signal.aborted || currentId !== requestId.current) return;
-      setProviderPageErrors((current) => ({ ...current, [categoryId]: error instanceof Error ? error.message : "获取更多地点失败" }));
+      if (controller.signal.aborted || currentId !== requestId.current) return null;
+      setProviderPageErrors(current => ({ ...current, [categoryId]: error instanceof Error ? error.message : "获取更多地点失败" }));
+      return null;
     } finally {
       if (activeRequest.current === controller) activeRequest.current = null;
-      if (currentId === requestId.current) setLoadingProviderCategory(null);
+      if (currentId === requestId.current) { providerPageBusy.current = false; setLoadingProviderCategory(null); }
     }
   }
 
   const busy = phase === "resolving" || phase === "searching";
   const candidatePhase = phase === "needs-confirmation";
   const allCount = response ? getPlacesForFilter(response, "all").length : null;
-  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0; }, [phase, activeFilter]);
+  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0; }, [searchVersion]);
   useEffect(() => {
     if (phase === "resolved") setConditionsOpen(true);
     if (phase === "results" && window.matchMedia("(max-width: 1000px)").matches) setConditionsOpen(false);
@@ -315,21 +286,20 @@ if (hasSuccessfulCategory) {
         <div className={s.metric}><span className={s.metricIcon} data-color="pink"><Icon name="pin" /></span><div><span>搜索中心</span><strong title={resolvedLocation?.name}>{resolvedLocation?.name ?? "待确认"}</strong><Badge tone={resolvedLocation ? "success" : "warning"}>{resolvedLocation ? "已确认" : "请选择地点"}</Badge></div></div>
         <div className={s.metric}><span className={s.metricIcon} data-color="yellow"><Icon name="pin" /></span><div><span>搜索半径</span><strong>{radiusMeters / 1000} km</strong></div></div>
         <div className={s.metric}><span className={s.metricIcon} data-color="mint"><Icon name="panel" /></span><div><span>已选类别</span><strong>{selectedCategoryIds.length} / {ALL_CATEGORY_IDS.length}</strong></div></div>
-        <div className={s.metric}><span className={s.metricIcon} data-color="lilac"><Icon name="search" /></span><div><span>本次已获取</span><strong>{phase === "results" && successfulCount > 0 && allCount !== null ? allCount + " 个地点" : "—"}</strong></div></div>
+        <div className={s.metric}><span className={s.metricIcon} data-color="lilac"><Icon name="search" /></span><div><span>本次已获取</span><strong>{(phase === "results" || phase === "searching" || phase === "search-error") && successfulCount > 0 && allCount !== null ? allCount + " 个地点" : "—"}</strong></div></div>
       </div>
       <div className={s.searchColumns}>
         <section className={s.mainPanel} aria-labelledby="search-panel-title">
           <div className={s.panelHeading}><div><h2 id="search-panel-title" tabIndex={-1}>{candidatePhase ? "请确认搜索中心" : "附近结果"}</h2><p>{candidatePhase ? "选择你想搜索的位置，附近服务将以此为中心。" : "围绕已确认的搜索中心"}</p></div>{candidatePhase && <Badge tone="warning">{candidates.length} 个候选</Badge>}</div>
-          <div ref={scrollRef} className={s.listViewport} role="region" tabIndex={0} aria-label={candidatePhase ? "候选地点列表" : "附近结果列表"} aria-busy={busy}>
+          <div ref={scrollRef} className={s.listViewport} role="region" tabIndex={0} aria-label={candidatePhase ? "候选地点列表" : "附近结果列表"} aria-busy={phase === "resolving"}>
             {phase === "initial" && <EmptyState title="从一个地点开始">输入地名或地址，确认搜索中心后发现附近生活服务。</EmptyState>}
             {phase === "resolving" && <LoadingState>正在查找可能的地点…</LoadingState>}
             {candidatePhase && <CandidateList candidates={candidates} expanded={showAllCandidates} onExpand={() => setShowAllCandidates(true)} onSelect={confirmCandidate} />}
             {phase === "not-found" && <EmptyState title="没有找到明确地点">请补充城市、行政区或更完整的地点名称，再次解析。</EmptyState>}
             {phase === "resolve-error" && <Feedback tone="error" title="地点解析未完成" action={<button type="button" onClick={resolveLocation}>重新解析</button>}>{publicError}</Feedback>}
             {phase === "resolved" && <EmptyState title="搜索中心已确认">在右侧选择服务类别和半径，点击“搜索附近”。</EmptyState>}
-            {phase === "searching" && <LoadingState>正在依次搜索 {selectedCategoryIds.length} 个类别…</LoadingState>}
             {phase === "search-error" && <Feedback tone="error" title="附近搜索未完成" action={<button type="button" onClick={searchNearby} disabled={!resolvedLocation || selectedCategoryIds.length === 0}>重新搜索</button>}>{publicError}</Feedback>}
-            {phase === "results" && response && <ResultsView response={response} activeFilter={activeFilter} availableFilters={availableFilters} activeResult={activeResult} providerPageResult={providerPageResult} allowedSortModes={allowedSortModes} sortMode={effectiveSortMode} onFilterChange={changeFilter} onSortChange={changeSort} places={visiblePlaces} totalPlaces={sortedPlaces.length} canLoadMore={canLoadMore} canRequestProviderPage={canRequestProviderPage} canAnyCategoryRequestProviderPage={canAnyCategoryRequestProviderPage} providerPageLoading={providerPageCategory !== null && loadingProviderCategory === providerPageCategory} providerPageError={providerPageCategory ? providerPageErrors[providerPageCategory] ?? null : null} onLoadMore={loadMore} onLoadProviderPage={loadProviderPage} successfulCount={successfulCount} failedCount={failedCount} />}
+            {(phase === "searching" || phase === "results" || phase === "search-error") && <CategoryResults key={searchVersion} categoryIds={selectedCategoryIds} response={response} progress={progress} searching={phase === "searching"} interrupted={phase === "search-error"} loadingCategory={loadingProviderCategory} pageErrors={providerPageErrors} onLoadPage={loadProviderPage} />}
           </div>
           <div className={s.panelFooter}>在框内上下滚动，浏览已加载的地点。<Icon name="arrow" /></div>
         </section>
@@ -349,35 +319,4 @@ if (hasSuccessfulCategory) {
     {view === "history" && <HistoryView history={history} onSelect={handleHistorySelect} onDelete={handleHistoryDelete} />}
     {view === "personal" && <PersonalCenter />}
   </WorkspaceShell>;
-}
-
-function ResultsView({ response, activeFilter, availableFilters, activeResult, providerPageResult, allowedSortModes, sortMode, onFilterChange, onSortChange, places, totalPlaces, canLoadMore, canRequestProviderPage, canAnyCategoryRequestProviderPage, providerPageLoading, providerPageError, onLoadMore, onLoadProviderPage, successfulCount, failedCount }: { response: SearchResponse; activeFilter: ActiveFilter; availableFilters: ActiveFilter[]; activeResult: CategorySearchResult | null; providerPageResult: CategorySearchResult | null; allowedSortModes: SortMode[]; sortMode: SortMode; onFilterChange: (filter: ActiveFilter) => void; onSortChange: (mode: SortMode) => void; places: Place[]; totalPlaces: number; canLoadMore: boolean; canRequestProviderPage: boolean; canAnyCategoryRequestProviderPage: boolean; providerPageLoading: boolean; providerPageError: string | null; onLoadMore: () => void; onLoadProviderPage: () => void; successfulCount: number; failedCount: number }) {
-  const skippedCount = getCategoryCounts(response.categories).skipped;
-  const resultCount = activeFilter === "all" ? totalPlaces : activeResult?.places.length ?? 0;
-  const providerPageIsFull = providerPageResult?.page?.pageNumber === 2 && providerPageResult.page.returnedCount === providerPageResult.page.pageSize;
-  const exhaustedMessage = activeFilter === "all" && providerPageResult === null && canAnyCategoryRequestProviderPage
-    ? "已显示本次搜索的全部结果；切换到具体类别可获取更多。"
-    : providerPageIsFull
-      ? `当前类别最多展示两页，已显示 ${totalPlaces} 个结果。`
-      : `已显示全部 ${totalPlaces} 个结果。`;
-  return <div className={s.resultsBody}>
-    <div className={s.resultToolbar}><div className={s.filters} aria-label="结果类别">{availableFilters.map((filter) => {
-      const item = filter === "all" ? null : response.categories.find((entry) => entry.category.key === filter);
-      return <button type="button" aria-pressed={activeFilter === filter} key={filter} onClick={() => onFilterChange(filter)}>{filter === "all" ? "全部" : categoryLabel(filter)}{item?.status === "error" ? " · 失败" : item?.status === "skipped" ? " · 未搜索" : item?.status === "empty" ? " · 空" : ""}</button>;
-    })}</div><label className={s.sort}><span>排序</span><select value={sortMode} onChange={(event) => onSortChange(event.target.value as SortMode)}>{allowedSortModes.map((mode) => <option key={mode} value={mode}>{sortLabel(mode)}</option>)}</select></label></div>
-    <div className={s.resultMeta}><span>{activeFilter === "all" ? "本次已获取 " + resultCount + " 个地点" : categoryLabel(activeFilter) + " · " + resultCount + " 个地点"}</span><Badge tone={failedCount || skippedCount ? "warning" : "success"}>{successfulCount} 类完成{failedCount > 0 ? " · " + failedCount + " 类失败" : ""}{skippedCount > 0 ? " · " + skippedCount + " 类未搜索" : ""}</Badge></div>
-    {response.termination ? <Feedback tone="warning" title="搜索提前结束">{publicSearchErrorMessage(response.termination.code)}；已完成的类别仍可查看。</Feedback> : failedCount > 0 && <Feedback tone="warning" title={failedCount === response.categories.length ? "本次搜索的类别均未成功" : "部分服务类别暂不可用"}>{failedCount === response.categories.length ? "已完成所有类别尝试，可切换类别查看失败原因后重试。" : "可以继续查看成功结果，或调整条件后重新搜索。"}</Feedback>}
-    {activeFilter !== "all" && activeResult?.status === "error" && <Feedback tone="error" title="该类别暂时无法搜索">{activeResult.error?.message ?? "请稍后重试，或查看其他类别。"}</Feedback>}
-    {activeFilter !== "all" && activeResult?.status === "skipped" && <Feedback tone="warning" title="该类别尚未搜索">搜索提前结束，该类别未执行。</Feedback>}
-    {activeFilter !== "all" && activeResult?.status === "empty" && <EmptyState title="当前类别没有结果">{getEmptyStateMessage(activeFilter)}</EmptyState>}
-    {(activeFilter === "all" || activeResult?.status === "success") && <>
-      {places.length > 0 ? <PlaceList places={places} /> : successfulCount > 0 ? <EmptyState title={response.termination ? "已完成的类别暂无结果" : "当前范围内暂无结果"}>试试调整服务类别或搜索半径。</EmptyState> : null}
-      <div className={s.listFooter}>
-        {canLoadMore && <button type="button" onClick={onLoadMore}>加载更多（已显示 {places.length}/{totalPlaces}）</button>}
-        {!canLoadMore && (canRequestProviderPage || providerPageLoading) && <button type="button" onClick={onLoadProviderPage} disabled={providerPageLoading}>{providerPageLoading ? "正在获取更多地点…" : "获取更多附近结果"}</button>}
-        {providerPageError && <Feedback tone="error" title="更多地点加载失败" action={<button type="button" onClick={onLoadProviderPage} disabled={providerPageLoading}>重试加载</button>}>{providerPageError}</Feedback>}
-        {!canLoadMore && !canRequestProviderPage && !providerPageLoading && !providerPageError && <p className={s.muted}>{exhaustedMessage}</p>}
-      </div>
-    </>}
-  </div>;
 }

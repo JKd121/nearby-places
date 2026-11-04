@@ -9,13 +9,13 @@ test("候选确认、类别、半径、结果和排序", async ({ page, api }) =
   api.count = 2;
   await page.getByRole("button", { name: "搜索附近", exact: true }).click();
   const region = page.getByRole("region", { name: "附近结果列表" });
+  await page.getByRole("button", { name: /^酒店/ }).click();
   await expect(region.getByRole("heading", { name: "合成hotel地点1", exact: true })).toBeVisible();
-  await expect(region.getByRole("heading", { level: 3 })).toHaveCount(2);
+  await expect(region.getByRole("heading", { name: /^合成hotel地点/ })).toHaveCount(2);
   expect(api.searches).toEqual([expect.objectContaining({ categoryIds: ["hotel"], radiusMeters: 2000, center: center.location })]);
   await expect(page.getByRole("combobox")).toHaveValue("distance-asc");
-  await page.getByRole("button", { name: "酒店", exact: true }).click();
   await page.getByRole("combobox").selectOption("rating-desc");
-  await expect(region.getByRole("heading", { level: 3 }).first()).toHaveText("合成hotel地点2");
+  await expect(region.getByRole("heading", { name: /^合成hotel地点/ }).first()).toHaveText("合成hotel地点2");
 });
 
 for (const mode of ["partial", "all-error"] as const) {
@@ -25,12 +25,13 @@ for (const mode of ["partial", "all-error"] as const) {
     await page.getByRole("checkbox", { name: "商场", exact: true }).check();
     api.mode = mode;
     await page.getByRole("button", { name: "搜索附近", exact: true }).click();
-    await expect(page.getByText(mode === "partial" ? "部分服务类别暂不可用" : "本次搜索的类别均未成功", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^商场.*搜索失败/ })).toBeVisible();
+    await page.getByRole("button", { name: /^酒店/ }).click();
     const result = page.getByRole("heading", { name: "合成hotel地点1", exact: true });
     if (mode === "partial") await expect(result).toBeVisible();
     else await expect(result).toHaveCount(0);
-    await page.getByRole("button", { name: "商场 · 失败", exact: true }).click();
-    await expect(page.getByText("合成上游暂不可用", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: /^商场/ }).click();
+    await expect(page.getByRole("region", { name: /^商场/ }).getByText("合成上游暂不可用", { exact: true })).toBeVisible();
   });
 }
 
@@ -41,13 +42,14 @@ test("超时显示错误，并能重新搜索", async ({ page, api }) => {
   await expect(page.getByText("合成请求超时，请稍后再试", { exact: true })).toBeVisible();
   api.mode = "success";
   await page.getByRole("button", { name: "重新搜索", exact: true }).click();
+  await page.getByRole("button", { name: /^酒店/ }).click();
   await expect(page.getByRole("heading", { name: "合成hotel地点1", exact: true })).toBeVisible();
 });
 
 test("分页失败保留首批结果，重试追加第二页", async ({ page, api }) => {
   await confirmCenter(page); await selectHotel(page); api.count = 25;
   await page.getByRole("button", { name: "搜索附近", exact: true }).click();
-  await page.getByRole("button", { name: "酒店", exact: true }).click();
+  await page.getByRole("button", { name: /^酒店/ }).click();
   const more = page.getByRole("button", { name: /^加载更多（/ });
   while (await more.count()) await more.click();
   await page.getByRole("button", { name: "获取更多附近结果", exact: true }).click();
@@ -101,6 +103,7 @@ test("忽略未配合取消的迟到响应，保留新搜索结果", async ({ pa
   await page.getByRole("textbox", { name: "地点", exact: true }).fill("新一轮搜索");
   await confirmCenter(page); await selectHotel(page);
   await page.getByRole("button", { name: "搜索附近", exact: true }).click();
+  await page.getByRole("button", { name: /^酒店/ }).click();
   await expect(page.getByRole("heading", { name: "合成hotel地点1", exact: true })).toBeVisible();
   await page.evaluate(async () => {
     (window as typeof window & { releaseOld?: () => void }).releaseOld!();
@@ -119,6 +122,7 @@ test("历史刷新、直接回放和删除", async ({ page, api }) => {
   await page.reload();
   await page.getByRole("button", { name: "最近搜索", exact: true }).click();
   await history.getByRole("button", { name: new RegExp(`^${center.name}`) }).click();
+  await page.getByRole("button", { name: /^酒店/ }).click();
   await expect(page.getByRole("heading", { name: "合成hotel地点1", exact: true })).toBeVisible();
   expect(api.resolveCalls).toBe(1);
   expect(api.searches).toHaveLength(2);
@@ -137,6 +141,7 @@ test("手机尺寸支持键盘确认、搜索和历史导航", async ({ page }) 
   await selectHotel(page);
   const search = page.getByRole("button", { name: "搜索附近", exact: true });
   await search.focus(); await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: /^酒店/ }).focus(); await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "合成hotel地点1", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "最近搜索", exact: true }).click();
   await expect(page.getByRole("heading", { name: "最近搜索", exact: true })).toBeVisible();
@@ -147,9 +152,9 @@ test("手机尺寸支持键盘确认、搜索和历史导航", async ({ page }) 
 test("空结果显示调整条件提示，类别状态为空", async ({ page, api }) => {
   await confirmCenter(page); await selectHotel(page); api.count = 0;
   await page.getByRole("button", { name: "搜索附近", exact: true }).click();
-  await expect(page.getByText("当前范围内暂无结果", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^酒店.*无结果/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: /^合成hotel地点/ })).toHaveCount(0);
-  await page.getByRole("button", { name: "酒店 · 空", exact: true }).click();
+  await page.getByRole("button", { name: /^酒店/ }).click();
   await expect(page.getByText("当前类别没有结果", { exact: true })).toBeVisible();
   expect(api.searches).toHaveLength(1);
 });

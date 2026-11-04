@@ -99,6 +99,26 @@
 .sort { display: flex; align-items: center; gap: 7px; font-size: 11px; }
 .sort select { max-width: 150px; min-height: 34px; padding: 4px 8px; border: 2px solid #111; border-radius: 7px; background: white; color: #111; font-size: 12px; }
 .resultMeta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 0; color: #595b63; font-size: 11px; }
+.categoryResults { --category-border: #111; --category-radius: 10px; --category-gap: 12px; display: flex; flex-direction: column; gap: var(--category-gap); padding: 2px 4px 8px 0; }
+.categoryResult { border: 2px solid var(--category-border); border-radius: var(--category-radius); box-shadow: 3px 3px 0 var(--category-border); background: #fff; overflow-anchor: none; }
+.categoryResultHeading { margin: 0; }
+.explore .categoryResultToggle { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: 100%; min-height: 54px; padding: 12px 14px; border: 0; border-radius: 8px; box-shadow: none; background: transparent; text-align: left; }
+.explore .categoryResultToggle:hover { transform: none; box-shadow: none; background: #f3f1ed; }
+.categoryResult[data-active="true"] { background: #fff8da; }
+.categoryResultName { font-size: 16px; font-weight: 850; }
+.categoryResultCount { color: #595b63; font-size: 12px; font-weight: 400; }
+.categoryChevron { margin-left: auto; flex-shrink: 0; }
+.categoryChevron[data-expanded="true"] { transform: rotate(180deg); }
+.categoryResultBody { padding: 0 14px; border-top: 1px solid var(--category-border); background: #fff; border-radius: 0 0 8px 8px; }
+.categoryResultBody[hidden] { display: none; }
+.categorySortRow { display: flex; justify-content: flex-end; padding: 12px 0 0; }
+.categoryWaiting { padding: 20px 0; font-size: 13px; color: #595b63; line-height: 1.7; }
+@media (max-width: 600px) {
+  .explore .categoryResultToggle { gap: 7px; padding: 10px; }
+  .categoryResultBody { padding: 0 10px; }
+  .categoryResultBody .place { gap: 8px; }
+  .categoryResultBody .placeTitle { flex-wrap: wrap; gap: 6px; }
+}
 .place { display: flex; gap: 12px; padding: 18px 0; border-bottom: 1px solid #111; }
 .placeCopy { min-width: 0; flex: 1; }
 .placeTitle { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }

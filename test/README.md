@@ -117,3 +117,7 @@ npm run test:acceptance  # 最新生产构建 → 接口模拟 → 浏览器回�
 `test:acceptance` 在子进程提供本地占位数据库配置，方便干净环境执行；历史集成仍需单独准备测试数据库。定向接口运行示例：`npm run test:api -- --test-name-pattern "second-page"`。
 
 日常页面改动运行 `test:acceptance`；仅接口改动运行 `test:api` 并执行常规检查；历史持久化改动追加独立数据库集成。依赖安装后先执行 `npx playwright install chromium`，CI 使用 `--with-deps chromium`。当前浏览器套件采用 Chromium 桌面和 390px 移动视口，零重试。
+
+## 2026-11-04 分类流式补充
+
+`test/search-stream-route.test.ts` 自动纳入单元与API验收测试，覆盖进度、超时、取消与NDJSON解析。`e2e/browser/category-stream.spec.ts` 使用纯浏览器fetch夹具验证逐类返回、多框与排序独立、分页重试、断流保留、新输入取消及390px键盘展开。原搜索用例更新为先展开类别再检查地点，重复错误文案定位到对应类别区域。当前验收结果见[Preview记录](../harness/build/2026-11-04-category-preview.md)。

@@ -23,6 +23,19 @@ export interface SearchResponse {
   termination?: { code: PublicSearchErrorCode; categoryId: CategoryKey };
 }
 
+/** Public progress state; waiting/running categories have no fabricated result. */
+export interface SearchProgress {
+  results: readonly CategorySearchResult[];
+  active: readonly CategoryKey[];
+  pending: readonly CategoryKey[];
+  termination?: NonNullable<SearchResponse["termination"]>;
+}
+
+export type SearchStreamEvent =
+  | { type: "progress"; progress: SearchProgress }
+  | { type: "complete"; response: SearchResponse }
+  | { type: "error"; error: { message: string; code?: string } };
+
 export interface SearchSecondPageRequest {
   center: Coordinates;
   categoryId: CategoryKey;
