@@ -1,0 +1,8 @@
+{
+  "radiusMeters": 1000,
+  "locations": [
+    { "density": "low", "longitude": null, "latitude": null },
+    { "density": "medium", "longitude": null, "latitude": null },
+    { "density": "high", "longitude": null, "latitude": null }
+  ]
+}

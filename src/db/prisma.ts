@@ -16,6 +16,7 @@ if (!databaseUrl) {
 
 const adapter = new PrismaPg({
   connectionString: databaseUrl,
+  options: "-c timezone=UTC",
 });
 
 const globalForPrisma = globalThis as unknown as {

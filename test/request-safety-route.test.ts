@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import "./admission-fixture.js";
+import { getTestAccess } from "./admission-fixture.js";
 const { POST: search } = await import("../app/api/search/route.js");
 const { POST: resolve } = await import("../app/api/resolve-location/route.js");
 const { POST: page } = await import("../app/api/search/page/route.js");
@@ -34,8 +34,8 @@ test("both factories cover geocode/text/nearby/page 2 through the same guarded t
     const url = new URL(String(input)); paths.push(url.pathname); pages.push(url.searchParams.get("page_num") ?? "");
     return Response.json({ status: "1", geocodes: [ { location: "114,22", formatted_address: "fixture" } ], pois: [] });
   }, async () => {
-    const resolver = createServerLocationResolverProvider(); await resolver.geocode("fixture"); await resolver.searchPlaceCandidates("fixture");
-    const client = createServerAmapClient(); await client.searchNearby(centre, (await import("../src/amap/categories.js")).CATEGORIES[0]!, { pageNumber: 1, pageSize: 25, radiusMeters: 3000 });
+    const resolver = createServerLocationResolverProvider(undefined, undefined, undefined, getTestAccess()); await resolver.geocode("fixture"); await resolver.searchPlaceCandidates("fixture");
+    const client = createServerAmapClient(undefined, undefined, undefined, getTestAccess()); await client.searchNearby(centre, (await import("../src/amap/categories.js")).CATEGORIES[0]!, { pageNumber: 1, pageSize: 25, radiusMeters: 3000 });
     assert.equal((await page(makeRequest(pageBody))).status, 200);
   });
   assert.deepEqual(paths, ["/v3/geocode/geo", "/v5/place/text", "/v5/place/around", "/v5/place/around"]); assert.equal(pages[3], "2");

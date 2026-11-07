@@ -1,7 +1,9 @@
-import { randomUUID } from "node:crypto";
+import { requireAccount } from "../../../src/identity/service.js";
+import { trustedOrigin } from "../../../src/identity/security.js";
+import { mapServerError } from "../../../src/server/http.js";
 
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+
+
 
 import {
   deleteSearchHistory,
@@ -12,35 +14,7 @@ import type { HistorySearchInput } from "../../../src/history/contracts.js";
 import { copyConfirmedLocation, isHistorySearchInput } from "../../../src/history/validation.js";
 import type { LocationCandidate } from "../../../src/location/types.js";
 
-const VISITOR_COOKIE_NAME = "nearby_visitor_id";
-
-const VISITOR_COOKIE_MAX_AGE_SECONDS =
-  60 * 60 * 24 * 365;
-
 type SaveHistoryBody = HistorySearchInput;
-
-async function getOrCreateVisitor(): Promise<{ id: string; created: boolean }> {
-  const cookieStore = await cookies();
-
-  const existingVisitorId =
-    cookieStore.get(VISITOR_COOKIE_NAME)?.value;
-
-  if (existingVisitorId) {
-    return { id: existingVisitorId, created: false };
-  }
-
-  const visitorId = randomUUID();
-
-  cookieStore.set(VISITOR_COOKIE_NAME, visitorId, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: VISITOR_COOKIE_MAX_AGE_SECONDS,
-  });
-
-  return { id: visitorId, created: true };
-}
 
 function isSaveHistoryBody(
   value: unknown,
@@ -83,27 +57,29 @@ function toHistoryResponseItem(history: {
   };
 }
 
-export async function GET(request: Request) {
+async function get(request: Request) {
+  const identity = await requireAccount(request);
   const params = new URL(request.url).searchParams;
   const limitValue = params.get("limit");
   if ([...params.keys()].some((key) => key !== "limit") || params.getAll("limit").length > 1 ||
       (limitValue !== null && limitValue !== "10" && limitValue !== "20")) {
-    return NextResponse.json({ error: "Invalid history limit" }, { status: 400 });
+    return Response.json({ error: "Invalid history limit" }, { status: 400 });
   }
-  const visitor = await getOrCreateVisitor();
-  const history = visitor.created ? [] : await getRecentSearchHistory(visitor.id, Number(limitValue ?? 10));
-  return NextResponse.json({ items: history.map(toHistoryResponseItem) }, {
+  const history = await getRecentSearchHistory(identity.userId, Number(limitValue ?? 10));
+  return Response.json({ items: history.map(toHistoryResponseItem) }, {
     headers: { "Cache-Control": "private, no-store" },
   });
 }
 
-export async function POST(request: Request) {
+async function post(request: Request) {
+  trustedOrigin(request);
+  const identity = await requireAccount(request);
   let body: unknown;
 
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
+    return Response.json(
       {
         error: "Invalid JSON body",
       },
@@ -114,7 +90,7 @@ export async function POST(request: Request) {
   }
 
   if (!isSaveHistoryBody(body)) {
-    return NextResponse.json(
+    return Response.json(
       {
         error: "Invalid search history input",
       },
@@ -124,28 +100,31 @@ export async function POST(request: Request) {
     );
   }
 
-  const { id: visitorId } = await getOrCreateVisitor();
+  const visitorId = identity.userId;
 
   const history = await saveSearchHistory({
     visitorId,
+    userId: identity.userId,
     query: body.query,
     categoryIds: body.categoryIds,
     radiusMeters: body.radiusMeters,
     confirmedLocation: copyConfirmedLocation(body.confirmedLocation),
   });
 
-  return NextResponse.json({
+  return Response.json({
     item: toHistoryResponseItem(history),
   });
 }
 
-export async function DELETE(request: Request) {
+async function remove(request: Request) {
+  trustedOrigin(request);
+  const identity = await requireAccount(request);
   let body: unknown;
 
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
+    return Response.json(
       {
         error: "Invalid JSON body",
       },
@@ -156,7 +135,7 @@ export async function DELETE(request: Request) {
   }
 
   if (!isDeleteHistoryBody(body)) {
-    return NextResponse.json(
+    return Response.json(
       {
         error: "Invalid search history input",
       },
@@ -166,11 +145,11 @@ export async function DELETE(request: Request) {
     );
   }
 
-  const { id: visitorId } = await getOrCreateVisitor();
+  const visitorId = identity.userId;
   const result = await deleteSearchHistory(body.id, visitorId);
 
   if (result.count === 0) {
-    return NextResponse.json(
+    return Response.json(
       {
         error: "Search history not found",
       },
@@ -180,5 +159,13 @@ export async function DELETE(request: Request) {
     );
   }
 
-  return NextResponse.json({ deleted: true });
+  return Response.json({ deleted: true });
 }
+
+const wrap = (handler: (request: Request) => Promise<Response>) => async (request: Request) => {
+  try { const response = await handler(request); response.headers.set("cache-control", "private, no-store"); return response; }
+  catch (error) { return mapServerError(error); }
+};
+export const GET = wrap(get);
+export const POST = wrap(post);
+export const DELETE = wrap(remove);

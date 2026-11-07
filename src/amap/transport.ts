@@ -6,13 +6,15 @@ import { STAGE_A_POLICY } from "./policy.js";
 export type AmapOperation = "geocode" | "poi-text" | "nearby";
 export interface TransportPolicy { upstreamTimeoutMs: number; maxResponseBytes: number; }
 /** Stage B implements this at the transport boundary, never in a Route/business method. */
-export interface AttemptPermit { assertValid(): void; }
+export interface AttemptPermit { assertValid(): void; release?(): Promise<void>; }
 export type BeforeAmapAttempt = (operation: AmapOperation, signal: AbortSignal, context?: RequestContext) => Promise<void | AttemptPermit>;
 export interface AmapTransportOptions {
   policy?: TransportPolicy;
   context?: RequestContext;
   diagnostics?: Diagnostics;
   beforeAttempt?: BeforeAmapAttempt;
+  onSuccess?: () => Promise<void>;
+  mapError?: (error: AmapApiError) => AmapApiError;
 }
 export interface AmapTransport {
   requestJson(url: URL, operation: AmapOperation, context?: RequestContext): Promise<Record<string, unknown>>;
@@ -63,9 +65,9 @@ export function createAmapTransport(fetchImpl: typeof fetch = fetch, options: Am
       const admissionContext = context ? { ...context, signal: admissionSignal } : undefined;
       const enter = () => abortable(options.beforeAttempt!(operation, admissionSignal, admissionContext), admissionSignal);
       const permit = options.beforeAttempt ? await (context?.admission?.run ? context.admission.run(enter, admissionSignal) : enter()) : undefined;
-      throwIfAborted(context?.signal);
       const call = createRequestContext(context, policy.upstreamTimeoutMs, "UPSTREAM_TIMEOUT");
       try {
+        throwIfAborted(context?.signal);
         const response = await measureAsync(diagnostics, "amap.fetch", () => {
           call.check();
           context?.admission?.check();
@@ -82,7 +84,7 @@ export function createAmapTransport(fetchImpl: typeof fetch = fetch, options: Am
           try { return JSON.parse(body); }
           catch { throw new AmapApiError("Invalid upstream JSON", null, null, "UPSTREAM_INVALID_JSON"); }
         });
-        return measureSync(diagnostics, "amap.validate", () => {
+        const validated = measureSync(diagnostics, "amap.validate", () => {
           if (!isRecord(payload)) throw new AmapApiError("Invalid upstream payload", null, null, "UPSTREAM_INVALID_PAYLOAD");
           if (payload.status !== "1") {
             const code = typeof payload.infocode === "string" && /^\d{5,6}$/.test(payload.infocode) ? payload.infocode : null;
@@ -92,10 +94,12 @@ export function createAmapTransport(fetchImpl: typeof fetch = fetch, options: Am
           }
           return payload;
         });
+        await options.onSuccess?.();
+        return validated;
       } catch (error) {
         if (call.signal.aborted) { try { throwIfAborted(call.signal); } catch (reason) { error = reason; } }
         if (!(error instanceof AmapApiError)) { console.error("amap.failed", { operation, ...safeErrorDiagnostic(error) }); throw error; }
-        const failure = error;
+        const failure = options.mapError?.(error) ?? error;
         const diagnosticType: DiagnosticErrorType = failure.code === "REQUEST_CANCELLED" ? "cancelled"
           : failure.code === "UPSTREAM_TIMEOUT" || failure.code === "REQUEST_DEADLINE_EXCEEDED" ? "timeout"
           : failure.code === "UPSTREAM_HTTP" ? "upstream_http"
@@ -106,7 +110,7 @@ export function createAmapTransport(fetchImpl: typeof fetch = fetch, options: Am
         diagnostics?.annotate(failure, diagnosticType, failure.infocode ?? failure.code);
         console.error("amap.failed", { operation, ...safeErrorDiagnostic(failure) });
         throw failure;
-      } finally { call.dispose(); }
+      } finally { call.dispose(); await permit?.release?.(); }
     },
   };
 }

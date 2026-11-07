@@ -1,3 +1,4 @@
+import { resolveAmapAccess } from "../../../src/server/amap-access.js";
 import { createServerLocationResolverProvider } from "../../../src/server/amap.js";
 import { jsonError } from "../../../src/server/http.js";
 import { resolveLocation } from "../../../src/location/resolver.js";
@@ -15,7 +16,7 @@ export async function POST(request: Request): Promise<Response> {
     const unknownFields = Object.keys(record).filter((field) => field !== "query");
     if (unknownFields.length > 0) return jsonError(`不支持的请求字段：${unknownFields.join(", ")}`, 400);
     if (typeof record.query !== "string" || record.query.trim().length < 1 || record.query.trim().length > 200) return jsonError("地点名称长度必须为 1-200 个字符", 400);
-    const resolution = await resolveLocation(record.query.trim(), createServerLocationResolverProvider(undefined, context, policy), undefined, context);
+    const resolution = await resolveLocation(record.query.trim(), createServerLocationResolverProvider(undefined, context, policy, await resolveAmapAccess(request, policy.upstreamTimeoutMs)), undefined, context);
     return resolution.status === "not_found" ? Response.json({ status: "not_found" }) : Response.json(resolution);
   });
 }

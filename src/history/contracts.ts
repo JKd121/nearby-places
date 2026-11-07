@@ -7,7 +7,7 @@ export type HistorySearchInput = {
   confirmedLocation: LocationCandidate;
 };
 
-export type SaveSearchHistoryInput = HistorySearchInput & { visitorId: string };
+export type SaveSearchHistoryInput = HistorySearchInput & { visitorId: string; userId?: string };
 
 export type NormalizedSearchHistoryInput = SaveSearchHistoryInput & {
   dedupeKey: string;

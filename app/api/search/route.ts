@@ -1,3 +1,4 @@
+import { resolveAmapAccess } from "../../../src/server/amap-access.js";
 import { createServerAmapClient } from "../../../src/server/amap.js";
 import { jsonError } from "../../../src/server/http.js";
 import { executeResolvedSearch, searchDeadlineResponse, type SearchSnapshot } from "../../../src/search/service.js";
@@ -21,7 +22,7 @@ export async function POST(request: Request): Promise<Response> {
       if (error instanceof SearchRequestValidationError) return jsonError(error.message, 400);
       return jsonError("请求校验失败", 400);
     }
-    return Response.json(await executeResolvedSearch(parsed, createServerAmapClient(undefined, context, policy), { context, onSnapshot: snapshot => { completed = snapshot; } }));
+    return Response.json(await executeResolvedSearch(parsed, createServerAmapClient(undefined, context, policy, await resolveAmapAccess(request, policy.upstreamTimeoutMs)), { context, onSnapshot: snapshot => { completed = snapshot; } }));
   }, () => {
     const partial = parsed && searchDeadlineResponse(parsed, completed);
     return partial ? Response.json(partial) : undefined;

@@ -25,8 +25,8 @@
 .preview button:hover { color: var(--preview-ink); border-color: var(--preview-ink); background: var(--preview-yellow); box-shadow: 5px 5px 0 var(--preview-ink); transform: translate(-1px, -1px); }
 .preview button:active { box-shadow: 0 0 0 var(--preview-ink); transform: translate(2px, 2px); }
 .preview button:focus-visible, .skipLink:focus-visible { outline: 3px solid var(--preview-ink); outline-offset: 5px; }
-.skipLink { position: absolute; top: 10px; left: 16px; z-index: 20; padding: 10px 16px; border: 2px solid #111; background: var(--preview-yellow); color: #111; font-weight: 700; transform: translateY(-160%); }
-.skipLink:focus { transform: translateY(0); }
+.skipLink { position: absolute; top: 10px; left: 16px; z-index: 20; padding: 10px 16px; border: 2px solid #111; background: var(--preview-yellow); color: #111; font-weight: 700; transform: translateY(-160%); clip-path: inset(50%); pointer-events: none; }
+.skipLink:focus { transform: translateY(0); clip-path: none; pointer-events: auto; }
 .topbar { position: relative; z-index: 5; display: flex; min-height: 76px; align-items: center; justify-content: space-between; gap: 20px; padding: 14px 24px; border-bottom: 2px solid var(--preview-ink); background: #fff; }
 .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .brand > strong { font-size: 25px; font-weight: 900; letter-spacing: -.04em; white-space: nowrap; }

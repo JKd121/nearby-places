@@ -2,7 +2,7 @@ import { AmapApiError } from "../amap/errors.js";
 import { AdmissionError } from "../admission/errors.js";
 
 export type ErrorAction = "recover" | "stop" | "abort" | "fatal";
-export type PublicSearchErrorCode = "ADMISSION_WAIT_EXCEEDED" | "ADMISSION_UNAVAILABLE" | "DAILY_BUDGET_EXHAUSTED" | "MONTHLY_BUDGET_EXHAUSTED" | "SERVICE_UNAVAILABLE" | "REQUEST_DEADLINE_EXCEEDED";
+export type PublicSearchErrorCode = "IDENTITY_REQUIRED" | "CREDENTIAL_INVALID" | "GUEST_DAILY_EXHAUSTED" | "UPSTREAM_QUOTA_EXHAUSTED" | "UPSTREAM_RATE_LIMITED" | "ADMISSION_WAIT_EXCEEDED" | "ADMISSION_UNAVAILABLE" | "DAILY_BUDGET_EXHAUSTED" | "MONTHLY_BUDGET_EXHAUSTED" | "SERVICE_UNAVAILABLE" | "REQUEST_DEADLINE_EXCEEDED";
 export interface FailureClassification {
   nature: "timeout" | "cancelled" | "quota" | "database" | "authentication" | "provider" | "invalid-request" | "internal";
   scope: "call" | "category" | "shared-resource" | "request";
@@ -13,6 +13,9 @@ export interface FailureClassification {
 export function classifyFailure(error: unknown): FailureClassification {
   if (!(error instanceof AmapApiError)) return { nature: "internal", scope: "request" };
   switch (error.code) {
+    case "IDENTITY_REQUIRED": case "CREDENTIAL_INVALID": return { nature: "authentication", scope: "shared-resource", resource: "amap-credential" };
+    case "GUEST_DAILY_EXHAUSTED": case "UPSTREAM_QUOTA_EXHAUSTED": return { nature: "quota", scope: "shared-resource", resource: "amap-credential" };
+    case "UPSTREAM_RATE_LIMITED": return { nature: "provider", scope: "shared-resource", resource: "amap-credential" };
     case "REQUEST_CANCELLED": return { nature: "cancelled", scope: "request" };
     case "REQUEST_DEADLINE_EXCEEDED": return { nature: "timeout", scope: "request" };
     case "REQUEST_BODY_TOO_LARGE": return { nature: "invalid-request", scope: "request" };
@@ -26,7 +29,7 @@ export function classifyFailure(error: unknown): FailureClassification {
     case "UPSTREAM_TIMEOUT": return { nature: "timeout", scope: "call" };
     // Official Web Service error table: 10003 is a daily quota exhausted for the key.
     // https://lbs.amap.com/api/webservice/guide/tools/info
-    case "UPSTREAM_BUSINESS": return error.infocode === "10003"
+    case "UPSTREAM_BUSINESS": return ["10003", "10044", "10045", "40000", "40002", "40003"].includes(error.infocode ?? "")
       ? { nature: "quota", scope: "shared-resource", resource: "amap-credential" } : { nature: "provider", scope: "call" };
     case "UPSTREAM_NETWORK": case "UPSTREAM_INVALID_JSON": case "UPSTREAM_INVALID_PAYLOAD": case "UPSTREAM_BODY_TOO_LARGE": return { nature: "provider", scope: "call" };
     default: return { nature: "internal", scope: "request" };
@@ -44,6 +47,7 @@ export function classifyError(error: unknown): ErrorAction {
 export function publicStopCode(error: AmapApiError): PublicSearchErrorCode {
   if (error.code === "UPSTREAM_BUSINESS" && error.infocode === "10003") return "DAILY_BUDGET_EXHAUSTED";
   switch (error.code) {
+    case "IDENTITY_REQUIRED": case "CREDENTIAL_INVALID": case "GUEST_DAILY_EXHAUSTED": case "UPSTREAM_QUOTA_EXHAUSTED": case "UPSTREAM_RATE_LIMITED": return error.code;
     case "REQUEST_DEADLINE_EXCEEDED": case "ADMISSION_WAIT_EXCEEDED": case "ADMISSION_UNAVAILABLE": case "DAILY_BUDGET_EXHAUSTED": case "MONTHLY_BUDGET_EXHAUSTED": return error.code;
     default: return "SERVICE_UNAVAILABLE";
   }
@@ -51,6 +55,11 @@ export function publicStopCode(error: AmapApiError): PublicSearchErrorCode {
 
 export function publicSearchErrorMessage(code: PublicSearchErrorCode): string {
   switch (code) {
+    case "IDENTITY_REQUIRED": return "会话已结束，请重新选择身份或登录";
+    case "CREDENTIAL_INVALID": return "高德 Key 已失效或已更新，请在个人中心检查配置";
+    case "GUEST_DAILY_EXHAUSTED": return "今日匿名体验额度已用完，北京时间零点重置";
+    case "UPSTREAM_QUOTA_EXHAUSTED": return "你的高德账户额度不足或服务已到期，请前往高德控制台查看";
+    case "UPSTREAM_RATE_LIMITED": return "你的高德账户请求过于频繁，请稍后再试";
     case "REQUEST_DEADLINE_EXCEEDED": return "搜索时间已用完，请缩小范围或减少类别后重试";
     case "ADMISSION_WAIT_EXCEEDED": return "服务繁忙，等待已结束，请稍后再试";
     case "DAILY_BUDGET_EXHAUSTED": return "今日服务额度已用完，请明日再试";

@@ -1,3 +1,4 @@
+import { resolveAmapAccess } from "../../../../src/server/amap-access.js";
 import { executeSecondPageSearch } from "../../../../src/search/service.js";
 import { parseSearchSecondPageRequest, SearchRequestValidationError } from "../../../../src/search/validation.js";
 import { createServerAmapClient } from "../../../../src/server/amap.js";
@@ -20,6 +21,6 @@ export async function POST(request: Request): Promise<Response> {
       return jsonError("请求校验失败", 400);
     }
 
-    return Response.json(await executeSecondPageSearch(parsed, createServerAmapClient(undefined, context, policy), context));
+    return Response.json(await executeSecondPageSearch(parsed, createServerAmapClient(undefined, context, policy, await resolveAmapAccess(request, policy.upstreamTimeoutMs)), context));
   });
 }

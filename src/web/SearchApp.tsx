@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import WorkspaceShell, { type WorkspaceView } from "./ui/WorkspaceShell";
 import { Badge, EmptyState, Feedback, LoadingState } from "./ui/Feedback";
 import { Icon } from "./ui/icons";
@@ -34,7 +34,7 @@ type HistoryReplaySnapshot = {
 
 async function readJson(response: Response): Promise<unknown> { try { return await response.json(); } catch { return null; } }
 
-export default function SearchApp() {
+export default function SearchApp({ identityKind = "account", sessionId, personal, activeView, onViewChange, credentialIssue, onRequestSettled }: { identityKind?: "guest" | "account"; sessionId?: string; personal?: ReactNode; activeView?: WorkspaceView; onViewChange?: (view: WorkspaceView) => void; credentialIssue?: boolean; onRequestSettled?: () => void } = {}) {
   const [query, setQuery] = useState("");
   const [resolvedLocation, setResolvedLocation] = useState<LocationCandidate | null>(null);
   const [resolvedQuery, setResolvedQuery] = useState<string | null>(null);
@@ -49,8 +49,10 @@ export default function SearchApp() {
   const [searchVersion, setSearchVersion] = useState(0);
   const [loadingProviderCategory, setLoadingProviderCategory] = useState<CategoryKey | null>(null);
   const [providerPageErrors, setProviderPageErrors] = useState<Partial<Record<CategoryKey, string>>>({});
-  const history = useSearchHistory();
-  const [view, setView] = useState<WorkspaceView>("explore");
+  const history = useSearchHistory(identityKind, sessionId);
+  const [localView, setLocalView] = useState<WorkspaceView>("explore");
+  const view = activeView ?? localView;
+  const setView = onViewChange ?? setLocalView;
   const [conditionsOpen, setConditionsOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const requestId = useRef(0);
@@ -154,7 +156,7 @@ export default function SearchApp() {
     const currentId = requestId.current;
     setPhase("resolving"); setPublicError(null); resetView(); setResolvedLocation(null); setResolvedQuery(null); setCandidates([]); setShowAllCandidates(false);
     try {
-      const result = await fetch("/api/resolve-location", { signal: controller.signal, method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: trimmed }) });
+      const result = await fetch("/api/resolve-location", { signal: controller.signal, method: "POST", headers: { ...(sessionId ? { "x-nearby-session": sessionId } : {}), "content-type": "application/json" }, body: JSON.stringify({ query: trimmed }) });
       const payload = await readJson(result) as ResolutionApiResponse | null;
       if (controller.signal.aborted || currentId !== requestId.current) return;
       if (!result.ok) throw new Error(payload?.error?.message ?? "地点解析失败");
@@ -169,6 +171,7 @@ export default function SearchApp() {
       setPublicError(error instanceof Error ? error.message : "地点解析失败"); setPhase("resolve-error");
     } finally {
       if (activeRequest.current === controller) activeRequest.current = null;
+      if (!controller.signal.aborted) onRequestSettled?.();
     }
   }
 
@@ -208,7 +211,7 @@ export default function SearchApp() {
         radiusMeters: snapshot.radiusMeters,
         confirmedLocation: copyConfirmedLocation(location),
       };
-      const result = await fetch("/api/search", { signal: controller.signal, method: "POST", headers: { "content-type": "application/json", "accept": "application/x-ndjson" }, body: JSON.stringify({ center: { longitude: location.location.longitude, latitude: location.location.latitude }, resolvedLocation: searchLocation, categoryIds: snapshot.categoryIds, radiusMeters: snapshot.radiusMeters }) });
+      const result = await fetch("/api/search", { signal: controller.signal, method: "POST", headers: { ...(sessionId ? { "x-nearby-session": sessionId } : {}), "content-type": "application/json", "accept": "application/x-ndjson" }, body: JSON.stringify({ center: { longitude: location.location.longitude, latitude: location.location.latitude }, resolvedLocation: searchLocation, categoryIds: snapshot.categoryIds, radiusMeters: snapshot.radiusMeters }) });
       if (!result.ok) {
         const errorPayload = await readJson(result) as { error?: PublicApiError } | null;
         throw new Error(errorPayload?.error?.message ?? "周边搜索失败");
@@ -231,6 +234,7 @@ export default function SearchApp() {
       setPublicError(error instanceof Error ? error.message : "周边搜索失败"); setPhase("search-error");
     } finally {
       if (activeRequest.current === controller) activeRequest.current = null;
+      if (!controller.signal.aborted) onRequestSettled?.();
     }
   }
 
@@ -246,7 +250,7 @@ export default function SearchApp() {
       return remaining;
     });
     try {
-      const result = await fetch("/api/search/page", { signal: controller.signal, method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ center: { longitude: response.resolvedLocation.longitude, latitude: response.resolvedLocation.latitude }, categoryId, radiusMeters }) });
+      const result = await fetch("/api/search/page", { signal: controller.signal, method: "POST", headers: { ...(sessionId ? { "x-nearby-session": sessionId } : {}), "content-type": "application/json" }, body: JSON.stringify({ center: { longitude: response.resolvedLocation.longitude, latitude: response.resolvedLocation.latitude }, categoryId, radiusMeters }) });
       const payload = await readJson(result) as (SearchSecondPageResponse & { error?: PublicApiError }) | null;
       if (controller.signal.aborted || currentId !== requestId.current) return null;
       if (!result.ok || !payload?.page || payload.categoryId !== categoryId) throw new Error(payload?.error?.message ?? "获取更多地点失败");
@@ -258,6 +262,7 @@ export default function SearchApp() {
       return null;
     } finally {
       if (activeRequest.current === controller) activeRequest.current = null;
+      if (!controller.signal.aborted) onRequestSettled?.();
       if (currentId === requestId.current) { providerPageBusy.current = false; setLoadingProviderCategory(null); }
     }
   }
@@ -292,7 +297,8 @@ export default function SearchApp() {
         <section className={s.mainPanel} aria-labelledby="search-panel-title">
           <div className={s.panelHeading}><div><h2 id="search-panel-title" tabIndex={-1}>{candidatePhase ? "请确认搜索中心" : "附近结果"}</h2><p>{candidatePhase ? "选择你想搜索的位置，附近服务将以此为中心。" : "围绕已确认的搜索中心"}</p></div>{candidatePhase && <Badge tone="warning">{candidates.length} 个候选</Badge>}</div>
           <div ref={scrollRef} className={s.listViewport} role="region" tabIndex={0} aria-label={candidatePhase ? "候选地点列表" : "附近结果列表"} aria-busy={phase === "resolving"}>
-            {phase === "initial" && <EmptyState title="从一个地点开始">输入地名或地址，确认搜索中心后发现附近生活服务。</EmptyState>}
+            {credentialIssue && <Feedback tone="warning" title="请配置高德 Key" action={<button type="button" onClick={() => navigate("personal")}>前往个人中心</button>}>添加或更换可用的 Key 后，即可搜索附近。</Feedback>}
+            {phase === "initial" && !credentialIssue && <EmptyState title="从一个地点开始">输入地名或地址，确认搜索中心后发现附近生活服务。</EmptyState>}
             {phase === "resolving" && <LoadingState>正在查找可能的地点…</LoadingState>}
             {candidatePhase && <CandidateList candidates={candidates} expanded={showAllCandidates} onExpand={() => setShowAllCandidates(true)} onSelect={confirmCandidate} />}
             {phase === "not-found" && <EmptyState title="没有找到明确地点">请补充城市、行政区或更完整的地点名称，再次解析。</EmptyState>}
@@ -317,6 +323,6 @@ export default function SearchApp() {
       </div>
     </div>
     {view === "history" && <HistoryView history={history} onSelect={handleHistorySelect} onDelete={handleHistoryDelete} />}
-    {view === "personal" && <PersonalCenter />}
+    {view === "personal" && (personal ?? <PersonalCenter />)}
   </WorkspaceShell>;
 }

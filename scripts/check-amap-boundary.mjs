@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 const transport = "src/amap/transport.ts";
 const factories = new Set(["src/amap/client.ts", "src/location/provider.ts", "src/server/amap.ts"]);
 const networkModules = /^(?:node:)?(?:https?|http2|net|tls|dns|dgram)$|^(?:undici|axios|got|node-fetch|cross-fetch|superagent)(?:\/|$)/;
+const scopedImports = new Map([["src/identity/auth.ts", new Set(["better-auth", "better-auth/adapters/prisma"])], ["src/identity/auth-policy.ts", new Set(["@better-auth/core/utils/ip"])], ["src/identity/mail.ts", new Set(["nodemailer", "node:async_hooks"])]]);
 const reviewedExternalModules = /^(?:react(?:\/.*)?|next(?:\/.*)?|server-only|@prisma\/adapter-pg|node:crypto)$/;
 const normalize = path => path.replaceAll("\\", "/");
 
@@ -30,7 +31,7 @@ export function inspectSource(path, source) {
       if (module) {
         if (networkModules.test(node.text)) report(node, "network modules must not bypass AMap transport");
         const databaseImport = path === "src/db/prisma.ts" && ["pg", "@vercel/functions/db-connections"].includes(node.text);
-        if (!node.text.startsWith(".") && !reviewedExternalModules.test(node.text) && !databaseImport) report(node, "new production external imports need boundary review");
+        if (!node.text.startsWith(".") && !reviewedExternalModules.test(node.text) && !databaseImport && !scopedImports.get(path)?.has(node.text)) report(node, "new production external imports need boundary review");
         if (!browser && /(?:^|\/)scripts\/|(?:^|\/)test\//.test(node.text)) report(node, "production must not import CLI/test helpers");
         if (!browser && /amap\/client(?:\.js)?$|location\/provider(?:\.js)?$/.test(node.text) && !factories.has(path)) report(node, "production AMap clients must come from server/amap");
       }
@@ -49,7 +50,7 @@ export function inspectSource(path, source) {
         const options = node.arguments[1];
         const guarded = options && ts.isObjectLiteralExpression(options) && options.properties.some(p =>
           ts.isPropertyAssignment(p) && p.name.getText(file) === "beforeAttempt"
-          && ts.isCallExpression(p.initializer) && p.initializer.expression.getText(file) === "getServerAdmission");
+          && ((ts.isCallExpression(p.initializer) && p.initializer.expression.getText(file) === "getServerAdmission") || p.initializer.getText(file) === "access.options.beforeAttempt"));
         if (!guarded) report(node, "server AMap transport requires the shared admission hook");
       }
       if (["createAmapTransport", "createAmapClient", "createAmapClientWithTransport", "createLocationResolverProvider", "createLocationResolverProviderWithTransport"].includes(name) && !factories.has(path)) report(node, "use the server AMap factory");

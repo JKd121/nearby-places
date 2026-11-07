@@ -37,3 +37,16 @@ test("database lifecycle dependencies are scoped to the reviewed pool module", (
     assert.ok(inspectSource("src/server/new-feature.ts", `import value from '${module}';`).length);
   }
 });
+
+test("authentication and SMTP dependency exceptions stay scoped to reviewed modules", () => {
+  assert.equal(inspectSource("src/identity/auth.ts", 'import { betterAuth } from "better-auth";').length, 0);
+  assert.equal(inspectSource("src/identity/mail.ts", 'import mail from "nodemailer"; import { AsyncLocalStorage } from "node:async_hooks";').length, 0);
+  for (const path of ["src/server/other.ts", "src/web/other.ts"]) {
+    assert.ok(inspectSource(path, 'import mail from "nodemailer";').length > 0);
+    assert.ok(inspectSource(path, 'import { betterAuth } from "better-auth";').length > 0);
+  }
+});
+test("identity-aware server transport still requires an explicit admission hook", () => {
+  assert.equal(inspectSource("src/server/amap.ts", 'createAmapTransport(undefined, { ...access.options, beforeAttempt: access.options.beforeAttempt });').length, 0);
+  assert.ok(inspectSource("src/server/amap.ts", 'createAmapTransport(undefined, { ...access.options });').length > 0);
+});

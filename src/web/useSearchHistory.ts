@@ -1,10 +1,11 @@
 "use client";
+import { localHistoryFetch } from "./local-history.js";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { createSearchHistoryStore } from "./search-history-store.js";
 
-export function useSearchHistory() {
-  const [store] = useState(() => createSearchHistoryStore());
+export function useSearchHistory(kind: "guest" | "account" = "account", sessionId?: string) {
+  const [store] = useState(() => createSearchHistoryStore(kind === "guest" ? { fetch: (...args) => localHistoryFetch(window.localStorage)(...args) } : { ...(sessionId ? { sessionId } : {}) }));
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
   useEffect(() => {
     store.start();

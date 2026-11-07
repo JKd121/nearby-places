@@ -1,3 +1,4 @@
+import { resolveAmapAccess } from "./amap-access.js";
 import { AmapApiError, RequestTerminatedError } from "../amap/errors.js";
 import { abortable, createRequestContext, throwIfAborted } from "../amap/request-context.js";
 import type { ConfirmedSearchRequest, SearchStreamEvent } from "../search/contracts.js";
@@ -26,7 +27,7 @@ export async function searchStreamResponse(request: Request): Promise<Response> 
     }
     lifetime.check();
     // Assemble before sending headers so configuration errors retain HTTP status.
-    const client = createServerAmapClient(undefined, lifetime, policy);
+    const client = createServerAmapClient(undefined, lifetime, policy, await resolveAmapAccess(request, policy.upstreamTimeoutMs));
     let closed = false;
     let snapshot: SearchSnapshot = { results: [], active: [], pending: parsed.categoryIds };
     const encoder = new TextEncoder();

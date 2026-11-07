@@ -41,6 +41,7 @@ class HistoryHttpError extends Error {
 /** A single page's history. Nothing is persisted or shared between visitors/pages. */
 export function createSearchHistoryStore(options: {
   fetch?: typeof fetch;
+  sessionId?: string;
   now?: () => number;
   timeoutMs?: number;
   prefetchDelayMs?: number;
@@ -79,6 +80,7 @@ export function createSearchHistoryStore(options: {
   }
 
   async function request(method: string, body?: unknown, signal?: AbortSignal) {
+    if (!active) throw new Error("History store stopped");
     const controller = new AbortController();
     const cancel = () => controller.abort(signal?.reason);
     signal?.addEventListener("abort", cancel, { once: true });
@@ -94,7 +96,7 @@ export function createSearchHistoryStore(options: {
       return await Promise.race([aborted, (async () => {
         const response = await fetcher(method === "GET" ? "/api/history?limit=20" : "/api/history", {
           method, credentials: "same-origin", cache: "no-store", signal: controller.signal,
-          headers: body === undefined ? { accept: "application/json" } : { "content-type": "application/json" },
+          headers: { ...(options.sessionId ? { "x-nearby-session": options.sessionId } : {}), ...(body === undefined ? { accept: "application/json" } : { "content-type": "application/json" }) },
           ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
         if (!response.ok) throw new HistoryHttpError(response.status);

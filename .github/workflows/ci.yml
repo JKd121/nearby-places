@@ -2,21 +2,18 @@ name: CI
 
 on:
   pull_request:
-  push:
     branches: [master]
+  push:
+    branches: [master, "Nearby-双身份内测Preview-20261107"]
 
 permissions:
   contents: read
-
-concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
     name: Tests, types and build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     services:
       postgres:
@@ -36,8 +33,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/nearby_ci
       DIRECT_URL: postgresql://ci:ci@localhost:5432/nearby_ci
+      NEARBY_IDENTITY_TEST_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/nearby_identity_test_ci
       NEARBY_ADMISSION_TEST_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/nearby_admission_test_ci
-      NEARBY_HISTORY_TEST_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/nearby_history_test_ci
 
     steps:
       - name: Download code
@@ -58,109 +55,39 @@ jobs:
       - name: Verify PostgreSQL admission functions
         run: npm run test:admission:postgres
 
+      - name: Create disposable identity database
+        env:
+          PGPASSWORD: ci
+        run: psql -h 127.0.0.1 -U ci -d nearby_admission_test_ci -c 'CREATE DATABASE nearby_identity_test_ci'
+
+      - name: Verify identity and BYOK with PostgreSQL and SMTP
+        run: npm run test:identity:postgres
+
+      - name: Verify private beta access and account management
+        run: npm run test:beta:postgres
+
+      - name: Verify login security assertions and fault handling
+        run: npm run test:login-security:postgres
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify browser flows
+        run: npm run test:e2e
+
+      - name: Verify private beta browser flows
+        run: npm run test:e2e:beta
+
+      - name: Verify local beta login and guest entry
+        env:
+          NEARBY_BETA_E2E_ACCESS_MODE: local-beta
+        run: npm run test:e2e:beta
+
+      - name: Lint application
+        run: npm run lint
+
       - name: Check types
         run: npm run check
 
       - name: Build application
         run: npm run build
-
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-
-      - name: API mock contracts
-        run: npm run test:api
-
-      - name: Browser regression
-        run: npm run test:browser
-
-      - name: History HTTP and PostgreSQL integration
-        run: npm run test:history:integration
-
-      - name: Upload browser and integration evidence
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-test-evidence
-          path: |
-            playwright-report/
-            test-results/
-          if-no-files-found: ignore
-          retention-days: 7
-
-  production:
-    name: Deploy production after CI
-    needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment:
-      name: Production
-      url: ${{ steps.deploy.outputs.url }}
-    concurrency:
-      group: nearby-production
-      cancel-in-progress: false
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-    steps:
-      - name: Download verified source
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: "24"
-
-      - name: Verify production configuration
-        shell: bash
-        run: |
-          test -n "$VERCEL_TOKEN" || { echo "::error::Missing Production VERCEL_TOKEN"; exit 1; }
-          test -n "$VERCEL_ORG_ID" || { echo "::error::Missing Production VERCEL_ORG_ID"; exit 1; }
-          test -n "$VERCEL_PROJECT_ID" || { echo "::error::Missing Production VERCEL_PROJECT_ID"; exit 1; }
-
-      - name: Install pinned Vercel CLI
-        run: npm install --global vercel@65.10.0
-
-      - name: Pull production configuration
-        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-
-      - name: Build production artifact
-        run: vercel build --prod --token="$VERCEL_TOKEN"
-
-      - name: Check latest master before deployment
-        id: latest
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          latest=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/master" --jq .object.sha)
-          if [ "$latest" = "$GITHUB_SHA" ]; then
-            echo "current=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "current=false" >> "$GITHUB_OUTPUT"
-            echo "A newer master commit exists; this deployment is skipped." >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-      - name: Deploy verified commit
-        if: steps.latest.outputs.current == 'true'
-        id: deploy
-        shell: bash
-        run: |
-          url=$(vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN" \
-            --meta githubCommitSha="$GITHUB_SHA" \
-            --meta githubCommitRef=master \
-            --meta githubCommitOrg=JKd121 \
-            --meta githubCommitRepo=nearby-places)
-          echo "url=$url" >> "$GITHUB_OUTPUT"
-          echo "Verified commit: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
-          echo "Production deployment: $url" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Verify production responses
-        if: steps.latest.outputs.current == 'true'
-        env:
-          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
-        run: node scripts/verify-deployment.mjs https://nearby.durunqian.com

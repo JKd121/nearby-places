@@ -24,9 +24,9 @@ mock.module("../generated/prisma/client.js", { namedExports: { PrismaClient } })
 const db = await import("../src/db/prisma.js");
 const { prepareServerAdmission } = await import("../src/server/admission.js");
 
-test("ordinary client retains its configuration; Vercel admission owns one attached pool", async () => {
+test("ordinary client fixes UTC timestamps; Vercel admission owns one attached pool", async () => {
   const ordinary = db.prisma as unknown as PrismaClient;
-  assert.deepEqual(ordinary.options.adapter.input, { connectionString: "fixture-only" });
+  assert.deepEqual(ordinary.options.adapter.input, { connectionString: "fixture-only", options: "-c timezone=UTC" });
   const a = db.getAdmissionRuntime(), b = db.getAdmissionRuntime();
   assert.equal(a, b); assert.equal(a.database, b.database); assert.equal(attached, 1);
   const pool = a.pool as unknown as Pool;

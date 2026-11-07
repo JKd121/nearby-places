@@ -38,6 +38,7 @@ export function normalizeSearchHistoryInput(
 
   return {
     visitorId: input.visitorId,
+    ...(input.userId ? { userId: input.userId } : {}),
     dedupeKey,
     query,
     categoryIds,

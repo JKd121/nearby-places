@@ -77,7 +77,7 @@ function observe(record: () => void) { try { record(); } catch { /* Diagnostics 
 /** One checked-out connection per ordered batch. Waiting between phases owns no connection. */
 export class PipelinedAdmissionDatabase implements AdmissionDatabase {
   private acquiring = 0;
-  constructor(private readonly pool: AdmissionPool) {}
+  constructor(private readonly pool: AdmissionPool, private readonly statements = SQL) {}
 
   async execute(phase: AdmissionPhase, values: readonly unknown[], signal: AbortSignal, remaining: () => number, completionRemaining: () => number = remaining): Promise<AdmissionExecution> {
     const started = performance.now();
@@ -119,7 +119,7 @@ export class PipelinedAdmissionDatabase implements AdmissionDatabase {
       const queries = [
         { text: "BEGIN" },
         { text: CONFIGURE, values: [String(diagnostic.budgetMs), String(Math.min(150, diagnostic.budgetMs))] },
-        { text: SQL[phase], values: [...values, diagnostic.remainingMs] },
+        { text: this.statements[phase], values: [...values, diagnostic.remainingMs] },
         { text: "COMMIT" },
       ];
       batchStarted = performance.now();

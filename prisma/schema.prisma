@@ -15,7 +15,9 @@ datasource db {
 
 model SearchHistory {
   id           String   @id @default(cuid())
-  visitorId    String
+  visitorId    String?
+  userId       String?
+  user         User? @relation(fields: [userId], references: [id], onDelete: Cascade)
   dedupeKey    String
   query        String
   categoryIds  String[]
@@ -24,7 +26,126 @@ model SearchHistory {
   searchedAt   DateTime @default(now())
 
   @@unique([visitorId, dedupeKey])
+  @@unique([userId, dedupeKey])
+  @@index([userId, searchedAt])
   @@index([visitorId, searchedAt])
+}
+
+model User {
+  id String @id
+  disabledAt DateTime?
+  betaAccess Boolean @default(false)
+  name String
+  email String @unique
+  emailVerified Boolean @default(false)
+  image String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sessions Session[]
+  accounts Account[]
+  credential UserApiCredential?
+  history SearchHistory[]
+}
+
+model Session {
+  id String @id
+  token String @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model Account {
+  id String @id
+  accountId String
+  providerId String
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken String?
+  refreshToken String?
+  idToken String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope String?
+  password String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId])
+  @@unique([providerId, accountId])
+}
+
+model Verification {
+  id String @id
+  identifier String
+  value String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([identifier])
+}
+
+model UserApiCredential {
+  id String @id @default(cuid())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  encryptedKey String
+  encryptionVersion Int
+  fingerprint String
+  lastFour String
+  status String @default("pending")
+  version Int @default(1)
+  validatedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GuestIdentity {
+  id String @id
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  sessions GuestSession[]
+  usage GuestDailyUsage[]
+}
+
+model GuestSession {
+  id String @id
+  guestId String
+  guest GuestIdentity @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@index([guestId])
+}
+
+model GuestDailyUsage {
+  guestId String
+  guest GuestIdentity @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  day String
+  used Int @default(0)
+  @@id([guestId, day])
+}
+
+// Atomic fixed-window counters, including Better Auth customStorage.
+model RequestCounter {
+  key String @id
+  count Int
+  resetsAt DateTime @db.Timestamptz(3)
+}
+
+model RequestRate {
+  key String @id
+  nextAt DateTime @db.Timestamptz(3)
+}
+
+model RequestLease {
+  id String @id
+  subject String
+  expiresAt DateTime @db.Timestamptz(3)
+  @@index([expiresAt])
 }
 
 // One row per confirmed shared budget/rate scope. No real keys or automatic seed.

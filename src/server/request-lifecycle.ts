@@ -14,6 +14,7 @@ export async function withRequestLifecycle(request: Request,
     try {
       const result = await abortable(handle(context, policy), context.signal);
       context.check();
+      result.headers.set("cache-control", "private, no-store");
       return result;
     } catch (error) {
       throwIfAborted(request.signal);

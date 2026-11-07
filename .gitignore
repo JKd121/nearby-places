@@ -20,6 +20,17 @@ harness/build/*-real-api-verification.txt
 # Generated Prisma Client
 /generated/prisma/
 
-# Browser and HTTP integration evidence
-/playwright-report/
-/test-results/
+# Private experiment coordinates, one-shot live budget and generated reports
+/.local/poi-union-v1/
+
+# Isolated BYOK validation data and reports
+/.local/byok*
+
+# Private beta configuration, PostgreSQL data and baseline snapshots
+/.local/nearby-beta*
+
+# Login security audit snapshots and temporary evidence
+/.local/login-security*
+
+# Key management UI snapshots and private verification data
+/.local/key-management*

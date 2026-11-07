@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { before, after, test } from "node:test";
+import { before, after, test, mock } from "node:test";
 import { readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { createServer, connect as connectSocket, type Socket } from "node:net";
@@ -680,7 +680,7 @@ test("actual PostgreSQL: 5s transaction idle timeout terminates only its idle se
   } finally { await scopedPool.end(); }
 });
 
-test("actual PostgreSQL: real server factories and all three routes enforce the shared pool", async () => {
+test("actual PostgreSQL: verified access fixture and real routes retain public V1 shared pool", async () => {
   await seed(3, 10, 20);
   const saved = { database: process.env.DATABASE_URL, key: process.env.AMAP_WEB_SERVICE_KEY, credential: process.env.AMAP_CREDENTIAL_ID };
   const original = globalThis.fetch;
@@ -688,6 +688,8 @@ test("actual PostgreSQL: real server factories and all three routes enforce the 
   let sends = 0;
   globalThis.fetch = async () => { sends++; return Response.json({ status: "1", pois: [] }); };
   try {
+    const { getServerAdmission } = await import("../src/server/admission.js");
+    mock.module("../src/server/amap-access.js", { namedExports: { resolveAmapAccess: async () => ({ key: "test-only", options: { beforeAttempt: getServerAdmission("test") } }) } });
     const { POST: resolve } = await import("../app/api/resolve-location/route.js");
     const { POST: search } = await import("../app/api/search/route.js");
     const { POST: page } = await import("../app/api/search/page/route.js");

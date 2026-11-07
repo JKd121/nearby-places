@@ -1,3 +1,3 @@
-import SearchApp from "../src/web/SearchApp";
+import IdentityApp from "../src/web/IdentityApp";
 
-export default function Page() { return <SearchApp />; }
+export default function Page() { return <IdentityApp />; }

@@ -15,8 +15,6 @@ type HistoryItem = {
 
 let cookieValue: string | undefined;
 const cookieSets: Array<{ name: string; value: string; options: Record<string, unknown> }> = [];
-let saveError: Error | undefined;
-let saveCalls = 0;
 let saveInput: Record<string, unknown> | undefined;
 let recentVisitorId: string | undefined;
 let recentLimit: number | undefined;
@@ -35,8 +33,6 @@ const cookieStore = {
 
 const serviceMock = {
   saveSearchHistory: async (input: Record<string, unknown>) => {
-    saveCalls++;
-    if (saveError) throw saveError;
     saveInput = input;
     return {
       confirmedLocation: input.confirmedLocation as typeof confirmedLocation,
@@ -84,6 +80,12 @@ mock.module("../src/history/service.js", {
   exports: serviceMock,
 } as unknown as Parameters<typeof mock.module>[1]);
 
+process.env.BETTER_AUTH_URL = "http://localhost";
+let rejectIdentity = false;
+mock.module("../src/identity/service.js", { namedExports: { requireAccount: async () => {
+  if (rejectIdentity) { const { IdentityError } = await import("../src/identity/security.js"); throw new IdentityError("ACCOUNT_REQUIRED", 403, "请先登录账户"); }
+  return { userId: cookieValue ?? "account-default", kind: "account", sessionId: "session" };
+} } });
 const historyRouteModule = "../app/api/history/route.js";
 const { GET, POST, DELETE } = await import(historyRouteModule);
 
@@ -92,7 +94,7 @@ const routeUrl = "http://localhost/api/history";
 function request(body: string | object): Request {
   return new Request(routeUrl, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", origin: "http://localhost" },
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 }
@@ -100,18 +102,18 @@ function request(body: string | object): Request {
 function deleteRequest(body: string | object): Request {
   return new Request(routeUrl, {
     method: "DELETE",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", origin: "http://localhost" },
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 }
 
 function resetState(visitorId?: string): void {
+  rejectIdentity = false;
   cookieValue = visitorId;
   cookieSets.length = 0;
   recentVisitorId = undefined;
   recentLimit = undefined;
   saveInput = undefined;
-  saveError = undefined; saveCalls = 0;
   recentVisitorId = undefined;
   deleteInputs = [];
   deletedHistoryRows = [
@@ -120,7 +122,7 @@ function resetState(visitorId?: string): void {
   ];
 }
 
-test("DELETE removes the current visitor's history row", async () => {
+test("DELETE removes the current account's history row", async () => {
   resetState("visitor-a");
 
   const response = await DELETE(deleteRequest({ id: "history-a" }));
@@ -200,7 +202,7 @@ test("POST rejects invalid business input", async () => {
   assert.equal(saveInput, undefined);
 });
 
-test("POST reuses a visitor cookie, passes the business input, and strips private fields", async () => {
+test("POST uses authenticated account identity, passes the business input, and strips private fields", async () => {
   resetState("visitor-existing");
   const response = await POST(request({ confirmedLocation, query: " 深圳北站 ", categoryIds: ["hotpot", "hotel"], radiusMeters: 3000 }));
 
@@ -208,6 +210,7 @@ test("POST reuses a visitor cookie, passes the business input, and strips privat
   assert.deepEqual(saveInput, {
     confirmedLocation,
     visitorId: "visitor-existing",
+    userId: "visitor-existing",
     query: " 深圳北站 ",
     categoryIds: ["hotpot", "hotel"],
     radiusMeters: 3000,
@@ -293,43 +296,8 @@ test("GET requests the bounded reserve and cannot select a different visitor", a
   }
 });
 
-test("GET establishes a new visitor and returns empty without a database read", async () => {
-  resetState();
-  const response = await GET(new Request(`${routeUrl}?limit=20`));
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { items: [] });
-  assert.equal(recentVisitorId, undefined);
-  assert.equal(cookieSets.length, 1);
-  assert.equal(cookieSets[0]?.options.httpOnly, true);
-  assert.equal(response.headers.get("cache-control"), "private, no-store");
-});
-
-test("missing visitor cookie generates and sets a secure cookie contract", async () => {
-  resetState();
-  const response = await POST(request({ confirmedLocation, query: "深圳北站", categoryIds: ["hotpot"], radiusMeters: 3000 }));
-
-  assert.equal(response.status, 200);
-  assert.match(saveInput?.visitorId as string, /^[0-9a-f-]{36}$/);
-  assert.equal(cookieSets.length, 1);
-  assert.equal(cookieSets[0]?.name, "nearby_visitor_id");
-  assert.equal(cookieSets[0]?.value, saveInput?.visitorId);
-  assert.deepEqual(cookieSets[0]?.options, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: false,
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365,
-  });
-});
-
-
-test("POST propagates a failed history write exactly once without returning a success item", async () => {
-  resetState("visitor-failure");
-  saveError = new Error("synthetic database unavailable");
-  try {
-    await assert.rejects(POST(request({ confirmedLocation, query: "合成历史", categoryIds: ["hotel"], radiusMeters: 3000 })), /synthetic database unavailable/);
-    assert.equal(saveCalls, 1);
-    assert.equal(saveInput, undefined);
-    assert.equal(cookieSets.length, 0);
-  } finally { saveError = undefined; }
+test("anonymous history access is rejected without creating a cookie or writing rows", async () => {
+  resetState(); rejectIdentity = true;
+  for (const response of [await GET(new Request(routeUrl)), await POST(request({ confirmedLocation, query: "深圳北站", categoryIds: ["hotel"], radiusMeters: 3000 })), await DELETE(deleteRequest({ id: "history-a" }))]) assert.equal(response.status, 403);
+  assert.equal(cookieSets.length, 0); assert.equal(saveInput, undefined); assert.equal(recentVisitorId, undefined);
 });

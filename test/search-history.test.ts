@@ -27,16 +27,16 @@ mock.module("../src/db/prisma.js", {
     prisma: {
       searchHistory: {
         upsert: async (input: unknown) => { upsertInput = input; return {}; },
-        findMany: async (input: { where: { visitorId: string }; take: number; cursor?: { id: string }; skip?: number }) => {
+        findMany: async (input: { where: { userId: string }; take: number; cursor?: { id: string }; skip?: number }) => {
           recentReads.push(input);
-          const eligible = recentRows.filter((row) => row.visitorId === input.where.visitorId && row.confirmedLocation !== null);
+          const eligible = recentRows.filter((row) => row.visitorId === input.where.userId && row.confirmedLocation !== null);
           const start = input.cursor ? eligible.findIndex((row) => row.id === input.cursor!.id) + (input.skip ?? 0) : 0;
           return eligible.slice(start, start + input.take);
         },
-        deleteMany: async ({ where }: { where: { id: string; visitorId: string } }) => {
+        deleteMany: async ({ where }: { where: { id: string; userId: string } }) => {
           lastDeleteWhere = where;
           const index = historyRows.findIndex(
-            (row) => row.id === where.id && row.visitorId === where.visitorId,
+            (row) => row.id === where.id && row.visitorId === where.userId,
           );
           if (index === -1) return { count: 0 };
           historyRows.splice(index, 1);
@@ -179,7 +179,7 @@ test("deleteSearchHistory scopes the database delete by both id and visitorId", 
   const result = await deleteSearchHistory("history-a", "visitor-a");
 
   assert.deepEqual(result, { count: 1 });
-  assert.deepEqual(lastDeleteWhere, { id: "history-a", visitorId: "visitor-a" });
+  assert.deepEqual(lastDeleteWhere, { id: "history-a", userId: "visitor-a" });
   assert.deepEqual(historyRows, [{ id: "history-b", visitorId: "visitor-b" }]);
   assert.deepEqual(savedPlaceRows, [{ id: "saved-place-a", visitorId: "visitor-a" }]);
   assert.equal(savedPlaceDeleteCalls, 0);
@@ -193,6 +193,6 @@ test("deleteSearchHistory cannot remove another visitor's row", async () => {
   const result = await deleteSearchHistory("history-b", "visitor-a");
 
   assert.deepEqual(result, { count: 0 });
-  assert.deepEqual(lastDeleteWhere, { id: "history-b", visitorId: "visitor-a" });
+  assert.deepEqual(lastDeleteWhere, { id: "history-b", userId: "visitor-a" });
   assert.deepEqual(historyRows, [{ id: "history-b", visitorId: "visitor-b" }]);
 });

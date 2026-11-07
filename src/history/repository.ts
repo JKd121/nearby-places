@@ -9,7 +9,7 @@ export async function upsertSearchHistory(
   input: NormalizedSearchHistoryInput,
 ) {
   const record = await prisma.searchHistory.upsert({
-    where: {
+    where: input.userId ? { userId_dedupeKey: { userId: input.userId, dedupeKey: input.dedupeKey } } : {
       visitorId_dedupeKey: {
         visitorId: input.visitorId,
         dedupeKey: input.dedupeKey,
@@ -17,7 +17,8 @@ export async function upsertSearchHistory(
     },
 
     create: {
-      visitorId: input.visitorId,
+      visitorId: input.userId ? null : input.visitorId,
+      ...(input.userId ? { userId: input.userId } : {}),
       dedupeKey: input.dedupeKey,
       query: input.query,
       categoryIds: input.categoryIds,
@@ -43,7 +44,7 @@ export async function findRecentSearchHistory(
   let cursor: string | undefined;
   while (items.length < limit) {
     const rows = await prisma.searchHistory.findMany({
-      where: { visitorId, confirmedLocation: { not: Prisma.DbNull } },
+      where: { userId: visitorId, confirmedLocation: { not: Prisma.DbNull } },
       orderBy: [{ searchedAt: "desc" }, { id: "desc" }],
       take: limit,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
@@ -68,7 +69,7 @@ export async function deleteSearchHistory(
   return prisma.searchHistory.deleteMany({
     where: {
       id,
-      visitorId,
+      userId: visitorId,
     },
   });
 }

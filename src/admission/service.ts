@@ -45,6 +45,7 @@ export class PostgresAdmissionStore {
       throwIfAborted(signal);
       if (remaining() <= 0) throw new AdmissionError("ADMISSION_WAIT_EXCEEDED");
       const row = record(execution.value);
+      if (["IDENTITY_REQUIRED", "CREDENTIAL_INVALID", "GUEST_DAILY_EXHAUSTED"].includes(String(row.code))) throw new AmapApiError("Identity admission refused", null, null, row.code as import("../amap/errors.js").AmapErrorCode);
       if (["ADMISSION_UNAVAILABLE", "ADMISSION_WAIT_EXCEEDED", "DAILY_BUDGET_EXHAUSTED", "MONTHLY_BUDGET_EXHAUSTED"].includes(String(row.code))) {
         let retryAt: string | undefined;
         if (row.retryAt !== undefined) {
