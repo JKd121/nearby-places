@@ -35,7 +35,7 @@ export function inspectSource(path, source) {
         if (!browser && /(?:^|\/)scripts\/|(?:^|\/)test\//.test(node.text)) report(node, "production must not import CLI/test helpers");
         if (!browser && /amap\/client(?:\.js)?$|location\/provider(?:\.js)?$/.test(node.text) && !factories.has(path)) report(node, "production AMap clients must come from server/amap");
       }
-      if (node.text.includes("restapi.amap.com") && !factories.has(path) && path !== transport) report(node, "AMap endpoint outside transport/client assembly");
+      if (node.text.includes("restapi.amap.com") && !factories.has(path) && path !== transport && path !== "src/server/map-config.ts") report(node, "AMap endpoint outside transport/client assembly");
       if (!browser && path !== transport && node.text === "fetch") report(node, "computed fetch outside transport");
     }
     if (!browser && path !== transport && ts.isIdentifier(node) && ["fetch", "fetchImpl"].includes(node.text) && !inType(node)) {

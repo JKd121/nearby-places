@@ -26,6 +26,12 @@ test("fetchImpl cannot run directly inside either business client", () => {
 });
 test("only transport can execute fetch with a signal", () => assert.deepEqual(inspectSource("src/amap/transport.ts", 'fetchImpl(url, { signal });'), []));
 test("browser modules cannot contain a direct AMap endpoint", () => assert.ok(inspectSource("src/web/new.ts", 'fetch("https://restapi.amap.com/v3/geocode/geo")').length));
+
+test("map endpoint assembly has a scoped host exception and still cannot execute fetch", () => {
+  assert.deepEqual(inspectSource("src/server/map-config.ts", 'const host = "https://restapi.amap.com";'), []);
+  assert.ok(inspectSource("src/server/map-config.ts", 'fetch(url);').length);
+  assert.ok(inspectSource("app/api/maps/new/route.ts", 'fetch(url);').length);
+});
 test("server factories cannot omit PostgreSQL admission", () => {
   assert.ok(inspectSource("src/server/amap.ts", 'createAmapTransport(undefined, { policy });').length);
   assert.deepEqual(inspectSource("src/server/amap.ts", 'createAmapTransport(undefined, { policy, beforeAttempt: getServerAdmission("primary") });'), []);

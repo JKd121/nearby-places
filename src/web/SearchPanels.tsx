@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { CategoryKey, Place } from "../amap/types";
 import type { LocationCandidate } from "../location/types";
 import type { SearchHistoryItem } from "./search-history-store";
@@ -7,6 +8,7 @@ import { buildAmapMarkerUrl } from "./location-links";
 import { ALL_CATEGORY_IDS, CATEGORY_GROUPS, clearCategories, formatCost, formatDistance, formatRating, getBusinessHoursDisplay, getGroupSelection, getPlaceRenderKey, isTransitCategory, selectAllCategories, toggleCategory, toggleGroup, truncateTag } from "./logic";
 import { Badge, EmptyState, Feedback, LoadingState } from "./ui/Feedback";
 import { Icon } from "./ui/icons";
+import { CategoryIcon } from "./ui/CategoryIcon";
 import s from "./search-workspace.module.css";
 
 export function categoryLabel(key: CategoryKey): string { return CATEGORIES.find((category) => category.key === key)?.label ?? key; }
@@ -20,20 +22,32 @@ export function CandidateList({ candidates, expanded, onExpand, onSelect }: { ca
 }
 
 export function CategorySelector({ selected, onChange }: { selected: readonly CategoryKey[]; onChange: (next: CategoryKey[]) => void }) {
-  return <fieldset className={s.categorySelector}><legend>服务类别</legend><div className={s.selectionActions}><span>{selected.length}/{ALL_CATEGORY_IDS.length} 已选</span><div><button type="button" onClick={() => onChange(selectAllCategories())}>全选</button><button type="button" onClick={() => onChange(clearCategories())}>清空</button></div></div>
-    <div className={s.categoryGroups}>{CATEGORY_GROUPS.map((group) => { const selection = getGroupSelection(selected, group.categoryIds); return <div className={s.categoryGroup} key={group.key}>
-      <div className={s.groupTitle}><strong>{group.label}</strong><button type="button" aria-label={`${selection === "all" ? "取消" : "选中"}${group.label}整组`} aria-pressed={selection === "all"} onClick={() => onChange(toggleGroup(selected, group.categoryIds))}>{selection === "all" ? "取消整组" : "选中整组"}</button></div>
-      <div className={s.checkboxes}>{group.categoryIds.map((key) => <label key={key}><input type="checkbox" checked={selected.includes(key)} onChange={() => onChange(toggleCategory(selected, key))} />{categoryLabel(key)}</label>)}</div>
-    </div>; })}</div>
+  const [open, setOpen] = useState<string | null>(null);
+  const root = useRef<HTMLFieldSetElement>(null);
+  useEffect(() => {
+    const close = (event: PointerEvent) => { if (!root.current?.contains(event.target as Node)) setOpen(null); };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, []);
+  return <fieldset className={s.categorySelector}><legend className={s.srOnly}>服务类别</legend>
+    <div ref={node => { root.current = node?.closest("fieldset") ?? null; }} className={s.categoryGroups} onKeyDown={event => {
+      if (event.key === "Escape") { setOpen(null); root.current?.querySelector<HTMLButtonElement>('[aria-expanded="true"]')?.focus(); }
+    }}>{CATEGORY_GROUPS.map((group) => { const selection = getGroupSelection(selected, group.categoryIds); return <div className={s.categoryGroup} key={group.key} data-group={group.key}>
+      <button type="button" className={s.groupToggle} aria-expanded={open === group.key} aria-controls={`category-group-${group.key}`} onClick={() => setOpen(current => current === group.key ? null : group.key)}><CategoryIcon name={group.key} /><strong>{group.label}</strong><span>{group.categoryIds.filter(key => selected.includes(key)).length}/{group.categoryIds.length}</span><span aria-hidden="true">⌄</span></button>
+      <div id={`category-group-${group.key}`} className={s.groupDropdown} hidden={open !== group.key}>
+        <div className={s.groupTitle}><strong>{group.label}</strong><button type="button" aria-label={`${selection === "all" ? "取消" : "选中"}${group.label}整组`} aria-pressed={selection === "all"} onClick={() => onChange(toggleGroup(selected, group.categoryIds))}>{selection === "all" ? "取消整组" : "选中整组"}</button></div>
+        <div className={s.checkboxes}>{group.categoryIds.map((key) => <label key={key}><input type="checkbox" checked={selected.includes(key)} onChange={() => onChange(toggleCategory(selected, key))} /><CategoryIcon name={key} />{categoryLabel(key)}</label>)}</div>
+      </div>
+    </div>; })}</div><div className={s.selectionActions}><span>{selected.length}/{ALL_CATEGORY_IDS.length} 已选</span><div><button type="button" onClick={() => onChange(selectAllCategories())}>全选</button><button type="button" onClick={() => onChange(clearCategories())}>清空</button></div></div>
   </fieldset>;
 }
 
-export function PlaceList({ places }: { places: Place[] }) {
+export function PlaceList({ places, selectedPlace, onSelect, getEntryKey }: { places: Place[]; selectedPlace?: string | undefined; onSelect?: ((place: Place) => void) | undefined; getEntryKey?: ((place: Place) => string) | undefined }) {
   return <ol className={s.placeList}>{places.map((place, index) => {
     const cost = formatCost(place.category, place.cost), tag = truncateTag(place.tag), transit = isTransitCategory(place.category);
     const url = buildAmapMarkerUrl({ ...place, preferPoiId: transit });
-    return <li className={s.place} key={getPlaceRenderKey(place, index)}><span className={s.index}>{index + 1}</span><div className={s.placeCopy}>
-      <div className={s.placeTitle}><div><h3>{place.name}</h3><Badge>{categoryLabel(place.category)}</Badge></div><strong className={s.distance}>{formatDistance(place.distanceMeters)}</strong></div>
+    return <li className={s.place} key={getPlaceRenderKey(place, index)} data-map-entry={getEntryKey?.(place)} data-selected={selectedPlace !== undefined && selectedPlace === getEntryKey?.(place)} onMouseEnter={() => onSelect?.(place)} onFocus={() => onSelect?.(place)}><span className={s.index}>{index + 1}</span><div className={s.placeCopy}>
+      <div className={s.placeTitle}><div><h3>{onSelect ? <button type="button" className={s.placeMapSelect} onClick={() => onSelect(place)} aria-label={`在地图定位：${place.name}`}>{place.name}</button> : place.name}</h3><Badge>{categoryLabel(place.category)}</Badge></div><strong className={s.distance}>{formatDistance(place.distanceMeters)}</strong></div>
       {!transit && ((place.rating !== null && Number.isFinite(place.rating)) || cost) && <p className={s.metadata}>{place.rating !== null && Number.isFinite(place.rating) && <span>{formatRating(place.rating)}</span>}{cost && <span>{cost}</span>}</p>}
       {tag && <p className={s.muted}>{tag}</p>}{!transit && <p className={s.muted}>{getBusinessHoursDisplay(place)}</p>}
       <div className={s.placeBottom}><p>{place.address || "地址暂无"}</p>{url && <a href={url} target="_blank" rel="noopener noreferrer" aria-label={transit ? `在高德查看站点详情「${place.name}」` : `在高德地图查看「${place.name}」的位置`}>{transit ? "在高德查看站点详情" : "查看位置"}<Icon name="arrow" /></a>}</div>

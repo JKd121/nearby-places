@@ -25,6 +25,19 @@ const PATHS: Record<AmapOperation, string> = { geocode: "/v3/geocode/geo", "poi-
 const AUTH_CODES = new Set(["10001", "10002", "10005", "10006", "10007", "10008", "10009", "10012", "10013", "10026", "10041"]);
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
+/** JS SDK bootstrap/style assets only; POI/geocoding continue through requestJson admission. */
+export async function requestMapAsset(url: URL, caller: AbortSignal, fetchImpl: typeof fetch = fetch): Promise<Response> {
+  if (url.origin !== "https://restapi.amap.com" || !["/v4/map/styles", "/v3/log/init"].includes(url.pathname) || url.username || url.password) {
+    throw new Error("Unsupported map asset");
+  }
+  const signal = AbortSignal.any([caller, AbortSignal.timeout(8000)]);
+  const response = await abortable(fetchImpl(url, { signal, cache: "no-store", redirect: "error" }), signal);
+  if (!response.ok) { void response.body?.cancel().catch(() => {}); throw new Error("Map asset unavailable"); }
+  const body = await readBounded(response, 1024 * 1024, signal);
+  return new Response(body, { headers: { "content-type": url.searchParams.has("callback") ? "application/javascript; charset=utf-8" : "application/json; charset=utf-8",
+    "cache-control": "private, no-store", "x-content-type-options": "nosniff" } });
+}
+
 async function readBounded(response: Response, maxBytes: number, signal: AbortSignal): Promise<string> {
   if (!response.body) return "";
   const reader = response.body.getReader();

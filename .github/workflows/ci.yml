@@ -91,3 +91,8 @@ jobs:
 
       - name: Build application
         run: npm run build
+
+      - name: Verify map interaction and density on production build
+        env:
+          NEARBY_MAP_TEST_PRODUCTION: "1"
+        run: npm run test:map:browser

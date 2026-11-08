@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import WorkspaceShell, { type WorkspaceView } from "./ui/WorkspaceShell";
 import { Badge, EmptyState, Feedback, LoadingState } from "./ui/Feedback";
 import { Icon } from "./ui/icons";
@@ -10,17 +11,20 @@ import { useSearchHistory } from "./useSearchHistory";
 import type { SearchHistoryItem, SearchHistoryInput } from "./search-history-store";
 import { isSearchHistoryItem } from "./search-history-store";
 import { copyConfirmedLocation } from "../history/validation";
-import type { CategoryKey, GeocodedPlace } from "../amap/types";
+import type { CategoryKey, GeocodedPlace, Place } from "../amap/types";
 import type { LocationCandidate } from "../location/types";
 import type { SearchRadius, SearchResponse, SearchSecondPageResponse, SearchProgress } from "../search/contracts";
 import { isCategoryCompleted } from "../search/status";
 import { CategoryResults } from "./CategoryResults";
 import { readSearchStream } from "./search-stream";
+import { entryKey, mapPlaces, selectionFor, type MapSelection } from "./map/model";
 import {
-  ALLOWED_RADIUS_METERS, ALL_CATEGORY_IDS,
-  canRequestSecondProviderPage, getCategoryResult, getCategoryCounts,
-  getPlacesForFilter, mergeProviderPageResult, selectAllCategories,
+  ALLOWED_RADIUS_METERS,
+  canRequestSecondProviderPage, getCategoryResult,
+  mergeProviderPageResult, selectAllCategories,
 } from "./logic";
+
+const NearbyMap = dynamic(() => import("./NearbyMap"), { ssr: false });
 
 type Phase = "initial" | "resolving" | "needs-confirmation" | "resolved" | "not-found" | "searching" | "results" | "resolve-error" | "search-error";
 interface PublicApiError { message?: string; }
@@ -53,14 +57,33 @@ export default function SearchApp({ identityKind = "account", sessionId, persona
   const [localView, setLocalView] = useState<WorkspaceView>("explore");
   const view = activeView ?? localView;
   const setView = onViewChange ?? setLocalView;
-  const [conditionsOpen, setConditionsOpen] = useState(true);
+  const [mobileView, setMobileView] = useState<"list" | "map">("list");
+  const [selection, setSelection] = useState<MapSelection | null>(null);
+  const points = useMemo(() => mapPlaces(response?.categories ?? []), [response]);
+  const [mobile, setMobile] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const requestId = useRef(0);
   const activeRequest = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const providerPageBusy = useRef(false);
-  const counts = useMemo(() => getCategoryCounts(response?.categories ?? []), [response]);
-  const successfulCount = counts.completed;
+  useEffect(() => {
+    const media = matchMedia("(max-width: 700px)");
+    const sync = () => setMobile(media.matches);
+    sync(); media.addEventListener("change", sync); return () => media.removeEventListener("change", sync);
+  }, []);
+
+  function selectMapPlace(next: MapSelection): void {
+    setSelection(current => current?.entryKey === next.entryKey && current.pointKey === next.pointKey ? current : next);
+    setMobileView("list");
+  }
+  function selectListPlace(place: Place, index: number): void {
+    const key = entryKey(place, index);
+    const point = points.find(item => item.entries.some(entry => entry.key === key));
+    if (point) {
+      const next = selectionFor(point, place.category);
+      setSelection(current => current?.entryKey === next.entryKey && current.pointKey === next.pointKey ? current : next);
+    }
+  }
 
   function invalidateRequests(): void {
     requestId.current += 1;
@@ -79,6 +102,7 @@ export default function SearchApp({ identityKind = "account", sessionId, persona
   useEffect(() => () => invalidateRequests(), []);
 
   function resetView(): void {
+    setSelection(null);
     setResponse(null); setProgress(null); setPublicError(null); setLoadingProviderCategory(null); setProviderPageErrors({});
   }
 
@@ -269,14 +293,9 @@ export default function SearchApp({ identityKind = "account", sessionId, persona
 
   const busy = phase === "resolving" || phase === "searching";
   const candidatePhase = phase === "needs-confirmation";
-  const allCount = response ? getPlacesForFilter(response, "all").length : null;
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0; }, [searchVersion]);
-  useEffect(() => {
-    if (phase === "resolved") setConditionsOpen(true);
-    if (phase === "results" && window.matchMedia("(max-width: 1000px)").matches) setConditionsOpen(false);
-  }, [phase]);
 
-  return <WorkspaceShell active={view} onNavigate={navigate}>
+  return <WorkspaceShell active={view} onNavigate={navigate} compactChrome>
     <div className={s.explore} hidden={view !== "explore"}>
       <header className={s.searchHeader}>
         <div><h1>探索附近</h1><p>输入地点，确认中心，发现附近服务。</p></div>
@@ -286,14 +305,20 @@ export default function SearchApp({ identityKind = "account", sessionId, persona
           </label><button type="submit" className={s.primary} disabled={busy}>{phase === "resolving" ? "解析中…" : "解析地点"}</button>
           <button type="button" className={s.historyShortcut} aria-label="查看最近搜索" onClick={() => navigate("history")}><Icon name="clock" /></button>
         </form>
-      </header>
-      <div className={s.metrics}>
-        <div className={s.metric}><span className={s.metricIcon} data-color="pink"><Icon name="pin" /></span><div><span>搜索中心</span><strong title={resolvedLocation?.name}>{resolvedLocation?.name ?? "待确认"}</strong><Badge tone={resolvedLocation ? "success" : "warning"}>{resolvedLocation ? "已确认" : "请选择地点"}</Badge></div></div>
-        <div className={s.metric}><span className={s.metricIcon} data-color="yellow"><Icon name="pin" /></span><div><span>搜索半径</span><strong>{radiusMeters / 1000} km</strong></div></div>
-        <div className={s.metric}><span className={s.metricIcon} data-color="mint"><Icon name="panel" /></span><div><span>已选类别</span><strong>{selectedCategoryIds.length} / {ALL_CATEGORY_IDS.length}</strong></div></div>
-        <div className={s.metric}><span className={s.metricIcon} data-color="lilac"><Icon name="search" /></span><div><span>本次已获取</span><strong>{(phase === "results" || phase === "searching" || phase === "search-error") && successfulCount > 0 && allCount !== null ? allCount + " 个地点" : "—"}</strong></div></div>
+      <div className={s.centerSummary}>
+        <span><Icon name="pin" /><strong>{resolvedLocation?.name ?? "待确认搜索中心"}</strong><Badge tone={resolvedLocation ? "success" : "warning"}>{resolvedLocation ? "已确认" : "请选择地点"}</Badge></span>
+        {resolvedLocation && <button type="button" className={s.textButton} onClick={clearResolved}>修改地点</button>}
+        <span>本次已获取 <strong>{points.length}</strong> 个地点</span>
       </div>
-      <div className={s.searchColumns}>
+      </header>
+      <section className={s.topConditions} aria-label="搜索条件">
+        <CategorySelector selected={selectedCategoryIds} onChange={changeCategories} />
+        <fieldset className={s.radius}><legend>搜索半径</legend><div>{ALLOWED_RADIUS_METERS.map(value => <label key={value}><input type="radio" name="radius" value={value} checked={radiusMeters === value} onChange={event => changeRadius(event.target.value)} /><span>{value / 1000} km</span></label>)}</div></fieldset>
+        <button className={s.primary} type="button" onClick={searchNearby} disabled={!resolvedLocation || phase === "searching" || selectedCategoryIds.length === 0}>{phase === "searching" ? "正在搜索…" : "搜索附近"}</button>
+        {selectedCategoryIds.length === 0 && <span role="status">至少选择一个类别</span>}
+      </section>
+      <div className={s.mobileViewSwitch} role="group" aria-label="结果显示方式"><button type="button" aria-pressed={mobileView === "list"} onClick={() => setMobileView("list")}>列表</button><button type="button" aria-pressed={mobileView === "map"} onClick={() => setMobileView("map")}>地图</button></div>
+      <div className={s.searchColumns} data-mobile-view={mobileView}>
         <section className={s.mainPanel} aria-labelledby="search-panel-title">
           <div className={s.panelHeading}><div><h2 id="search-panel-title" tabIndex={-1}>{candidatePhase ? "请确认搜索中心" : "附近结果"}</h2><p>{candidatePhase ? "选择你想搜索的位置，附近服务将以此为中心。" : "围绕已确认的搜索中心"}</p></div>{candidatePhase && <Badge tone="warning">{candidates.length} 个候选</Badge>}</div>
           <div ref={scrollRef} className={s.listViewport} role="region" tabIndex={0} aria-label={candidatePhase ? "候选地点列表" : "附近结果列表"} aria-busy={phase === "resolving"}>
@@ -303,23 +328,13 @@ export default function SearchApp({ identityKind = "account", sessionId, persona
             {candidatePhase && <CandidateList candidates={candidates} expanded={showAllCandidates} onExpand={() => setShowAllCandidates(true)} onSelect={confirmCandidate} />}
             {phase === "not-found" && <EmptyState title="没有找到明确地点">请补充城市、行政区或更完整的地点名称，再次解析。</EmptyState>}
             {phase === "resolve-error" && <Feedback tone="error" title="地点解析未完成" action={<button type="button" onClick={resolveLocation}>重新解析</button>}>{publicError}</Feedback>}
-            {phase === "resolved" && <EmptyState title="搜索中心已确认">在右侧选择服务类别和半径，点击“搜索附近”。</EmptyState>}
+            {phase === "resolved" && <EmptyState title="搜索中心已确认">在上方选择服务类别和半径，点击“搜索附近”。</EmptyState>}
             {phase === "search-error" && <Feedback tone="error" title="附近搜索未完成" action={<button type="button" onClick={searchNearby} disabled={!resolvedLocation || selectedCategoryIds.length === 0}>重新搜索</button>}>{publicError}</Feedback>}
-            {(phase === "searching" || phase === "results" || phase === "search-error") && <CategoryResults key={searchVersion} categoryIds={selectedCategoryIds} response={response} progress={progress} searching={phase === "searching"} interrupted={phase === "search-error"} loadingCategory={loadingProviderCategory} pageErrors={providerPageErrors} onLoadPage={loadProviderPage} />}
+            {(phase === "searching" || phase === "results" || phase === "search-error") && <CategoryResults key={searchVersion} categoryIds={selectedCategoryIds} response={response} progress={progress} searching={phase === "searching"} interrupted={phase === "search-error"} loadingCategory={loadingProviderCategory} pageErrors={providerPageErrors} onLoadPage={loadProviderPage} selection={selection} onSelectPlace={selectListPlace} />}
           </div>
           <div className={s.panelFooter}>在框内上下滚动，浏览已加载的地点。<Icon name="arrow" /></div>
         </section>
-        <aside className={s.conditions} aria-label="搜索条件">
-          <div className={s.conditionHeading}><h2>搜索条件</h2><button type="button" className={s.conditionToggle} aria-expanded={conditionsOpen} aria-controls="condition-fields" onClick={() => setConditionsOpen((value) => !value)}>{conditionsOpen ? "收起条件" : "修改条件"}</button></div>
-          <div id="condition-fields" className={s.conditionBody} data-open={conditionsOpen}>
-            {resolvedLocation ? <><div className={s.confirmedCenter}><div className={s.centerTop}><span className={s.centerIcon}><Icon name="pin" /></span><strong>{resolvedLocation.name}</strong><Badge tone="success">已确认</Badge></div><p>{[resolvedLocation.city, resolvedLocation.district].filter(Boolean).join(" · ")}</p>{resolvedLocation.address && <p>{resolvedLocation.address}</p>}<button type="button" className={s.textButton} onClick={clearResolved} disabled={phase === "searching"}>修改地点</button></div>
-              <CategorySelector selected={selectedCategoryIds} onChange={changeCategories} />
-              {selectedCategoryIds.length === 0 && <Feedback tone="warning" title="至少选择一个类别">选中需要的服务后再搜索。</Feedback>}
-              <fieldset className={s.radius}><legend>搜索半径</legend><div>{ALLOWED_RADIUS_METERS.map((value) => <label key={value}><input type="radio" name="radius" value={value} checked={radiusMeters === value} onChange={(event) => changeRadius(event.target.value)} /><span>{value / 1000} km</span></label>)}</div></fieldset>
-              <button className={s.primary + " " + s.searchNearby} type="button" onClick={searchNearby} disabled={phase === "searching" || selectedCategoryIds.length === 0}>{phase === "searching" ? "正在搜索…" : "搜索附近"}</button>
-            </> : <div className={s.waiting}><Badge tone="warning">等待确认</Badge><h3>先选定一个搜索中心</h3><p>解析地点并选择候选后，即可设置服务类别和搜索半径。</p><ol><li>选择候选地点</li><li>设置条件，搜索附近</li></ol><button type="button" disabled>请先确认地点</button></div>}
-          </div>
-        </aside>
+        <div className={s.mapColumn}>{resolvedLocation ? <NearbyMap center={resolvedLocation} radius={radiusMeters} points={points} selection={selection} searching={phase === "searching"} visible={view === "explore" && (!mobile || mobileView === "map")} sessionId={sessionId} onSelect={selectMapPlace} /> : <div className={s.mapPlaceholder}><span>◎</span><h2>从一个地点展开探索</h2><p>确认搜索中心后，地图将在这里展开。</p></div>}</div>
       </div>
     </div>
     {view === "history" && <HistoryView history={history} onSelect={handleHistorySelect} onDelete={handleHistoryDelete} />}

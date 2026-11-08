@@ -20,7 +20,7 @@ const groups: { label: string; items: WorkspaceView[] }[] = [
 
 
 
-export default function WorkspaceShell({ active, onNavigate, children, preview = false }: { active: WorkspaceView; onNavigate: (view: WorkspaceView) => void; children: ReactNode; preview?: boolean }) {
+export default function WorkspaceShell({ active, onNavigate, children, preview = false, compactChrome = false }: { active: WorkspaceView; onNavigate: (view: WorkspaceView) => void; children: ReactNode; preview?: boolean; compactChrome?: boolean }) {
   const [userCollapsed, setUserCollapsed] = useState(false);
   const [compact, setCompact] = useState(false);
   const collapsed = compact || userCollapsed;
@@ -34,9 +34,10 @@ export default function WorkspaceShell({ active, onNavigate, children, preview =
     return () => media.removeEventListener("change", sync);
   }, []);
 
-  return <div className={styles.preview} data-collapsed={collapsed} data-live={!preview}>
+  const brand = <div className={styles.brand}><span className={styles.brandIcon}><Icon name="pin" /></span><strong>地点周边</strong></div>;
+  return <div className={styles.preview} data-collapsed={collapsed} data-live={!preview} data-compact-chrome={compactChrome}>
     <a className={styles.skipLink} href="#preview-main">跳到主要内容</a>
-    <header className={styles.topbar}>
+    {!compactChrome && <header className={styles.topbar}>
       <div className={styles.brand}>
         <span className={styles.brandIcon}><Icon name="pin" /></span>
         <strong>地点周边</strong>
@@ -46,11 +47,11 @@ export default function WorkspaceShell({ active, onNavigate, children, preview =
         <span className={collapsed ? styles.flipped : undefined}><Icon name="panel" /></span>
         <span>{collapsed ? "展开导航" : "折叠导航"}</span>
       </button>}
-    </header>
+    </header>}
 
     <div className={styles.workspace}>
       <aside id="preview-navigation" className={styles.sidebar} aria-label="侧边导航">
-        <div className={styles.workspaceName} aria-hidden="true"><Icon name="pin" /><strong>地点工作空间</strong></div>
+        {compactChrome ? brand : <div className={styles.workspaceName} aria-hidden="true"><Icon name="pin" /><strong>地点工作空间</strong></div>}
         <nav className={styles.navigation} aria-label="主导航">
           {groups.map((group) => <div className={styles.group} key={group.label}>
             <p className={styles.groupLabel}>{group.label}</p>
@@ -64,6 +65,7 @@ export default function WorkspaceShell({ active, onNavigate, children, preview =
           </div>)}
         </nav>
         <div className={styles.sidebarBottom}>
+          {compactChrome && !compact && <button className={styles.collapseControl} type="button" aria-controls="preview-navigation" aria-expanded={!collapsed} onClick={() => setUserCollapsed(value => !value)}><Icon name="panel" /><span className={styles.navLabel}>{collapsed ? "展开导航" : "折叠导航"}</span></button>}
           <div className={styles.sidebarFooter}><span className={styles.sourceDot} aria-hidden="true" /><span>高德地点数据</span></div>
           <button className={`${styles.navItem} ${styles.settingsButton}`} type="button" aria-label="设置" aria-disabled="true">
             <Icon name="settings" />
